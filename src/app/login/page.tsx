@@ -3,12 +3,14 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
+import { Eye, EyeOff } from 'lucide-react'
 
 export default function LoginPage() {
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [error, setError]       = useState('')
   const [loading, setLoading]   = useState(false)
+  const [showPass, setShowPass] = useState(false)
   const { signIn } = useAuth()
   const router     = useRouter()
 
@@ -27,232 +29,152 @@ export default function LoginPage() {
 
   return (
     <div style={{
-      minHeight: '100vh',
-      background: '#f8fafc',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '24px',
+      minHeight:'100vh',
+      background:'var(--background)',
+      display:'flex', alignItems:'center', justifyContent:'center',
+      padding:24,
+      position:'relative',
+      overflow:'hidden',
     }}>
+      {/* Background gradient orbs */}
       <div style={{
-        display: 'flex',
-        width: '100%',
-        maxWidth: '800px',
-        minHeight: '460px',
-        borderRadius: 8,
-        overflow: 'hidden',
-        boxShadow: 'rgba(50,50,93,0.25) 0px 30px 45px -30px, rgba(0,0,0,0.1) 0px 18px 36px -18px',
+        position:'absolute', top:'-20%', right:'-10%', width:600, height:600,
+        borderRadius:'50%', opacity:0.15, pointerEvents:'none',
+        background:'radial-gradient(circle, #635bff 0%, transparent 70%)',
+      }} />
+      <div style={{
+        position:'absolute', bottom:'-20%', left:'-10%', width:500, height:500,
+        borderRadius:'50%', opacity:0.1, pointerEvents:'none',
+        background:'radial-gradient(circle, #a78bfa 0%, transparent 70%)',
+      }} />
+
+      <div style={{
+        display:'flex', width:'100%', maxWidth:880, minHeight:500,
+        borderRadius:20, overflow:'hidden',
+        boxShadow:'0 24px 64px rgba(0,0,0,0.08), 0 0 1px rgba(0,0,0,0.06)',
+        position:'relative', zIndex:1,
       }}>
-        {/* ═══ LEFT PANEL — Hero gradient brand moment ═══ */}
-        <div
-          style={{
-            width: '42%',
-            background: 'linear-gradient(135deg, #533afd 0%, #7c5cfc 50%, #b9b9f9 100%)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '48px 32px',
-            position: 'relative',
-          }}
-          className="hidden sm:flex"
-        >
-          {/* Subtle noise texture */}
+        {/* LEFT — Hero */}
+        <div style={{
+          width:'44%', position:'relative', overflow:'hidden',
+          background:'linear-gradient(135deg, #0a2540 0%, #1a3a5c 50%, #635bff 100%)',
+          display:'flex', flexDirection:'column', justifyContent:'center',
+          padding:'48px 40px',
+        }} className="hidden sm:flex">
+          {/* Grid pattern overlay */}
           <div style={{
-            position: 'absolute', inset: 0,
-            background: 'radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)',
-            backgroundSize: '4px 4px',
-            pointerEvents: 'none',
+            position:'absolute', inset:0, opacity:0.06,
+            backgroundImage:'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
+            backgroundSize:'32px 32px', pointerEvents:'none',
           }} />
 
-          {/* Brand mark */}
-          <div style={{
-            marginBottom: 32,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-          }}>
-            <div style={{
-              width: 36, height: 36,
-              borderRadius: 6,
-              background: 'rgba(255,255,255,0.15)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              backdropFilter: 'blur(8px)',
-            }}>
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                <rect x="3" y="2" width="14" height="16" rx="1.5" stroke="#fff" strokeWidth="1.5"/>
-                <line x1="6" y1="6" x2="14" y2="6" stroke="#fff" strokeWidth="1.2"/>
-                <line x1="6" y1="9" x2="14" y2="9" stroke="#fff" strokeWidth="1.2"/>
-                <line x1="6" y1="12" x2="10" y2="12" stroke="#fff" strokeWidth="1.2"/>
-              </svg>
+          <div style={{ position:'relative', zIndex:1 }}>
+            {/* Brand */}
+            <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:40 }}>
+              <div style={{
+                width:40, height:40, borderRadius:12,
+                background:'rgba(255,255,255,0.12)', backdropFilter:'blur(8px)',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                border:'1px solid rgba(255,255,255,0.15)',
+              }}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <rect x="3" y="2" width="14" height="16" rx="2" stroke="#fff" strokeWidth="1.5"/>
+                  <line x1="6.5" y1="6" x2="13.5" y2="6" stroke="#fff" strokeWidth="1.2" strokeLinecap="round"/>
+                  <line x1="6.5" y1="9.5" x2="13.5" y2="9.5" stroke="#fff" strokeWidth="1.2" strokeLinecap="round"/>
+                  <line x1="6.5" y1="13" x2="10" y2="13" stroke="#fff" strokeWidth="1.2" strokeLinecap="round"/>
+                </svg>
+              </div>
+              <span style={{ fontSize:16, fontWeight:700, color:'#fff', letterSpacing:'-0.02em' }}>Kasir POS</span>
             </div>
-            <span style={{ fontSize:14, fontWeight:600, color:'#fff', letterSpacing:'-0.01em' }}>
-              Kasir POS
-            </span>
+
+            <h1 style={{
+              fontSize:36, fontWeight:300, color:'#fff',
+              letterSpacing:'-0.72px', lineHeight:1.1, marginBottom:16,
+            }}>
+              Selamat<br/>
+              <span style={{ fontWeight:600 }}>Datang Kembali</span>
+            </h1>
+
+            <p style={{
+              fontSize:15, fontWeight:400, color:'rgba(255,255,255,0.55)',
+              lineHeight:1.6, maxWidth:280, marginBottom:40,
+            }}>
+              Kelola servis, stok, dan laporan keuangan toko laptop Anda dalam satu platform.
+            </p>
+
+            {/* Stats preview */}
+            <div style={{ display:'flex', gap:20 }}>
+              {[
+                { label: 'Servis', val: '120+' },
+                { label: 'Unit', val: '45+' },
+                { label: 'Laporan', val: 'Realtime' },
+              ].map((s, i) => (
+                <div key={i} style={{
+                  padding:'12px 16px', borderRadius:10,
+                  background:'rgba(255,255,255,0.06)',
+                  border:'1px solid rgba(255,255,255,0.08)',
+                }}>
+                  <p style={{ fontSize:18, fontWeight:600, color:'#fff', lineHeight:1 }}>{s.val}</p>
+                  <p style={{ fontSize:11, color:'rgba(255,255,255,0.4)', marginTop:2 }}>{s.label}</p>
+                </div>
+              ))}
+            </div>
           </div>
-
-          {/* Headline */}
-          <h1 style={{
-            fontSize: 32,
-            fontWeight: 300,
-            color: '#fff',
-            textAlign: 'center',
-            letterSpacing: '-0.64px',
-            lineHeight: 1.1,
-            marginBottom: 16,
-          }}>
-            Selamat<br/>Datang Kembali
-          </h1>
-
-          <p style={{
-            fontSize: 14,
-            fontWeight: 300,
-            color: 'rgba(255,255,255,0.7)',
-            textAlign: 'center',
-            lineHeight: 1.5,
-            maxWidth: 220,
-          }}>
-            Sistem manajemen toko laptop Anda. Kelola servis, stok, dan laporan keuangan.
-          </p>
-
-          {/* Divider */}
-          <div style={{
-            width: '60%',
-            height: 1,
-            background: 'rgba(255,255,255,0.2)',
-            margin: '32px 0',
-          }} />
-
-          <p style={{ fontSize: 12, fontWeight: 300, color: 'rgba(255,255,255,0.5)', marginBottom: 12 }}>
-            Belum punya akses?
-          </p>
-
-          <button
-            type="button"
-            style={{
-              fontSize: 12,
-              fontWeight: 500,
-              color: '#fff',
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.3)',
-              borderRadius: 4,
-              padding: '8px 24px',
-              cursor: 'default',
-            }}
-          >
-            Hubungi Admin
-          </button>
         </div>
 
-        {/* ═══ RIGHT PANEL — White form ═══ */}
+        {/* RIGHT — Form */}
         <div style={{
-          flex: 1,
-          background: '#fff',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          padding: '48px 44px',
+          flex:1, background:'#fff', display:'flex', flexDirection:'column',
+          justifyContent:'center', padding:'48px 44px',
         }}>
-          <h2 style={{
-            fontSize: 24,
-            fontWeight: 300,
-            color: 'var(--ink)',
-            letterSpacing: '-0.48px',
-            marginBottom: 8,
-          }}>
+          <h2 style={{ fontSize:28, fontWeight:600, color:'var(--ink)', letterSpacing:'-0.56px', marginBottom:6 }}>
             Masuk
           </h2>
-          <p style={{
-            fontSize: 14,
-            fontWeight: 300,
-            color: 'var(--mute)',
-            marginBottom: 32,
-          }}>
+          <p style={{ fontSize:14, fontWeight:400, color:'var(--mute)', marginBottom:36 }}>
             Masukkan kredensial untuk melanjutkan
           </p>
 
-          <form onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <form onSubmit={handleSubmit} noValidate style={{ display:'flex', flexDirection:'column', gap:20 }}>
             {/* Email */}
             <div>
-              <label htmlFor="login-email" style={{
-                display: 'block',
-                fontSize: 12,
-                fontWeight: 400,
-                color: 'var(--charcoal)',
-                marginBottom: 6,
-                letterSpacing: '0.02em',
-              }}>
+              <label htmlFor="login-email" style={{ display:'block', fontSize:13, fontWeight:500, color:'var(--charcoal)', marginBottom:8 }}>
                 Email
               </label>
-              <input
-                id="login-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-                required
-                placeholder="nama@toko.com"
-                className="input"
-              />
+              <input id="login-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email" required placeholder="nama@toko.com" className="input" />
             </div>
 
             {/* Password */}
             <div>
-              <label htmlFor="login-password" style={{
-                display: 'block',
-                fontSize: 12,
-                fontWeight: 400,
-                color: 'var(--charcoal)',
-                marginBottom: 6,
-                letterSpacing: '0.02em',
-              }}>
+              <label htmlFor="login-password" style={{ display:'block', fontSize:13, fontWeight:500, color:'var(--charcoal)', marginBottom:8 }}>
                 Password
               </label>
-              <input
-                id="login-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                required
-                placeholder="••••••••"
-                className="input"
-              />
+              <div style={{ position:'relative' }}>
+                <input id="login-password" type={showPass ? 'text' : 'password'} value={password}
+                  onChange={(e) => setPassword(e.target.value)} autoComplete="current-password"
+                  required placeholder="••••••••" className="input" style={{ paddingRight:48 }} />
+                <button type="button" onClick={() => setShowPass(!showPass)}
+                  style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'transparent', border:'none', cursor:'pointer', color:'var(--mute)', padding:4 }}>
+                  {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
 
-            {/* Error */}
-            {error && (
-              <div className="alert alert-danger" role="alert">
-                {error}
-              </div>
-            )}
+            {error && <div className="alert alert-danger">{error}</div>}
 
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary"
-              style={{ width: '100%', height: 44, marginTop: 4, fontSize: 14, fontWeight: 500 }}
-            >
+            <button type="submit" disabled={loading} className="btn-primary"
+              style={{ width:'100%', height:48, marginTop:8, fontSize:15 }}>
               {loading ? (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span className="spinner" style={{ width:14, height:14, borderWidth:2 }} />
+                <span style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <span className="spinner" style={{ width:16, height:16, borderWidth:2 }} />
                   Memverifikasi...
                 </span>
-              ) : (
-                'Masuk'
-              )}
+              ) : 'Masuk'}
             </button>
           </form>
 
-          <p style={{
-            marginTop: 24,
-            textAlign: 'center',
-            fontSize: 12,
-            fontWeight: 300,
-            color: 'var(--stone)',
-          }}>
-            Butuh akses? Hubungi admin toko.
+          <p style={{ marginTop:28, textAlign:'center', fontSize:13, color:'var(--stone)' }}>
+            Butuh akses? <span style={{ color:'var(--primary)', fontWeight:500, cursor:'default' }}>Hubungi admin toko</span>
           </p>
         </div>
       </div>
