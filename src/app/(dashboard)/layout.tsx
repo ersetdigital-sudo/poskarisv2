@@ -166,17 +166,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div style={{ display:'flex', height:'100vh', background:'var(--background)' }}>
       {/* Mobile overlay */}
       {open && (
-        <div style={{ position:'fixed', inset:0, zIndex:40, background:'rgba(10,37,64,0.5)', backdropFilter:'blur(4px)' }}
-          onClick={() => setOpen(false)} className="mobile-only" />
+        <div className="sidebar-overlay" onClick={() => setOpen(false)} />
       )}
 
       {/* Sidebar */}
       <aside style={{
         width:260, background:'linear-gradient(180deg, #0a2540 0%, #051c30 100%)',
-        flexShrink:0, position:'relative', zIndex:50,
+        flexShrink:0,
         borderRight:'1px solid rgba(255,255,255,0.04)',
       }}
-        className={`fixed inset-y-0 left-0 transform transition-transform duration-300 ease-out desktop-sidebar ${open ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`sidebar-panel ${open ? 'open' : ''}`}
       >
         <Sidebar />
       </aside>
