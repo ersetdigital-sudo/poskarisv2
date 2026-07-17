@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 
-// ─── Receipt row types ────────────────────────────────────────────────────────
+// ─── Typed receipt rows ───────────────────────────────────────────────────────
 type ReceiptRow =
   | { type: 'header' }
   | { type: 'divider' }
@@ -29,12 +29,12 @@ const RECEIPT_ROWS: ReceiptRow[] = [
 ]
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
+  const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const { signIn } = useAuth()
-  const router = useRouter()
+  const [error, setError]       = useState('')
+  const [loading, setLoading]   = useState(false)
+  const { signIn }  = useAuth()
+  const router      = useRouter()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -50,165 +50,151 @@ export default function LoginPage() {
   }
 
   return (
+    /*
+     * Full-page background: Ink dark with subtle thermal dot-noise.
+     * The login card floats centered — same concept as the reference image
+     * but using our Kasir POS palette instead of purple.
+     */
     <div
-      className="flex min-h-screen"
+      className="thermal-noise flex min-h-screen items-center justify-center p-4 sm:p-8"
       style={{ background: 'var(--ink)' }}
     >
-      {/* ── LEFT PANEL — receipt strip ─────────────────────────────────────── */}
+      {/*
+       * CARD — max-w-[860px], two-column on md+, stacked on mobile.
+       * No heavy drop-shadow — thin border with Graphite, radius 6px max.
+       */}
       <div
-        className="torn-edge-right thermal-noise relative hidden overflow-hidden lg:flex lg:w-[52%] lg:flex-col"
-        style={{ background: 'var(--ink)' }}
+        className="flex w-full max-w-[860px] overflow-hidden"
+        style={{
+          borderRadius: '6px',
+          border: '1px solid var(--graphite)',
+          boxShadow: '0 8px 40px rgba(0,0,0,0.45)',
+        }}
       >
-        {/* Receipt paper content — sits above the ::before noise layer */}
-        <div className="relative z-10 flex h-full flex-col justify-between px-12 py-10">
+        {/* ── LEFT PANEL — receipt strip ───────────────────────────────────── */}
+        <div
+          className="torn-edge-right relative hidden flex-col justify-between px-10 py-10 md:flex md:w-[46%]"
+          style={{ background: 'var(--ink)' }}
+        >
+          {/* Thermal noise is on the outer wrapper; receipt content sits above it */}
+          <div className="relative z-10 flex h-full flex-col justify-between">
 
-          {/* Top logo row */}
-          <div className="print-in flex items-baseline gap-3">
+            {/* Top: receipt ID chip */}
+            <div className="print-in">
+              <span
+                className="text-[10px] font-semibold uppercase tracking-[0.28em]"
+                style={{
+                  fontFamily: 'var(--font-jetbrains-mono), monospace',
+                  color: 'var(--copper)',
+                }}
+              >
+                ● REC #001
+              </span>
+            </div>
+
+            {/* Middle: receipt rows */}
+            <div className="flex flex-col gap-0 py-6">
+              {RECEIPT_ROWS.map((row, i) => (
+                <ReceiptRowItem key={i} row={row} />
+              ))}
+            </div>
+
+            {/* Bottom: build tag */}
+            <div
+              className="print-in text-[10px] uppercase tracking-widest"
+              style={{
+                fontFamily: 'var(--font-jetbrains-mono), monospace',
+                color: '#3A3F47',
+              }}
+            >
+              SYS::KASIR-POS-V2 // BUILD 2026
+            </div>
+          </div>
+        </div>
+
+        {/* ── RIGHT PANEL — login form ─────────────────────────────────────── */}
+        <div
+          className="flex flex-1 flex-col justify-center px-8 py-10 sm:px-10"
+          style={{ background: 'var(--paper)' }}
+        >
+          {/* Mobile-only brand chip */}
+          <div className="mb-6 md:hidden">
             <span
-              className="text-[11px] font-semibold uppercase tracking-[0.25em]"
+              className="text-[10px] font-semibold uppercase tracking-[0.25em]"
               style={{
                 fontFamily: 'var(--font-jetbrains-mono), monospace',
                 color: 'var(--copper)',
               }}
             >
-              ● REC #001
+              ● KASIR POS — TOKO LAPTOP
             </span>
           </div>
 
-          {/* Receipt rows */}
-          <div className="flex flex-col gap-0">
-            {RECEIPT_ROWS.map((row, i) => (
-              <ReceiptRowItem key={i} row={row} />
-            ))}
-          </div>
-
-          {/* Bottom corner note */}
-          <div
-            className="print-in text-[10px] tracking-widest uppercase"
-            style={{
-              fontFamily: 'var(--font-jetbrains-mono), monospace',
-              color: '#3A3F47',
-            }}
-          >
-            SYS::KASIR-POS-V2 // BUILD 2026
-          </div>
-        </div>
-      </div>
-
-      {/* ── RIGHT PANEL — login form ────────────────────────────────────────── */}
-      <div
-        className="flex flex-1 items-center justify-center px-6 py-12"
-        style={{ background: 'var(--paper)' }}
-      >
-        <div className="w-full max-w-[360px]">
-
-          {/* Mobile header — only visible below lg */}
-          <div className="mb-10 lg:hidden">
-            <p
-              className="text-[11px] font-semibold uppercase tracking-[0.25em]"
-              style={{
-                fontFamily: 'var(--font-jetbrains-mono), monospace',
-                color: 'var(--copper)',
-              }}
-            >
-              ● KASIR POS
-            </p>
-            <p
-              className="mt-1 text-[10px] uppercase tracking-widest"
-              style={{
-                fontFamily: 'var(--font-jetbrains-mono), monospace',
-                color: '#9ca3af',
-              }}
-            >
-              Toko Laptop
-            </p>
-          </div>
-
-          {/* Form header */}
+          {/* Heading */}
           <div className="mb-8">
             <h1
-              className="text-[22px] font-semibold leading-tight tracking-tight"
+              className="text-[20px] font-bold tracking-[0.06em]"
               style={{
                 fontFamily: 'var(--font-jetbrains-mono), monospace',
                 color: 'var(--ink-text)',
-                letterSpacing: '0.02em',
               }}
             >
               SIGN IN
             </h1>
             <p
-              className="mt-2 text-[12px]"
+              className="mt-2 text-[12px] leading-relaxed"
               style={{
                 fontFamily: 'var(--font-geist-sans), sans-serif',
-                color: '#6b7280',
+                color: '#6B7076',
               }}
             >
-              Masukkan kredensial akun Anda untuk melanjutkan.
+              Masuk ke sistem kasir toko laptop Anda.
             </p>
           </div>
 
           {/* ── Form ── */}
-          <form onSubmit={handleSubmit} noValidate>
-            {/* Email */}
-            <div className="mb-7">
-              <label
-                htmlFor="email"
-                className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.18em]"
-                style={{
-                  fontFamily: 'var(--font-jetbrains-mono), monospace',
-                  color: '#6b7280',
-                }}
-              >
-                Email
-              </label>
+          <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
+
+            {/* Email — floating label */}
+            <div className="float-field">
               <input
-                id="email"
+                id="login-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                placeholder="user@tokolaptop.com"
-                className="input-underline"
+                placeholder=" "
                 aria-describedby={error ? 'login-error' : undefined}
               />
+              <label htmlFor="login-email">Email</label>
             </div>
 
-            {/* Password */}
-            <div className="mb-8">
-              <label
-                htmlFor="password"
-                className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.18em]"
-                style={{
-                  fontFamily: 'var(--font-jetbrains-mono), monospace',
-                  color: '#6b7280',
-                }}
-              >
-                Password
-              </label>
+            {/* Password — floating label */}
+            <div className="float-field">
               <input
-                id="password"
+                id="login-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
-                placeholder="••••••••"
-                className="input-underline"
+                placeholder=" "
                 aria-describedby={error ? 'login-error' : undefined}
               />
+              <label htmlFor="login-password">Password</label>
             </div>
 
-            {/* Error */}
+            {/* Error message */}
             {error && (
               <div
                 id="login-error"
                 role="alert"
-                className="mb-5 flex items-center gap-2 border-l-2 pl-3 py-1"
+                className="flex items-center gap-2 border-l-2 py-1 pl-3"
                 style={{
                   borderColor: '#ef4444',
                   fontFamily: 'var(--font-jetbrains-mono), monospace',
-                  fontSize: '12px',
+                  fontSize: '11px',
                   color: '#ef4444',
                 }}
               >
@@ -217,19 +203,18 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Submit */}
+            {/* Submit button */}
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full overflow-hidden py-3 text-[12px] font-semibold uppercase tracking-[0.18em] transition-colors"
+              className="mt-1 w-full py-3 text-[12px] font-semibold uppercase tracking-[0.18em] transition-colors"
               style={{
                 fontFamily: 'var(--font-jetbrains-mono), monospace',
                 background: loading ? '#a05a2c' : 'var(--copper)',
                 color: '#fff',
                 border: 'none',
-                borderRadius: 0,
+                borderRadius: '4px',
                 cursor: loading ? 'not-allowed' : 'pointer',
-                outline: 'none',
               }}
               onMouseEnter={(e) => {
                 if (!loading) (e.currentTarget as HTMLButtonElement).style.background = 'var(--copper-lt)'
@@ -238,10 +223,11 @@ export default function LoginPage() {
                 if (!loading) (e.currentTarget as HTMLButtonElement).style.background = 'var(--copper)'
               }}
               onFocus={(e) => {
-                ;(e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 0 3px rgba(198,118,59,0.35)'
+                ;(e.currentTarget as HTMLButtonElement).style.outline = '3px solid rgba(198,118,59,0.4)'
+                ;(e.currentTarget as HTMLButtonElement).style.outlineOffset = '2px'
               }}
               onBlur={(e) => {
-                ;(e.currentTarget as HTMLButtonElement).style.boxShadow = 'none'
+                ;(e.currentTarget as HTMLButtonElement).style.outline = 'none'
               }}
             >
               {loading ? (
@@ -258,10 +244,10 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Footer note */}
+          {/* Footer */}
           <div
-            className="mt-10 border-t pt-5"
-            style={{ borderColor: '#d1d5d0' }}
+            className="mt-8 border-t pt-5"
+            style={{ borderColor: '#D0D1CC' }}
           >
             <p
               className="text-center text-[11px]"
@@ -287,10 +273,7 @@ function ReceiptRowItem({ row }: { row: ReceiptRow }) {
     case 'header':
       return (
         <div className="print-in mb-3">
-          <p
-            className="text-[22px] font-bold tracking-[0.08em]"
-            style={{ ...mono, color: '#fff' }}
-          >
+          <p className="text-[22px] font-bold tracking-[0.08em]" style={{ ...mono, color: '#fff' }}>
             KASIR POS
           </p>
           <p
@@ -305,19 +288,13 @@ function ReceiptRowItem({ row }: { row: ReceiptRow }) {
     case 'divider':
       return (
         <div className="print-in my-3">
-          {/* Dotted line — mimics thermal receipt perforation */}
           <div
-            className="w-full"
             style={{
-              borderTop: '1px dashed #2A2F36',
-              /* extra gap dots via repeating gradient */
+              height: '1px',
               backgroundImage:
                 'repeating-linear-gradient(90deg, #2A2F36 0px, #2A2F36 6px, transparent 6px, transparent 12px)',
               backgroundSize: '12px 1px',
               backgroundRepeat: 'repeat-x',
-              backgroundPosition: 'center',
-              height: '1px',
-              border: 'none',
             }}
           />
         </div>
@@ -325,9 +302,9 @@ function ReceiptRowItem({ row }: { row: ReceiptRow }) {
 
     case 'item':
       return (
-        <div className="print-in flex items-baseline justify-between gap-4 py-[5px]">
+        <div className="print-in flex items-baseline justify-between gap-3 py-[5px]">
           <span
-            className="text-[11px] font-semibold uppercase tracking-[0.16em] whitespace-nowrap"
+            className="whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.16em]"
             style={{ ...mono, color: row.accent ? 'var(--copper)' : '#9ca3af' }}
           >
             {row.label}
@@ -365,16 +342,10 @@ function ReceiptRowItem({ row }: { row: ReceiptRow }) {
     case 'footer':
       return (
         <div className="print-in mt-3 text-center">
-          <p
-            className="text-[10px] tracking-[0.2em]"
-            style={{ ...mono, color: '#3A3F47' }}
-          >
+          <p className="text-[10px] tracking-[0.2em]" style={{ ...mono, color: '#3A3F47' }}>
             * * * &copy;2026 Kasir POS * * *
           </p>
-          <p
-            className="mt-1 text-[10px] tracking-widest"
-            style={{ ...mono, color: '#2A2F36' }}
-          >
+          <p className="mt-1 text-[10px] tracking-widest" style={{ ...mono, color: '#2A2F36' }}>
             TERIMA KASIH ATAS KUNJUNGAN ANDA
           </p>
         </div>
