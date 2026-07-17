@@ -86,8 +86,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </Link>
         <button onClick={() => setOpen(false)} aria-label="Tutup menu"
-          style={{ display:'flex', alignItems:'center', justifyContent:'center', width:28, height:28, background:'transparent', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.4)' }}
-          className="lg:hidden"><X size={16} /></button>
+          className="mobile-only"
+          style={{ width:28, height:28, background:'transparent', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.4)' }}><X size={16} /></button>
       </div>
 
       {/* Nav */}
@@ -167,7 +167,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Mobile overlay */}
       {open && (
         <div style={{ position:'fixed', inset:0, zIndex:40, background:'rgba(10,37,64,0.5)', backdropFilter:'blur(4px)' }}
-          onClick={() => setOpen(false)} className="lg:hidden" />
+          onClick={() => setOpen(false)} className="mobile-only" />
       )}
 
       {/* Sidebar */}
@@ -176,7 +176,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         flexShrink:0, position:'relative', zIndex:50,
         borderRight:'1px solid rgba(255,255,255,0.04)',
       }}
-        className={`fixed inset-y-0 left-0 transform transition-transform duration-300 ease-out lg:static lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed inset-y-0 left-0 transform transition-transform duration-300 ease-out desktop-sidebar ${open ? 'translate-x-0' : '-translate-x-full'}`}
       >
         <Sidebar />
       </aside>
@@ -189,19 +189,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           display:'flex', alignItems:'center', justifyContent:'space-between',
           padding:'0 28px', flexShrink:0, position:'sticky', top:0, zIndex:200,
         }}>
-          <button onClick={() => setOpen(true)} aria-label="Buka menu" className="lg:hidden"
-            style={{ display:'flex', alignItems:'center', justifyContent:'center', width:36, height:36, background:'transparent', border:'1px solid var(--hairline)', borderRadius:8, cursor:'pointer', color:'var(--mute)' }}>
+          <button onClick={() => setOpen(true)} aria-label="Buka menu" className="mobile-only"
+            style={{ width:36, height:36, background:'transparent', border:'1px solid var(--hairline)', borderRadius:8, cursor:'pointer', color:'var(--mute)' }}>
             <Menu size={16} />
           </button>
 
-          <div className="hidden lg:flex" style={{ alignItems:'center', gap:8 }}>
+          <div className="desktop-only" style={{ alignItems:'center', gap:8 }}>
             <span style={{ fontSize:13, color:'var(--mute)' }}>Kasir POS</span>
             <ChevronRight size={14} style={{ color:'var(--stone)' }} />
             <span style={{ fontSize:13, color:'var(--primary)', fontWeight:600 }}>{currentPage?.label ?? 'Dashboard'}</span>
           </div>
 
           <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-            <div style={{ textAlign:'right' }} className="hidden sm:block">
+            <div style={{ textAlign:'right' }} className="sm-block">
               <p style={{ fontSize:13, fontWeight:600, color:'var(--ink)' }}>{profile.name}</p>
               <p style={{ fontSize:11, color:'var(--mute)', textTransform:'capitalize' }}>{profile.role}</p>
             </div>

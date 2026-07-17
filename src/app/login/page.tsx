@@ -58,9 +58,9 @@ export default function LoginPage() {
         <div style={{
           width:'44%', position:'relative', overflow:'hidden',
           background:'linear-gradient(135deg, #0a2540 0%, #1a3a5c 50%, #635bff 100%)',
-          display:'flex', flexDirection:'column', justifyContent:'center',
+          flexDirection:'column', justifyContent:'center',
           padding:'48px 40px',
-        }} className="hidden sm:flex">
+        }} className="sm-flex">
           {/* Grid pattern overlay */}
           <div style={{
             position:'absolute', inset:0, opacity:0.06,

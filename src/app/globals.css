@@ -641,3 +641,61 @@ body {
 .transition-all {
   transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* ── Responsive Visibility ────────────────────── */
+.mobile-only {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+@media (min-width: 1024px) {
+  .mobile-only {
+    display: none !important;
+  }
+}
+
+.desktop-only {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .desktop-only {
+    display: flex !important;
+  }
+}
+
+/* Sidebar: fixed on mobile, static on desktop */
+@media (min-width: 1024px) {
+  .desktop-sidebar {
+    position: static !important;
+    transform: none !important;
+  }
+}
+
+/* Desktop-only block display */
+.desktop-only-block {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .desktop-only-block {
+    display: block !important;
+  }
+}
+
+/* sm:block responsive */
+.sm-block {
+  display: none;
+}
+@media (min-width: 640px) {
+  .sm-block {
+    display: block !important;
+  }
+}
+
+.sm-flex {
+  display: none;
+}
+@media (min-width: 640px) {
+  .sm-flex {
+    display: flex !important;
+  }
+}
