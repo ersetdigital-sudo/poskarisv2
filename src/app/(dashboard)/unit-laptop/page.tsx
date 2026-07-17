@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase, Product } from '@/lib/supabase'
-import { Plus, Search, ShoppingCart, ArrowDownToLine } from 'lucide-react'
+import { Search, ShoppingCart, ArrowDownToLine } from 'lucide-react'
 import Link from 'next/link'
 
 export default function UnitLaptopPage() {
@@ -11,26 +11,13 @@ export default function UnitLaptopPage() {
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('all')
 
-  useEffect(() => {
-    fetchProducts()
-  }, [])
+  useEffect(() => { fetchProducts() }, [])
 
   async function fetchProducts() {
     try {
-      const { data: cat } = await supabase
-        .from('categories')
-        .select('id')
-        .eq('name', 'Unit Laptop')
-        .single()
-
+      const { data: cat } = await supabase.from('categories').select('id').eq('name', 'Unit Laptop').single()
       if (!cat) return
-
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('category_id', cat.id)
-        .order('created_at', { ascending: false })
-
+      const { data, error } = await supabase.from('products').select('*').eq('category_id', cat.id).order('created_at', { ascending: false })
       if (error) throw error
       setProducts(data || [])
     } catch (error) {
@@ -41,72 +28,45 @@ export default function UnitLaptopPage() {
   }
 
   const filtered = products.filter(p => {
-    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
-      (p.brand || '').toLowerCase().includes(search.toLowerCase()) ||
-      (p.model || '').toLowerCase().includes(search.toLowerCase()) ||
-      (p.sku || '').toLowerCase().includes(search.toLowerCase())
+    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) || (p.brand || '').toLowerCase().includes(search.toLowerCase()) || (p.model || '').toLowerCase().includes(search.toLowerCase()) || (p.sku || '').toLowerCase().includes(search.toLowerCase())
     const matchStatus = filterStatus === 'all' || p.status === filterStatus
     return matchSearch && matchStatus
   })
 
   const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
-
-  const statusBadge: Record<string, string> = {
-    ready: 'bg-green-100 text-green-700',
-    sold: 'bg-blue-100 text-blue-700',
-    reserved: 'bg-yellow-100 text-yellow-700',
-    repairing: 'bg-orange-100 text-orange-700',
-  }
+  const statusBadge: Record<string, string> = { ready: 'badge-success', sold: 'badge-primary', reserved: 'badge-warning', repairing: 'badge-danger' }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'center', padding:48 }}>
+        <div className="spinner" />
       </div>
     )
   }
 
   return (
     <div>
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Unit Laptop</h1>
-          <p className="text-sm text-gray-500">Kelola stok unit laptop</p>
+      <div style={{ marginBottom:24, display:'flex', flexDirection:'column', gap:16, alignItems:'flex-start' }}>
+        <div style={{ flex:1 }}>
+          <h1 style={{ fontSize:24, fontWeight:300, color:'var(--ink)', letterSpacing:'-0.48px', marginBottom:4 }}>Unit Laptop</h1>
+          <p style={{ fontSize:14, fontWeight:300, color:'var(--mute)' }}>Kelola stok unit laptop</p>
         </div>
-        <div className="flex gap-2">
-          <Link
-            href="/unit-laptop/beli"
-            className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-700"
-          >
-            <ArrowDownToLine className="h-4 w-4" />
-            Beli Unit
+        <div style={{ display:'flex', gap:8 }}>
+          <Link href="/unit-laptop/beli" className="btn-primary" style={{ background:'#15be53', textDecoration:'none' }}>
+            <ArrowDownToLine size={16} /> Beli Unit
           </Link>
-          <Link
-            href="/unit-laptop/jual"
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            <ShoppingCart className="h-4 w-4" />
-            Jual Unit
+          <Link href="/unit-laptop/jual" className="btn-primary" style={{ textDecoration:'none' }}>
+            <ShoppingCart size={16} /> Jual Unit
           </Link>
         </div>
       </div>
 
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Cari merk, tipe, atau SKU..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
+      <div style={{ display:'flex', gap:12, marginBottom:16, flexWrap:'wrap' }}>
+        <div style={{ flex:1, minWidth:240, position:'relative' }}>
+          <Search size={16} style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'var(--stone)' }} />
+          <input type="text" placeholder="Cari merk, tipe, atau SKU..." value={search} onChange={(e) => setSearch(e.target.value)} className="input input-sm" style={{ paddingLeft:36 }} />
         </div>
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-        >
+        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="select select-sm" style={{ width:160 }}>
           <option value="all">Semua Status</option>
           <option value="ready">Ready</option>
           <option value="sold">Terjual</option>
@@ -115,46 +75,36 @@ export default function UnitLaptopPage() {
         </select>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-gray-200 bg-gray-50">
+      <div className="table-wrapper">
+        <div style={{ overflowX:'auto' }}>
+          <table className="table">
+            <thead>
               <tr>
-                <th className="px-4 py-3 font-medium text-gray-600">Unit</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Spesifikasi</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Kondisi</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Harga Beli</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Harga Jual</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Status</th>
+                <th>Unit</th>
+                <th>Spesifikasi</th>
+                <th>Kondisi</th>
+                <th>Harga Beli</th>
+                <th>Harga Jual</th>
+                <th>Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody>
               {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
-                    Belum ada unit laptop
-                  </td>
-                </tr>
+                <tr><td colSpan={6} style={{ textAlign:'center', padding:32, color:'var(--mute)' }}>Belum ada unit laptop</td></tr>
               ) : (
                 filtered.map((p) => (
-                  <tr key={p.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
+                  <tr key={p.id}>
+                    <td>
                       <div>
-                        <p className="font-medium text-gray-900">{p.brand} {p.model}</p>
-                        <p className="text-xs text-gray-500">{p.sku || '-'}</p>
+                        <p style={{ fontWeight:400, color:'var(--ink)' }}>{p.brand} {p.model}</p>
+                        <p style={{ fontSize:12, color:'var(--mute)' }}>{p.sku || '-'}</p>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-gray-700 max-w-xs truncate">{p.specs || '-'}</td>
-                    <td className="px-4 py-3">
-                      <span className="capitalize text-gray-700">{p.condition || '-'}</span>
-                    </td>
-                    <td className="px-4 py-3 font-medium text-gray-900">{formatRupiah(p.buy_price)}</td>
-                    <td className="px-4 py-3 font-medium text-gray-900">{formatRupiah(p.sell_price)}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${statusBadge[p.status] || 'bg-gray-100 text-gray-700'}`}>
-                        {p.status}
-                      </span>
-                    </td>
+                    <td style={{ color:'var(--charcoal)', maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.specs || '-'}</td>
+                    <td style={{ color:'var(--charcoal)', textTransform:'capitalize' }}>{p.condition || '-'}</td>
+                    <td style={{ fontWeight:500 }}>{formatRupiah(p.buy_price)}</td>
+                    <td style={{ fontWeight:500 }}>{formatRupiah(p.sell_price)}</td>
+                    <td><span className={`badge ${statusBadge[p.status] || 'badge-info'}`}>{p.status}</span></td>
                   </tr>
                 ))
               )}

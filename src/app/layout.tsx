@@ -1,15 +1,20 @@
 import type { Metadata } from 'next'
-import { Geist } from 'next/font/google'
-import { JetBrains_Mono } from 'next/font/google'
+import { Inter } from 'next/font/google'
+import { Source_Code_Pro } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/lib/auth-context'
 import './globals.css'
 
-const geistSans = Geist({ subsets: ['latin'], variable: '--font-geist-sans' })
-const jetbrainsMono = JetBrains_Mono({
+const inter = Inter({
   subsets: ['latin'],
-  variable: '--font-jetbrains-mono',
-  weight: ['400', '500', '600', '700'],
+  variable: '--font-inter',
+  weight: ['300', '400', '500', '600'],
+})
+
+const sourceCodePro = Source_Code_Pro({
+  subsets: ['latin'],
+  variable: '--font-source-code-pro',
+  weight: ['400', '500', '600'],
 })
 
 export const metadata: Metadata = {
@@ -29,7 +34,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${sourceCodePro.variable} font-sans antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

@@ -25,370 +25,237 @@ export default function LoginPage() {
     }
   }
 
-  const mono = 'var(--font-jetbrains-mono), monospace'
-  const sans = 'var(--font-geist-sans), sans-serif'
-
   return (
-    /* Full-viewport background */
-    <div
-      style={{
-        minHeight: '100vh',
-        background: '#7B6FE8',           /* purple — like reference image */
+    <div style={{
+      minHeight: '100vh',
+      background: '#f8fafc',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '24px',
+    }}>
+      <div style={{
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px',
-        fontFamily: sans,
-      }}
-    >
-      {/*
-       * CARD — exact proportions from the reference:
-       * ~740px wide, split ~42% left / 58% right
-       */}
-      <div
-        style={{
-          display: 'flex',
-          width: '100%',
-          maxWidth: '740px',
-          minHeight: '420px',
-          borderRadius: '12px',
-          overflow: 'hidden',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-        }}
-      >
-        {/* ══════════════════════════════════════════
-            LEFT PANEL — Ink dark, brand + tagline
-            (mirrors the "Event Jungle / Hey There!" panel)
-        ══════════════════════════════════════════ */}
+        width: '100%',
+        maxWidth: '800px',
+        minHeight: '460px',
+        borderRadius: 8,
+        overflow: 'hidden',
+        boxShadow: 'rgba(50,50,93,0.25) 0px 30px 45px -30px, rgba(0,0,0,0.1) 0px 18px 36px -18px',
+      }}>
+        {/* ═══ LEFT PANEL — Hero gradient brand moment ═══ */}
         <div
           style={{
             width: '42%',
-            background: 'var(--ink)',          /* #15181C */
+            background: 'linear-gradient(135deg, #533afd 0%, #7c5cfc 50%, #b9b9f9 100%)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
             padding: '48px 32px',
             position: 'relative',
-            gap: '0',
           }}
           className="hidden sm:flex"
         >
+          {/* Subtle noise texture */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)',
+            backgroundSize: '4px 4px',
+            pointerEvents: 'none',
+          }} />
+
           {/* Brand mark */}
-          <div
-            style={{
-              marginBottom: '24px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-            }}
-          >
-            {/* Receipt icon — simple monochrome */}
-            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-              <rect x="3" y="1" width="16" height="20" rx="1" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5"/>
-              <line x1="7" y1="6"  x2="15" y2="6"  stroke="rgba(255,255,255,0.5)" strokeWidth="1.2"/>
-              <line x1="7" y1="9"  x2="15" y2="9"  stroke="rgba(255,255,255,0.5)" strokeWidth="1.2"/>
-              <line x1="7" y1="12" x2="11" y2="12" stroke="rgba(255,255,255,0.5)" strokeWidth="1.2"/>
-              <path d="M3 21 L5 19 L7 21 L9 19 L11 21 L13 19 L15 21 L17 19 L19 21" stroke="rgba(255,255,255,0.3)" strokeWidth="1" fill="none"/>
-            </svg>
-            <span
-              style={{
-                fontFamily: mono,
-                fontSize: '13px',
-                fontWeight: 600,
-                color: 'rgba(255,255,255,0.6)',
-                letterSpacing: '0.1em',
-              }}
-            >
+          <div style={{
+            marginBottom: 32,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+          }}>
+            <div style={{
+              width: 36, height: 36,
+              borderRadius: 6,
+              background: 'rgba(255,255,255,0.15)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              backdropFilter: 'blur(8px)',
+            }}>
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <rect x="3" y="2" width="14" height="16" rx="1.5" stroke="#fff" strokeWidth="1.5"/>
+                <line x1="6" y1="6" x2="14" y2="6" stroke="#fff" strokeWidth="1.2"/>
+                <line x1="6" y1="9" x2="14" y2="9" stroke="#fff" strokeWidth="1.2"/>
+                <line x1="6" y1="12" x2="10" y2="12" stroke="#fff" strokeWidth="1.2"/>
+              </svg>
+            </div>
+            <span style={{ fontSize:14, fontWeight:600, color:'#fff', letterSpacing:'-0.01em' }}>
               Kasir POS
             </span>
           </div>
 
-          {/* Main headline — same energy as "Hey There!" */}
-          <h1
-            style={{
-              fontFamily: mono,
-              fontSize: '28px',
-              fontWeight: 700,
-              color: '#fff',
-              textAlign: 'center',
-              letterSpacing: '0.04em',
-              lineHeight: 1.2,
-              marginBottom: '16px',
-            }}
-          >
-            Hai,<br/>Selamat Datang!
+          {/* Headline */}
+          <h1 style={{
+            fontSize: 32,
+            fontWeight: 300,
+            color: '#fff',
+            textAlign: 'center',
+            letterSpacing: '-0.64px',
+            lineHeight: 1.1,
+            marginBottom: 16,
+          }}>
+            Selamat<br/>Datang Kembali
           </h1>
 
-          {/* Subtext — matches "Welcome Back. You are just one step away..." */}
-          <p
-            style={{
-              fontFamily: sans,
-              fontSize: '12px',
-              color: 'rgba(255,255,255,0.45)',
-              textAlign: 'center',
-              lineHeight: 1.6,
-              marginBottom: '40px',
-            }}
-          >
-            Sistem kasir & manajemen<br/>toko laptop Anda.
+          <p style={{
+            fontSize: 14,
+            fontWeight: 300,
+            color: 'rgba(255,255,255,0.7)',
+            textAlign: 'center',
+            lineHeight: 1.5,
+            maxWidth: 220,
+          }}>
+            Sistem manajemen toko laptop Anda. Kelola servis, stok, dan laporan keuangan.
           </p>
 
-          {/* Dotted separator — receipt aesthetic */}
-          <div
-            style={{
-              width: '80%',
-              height: '1px',
-              backgroundImage: 'repeating-linear-gradient(90deg, rgba(255,255,255,0.15) 0px, rgba(255,255,255,0.15) 5px, transparent 5px, transparent 10px)',
-              marginBottom: '24px',
-            }}
-          />
+          {/* Divider */}
+          <div style={{
+            width: '60%',
+            height: 1,
+            background: 'rgba(255,255,255,0.2)',
+            margin: '32px 0',
+          }} />
 
-          {/* "Don't have an account?" equivalent */}
-          <p
-            style={{
-              fontFamily: sans,
-              fontSize: '11px',
-              color: 'rgba(255,255,255,0.3)',
-              marginBottom: '12px',
-            }}
-          >
+          <p style={{ fontSize: 12, fontWeight: 300, color: 'rgba(255,255,255,0.5)', marginBottom: 12 }}>
             Belum punya akses?
           </p>
 
-          {/* Outline button — exact style from reference */}
           <button
             type="button"
             style={{
-              fontFamily: mono,
-              fontSize: '11px',
-              fontWeight: 600,
-              letterSpacing: '0.12em',
+              fontSize: 12,
+              fontWeight: 500,
               color: '#fff',
               background: 'transparent',
-              border: '1.5px solid rgba(255,255,255,0.3)',
-              borderRadius: '50px',
-              padding: '9px 28px',
+              border: '1px solid rgba(255,255,255,0.3)',
+              borderRadius: 4,
+              padding: '8px 24px',
               cursor: 'default',
-              textTransform: 'uppercase',
             }}
           >
             Hubungi Admin
           </button>
         </div>
 
-        {/* ══════════════════════════════════════════
-            RIGHT PANEL — white form panel
-        ══════════════════════════════════════════ */}
-        <div
-          style={{
-            flex: 1,
-            background: '#fff',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            padding: '48px 44px',
-          }}
-        >
-          {/* SIGN IN heading */}
-          <h2
-            style={{
-              fontFamily: mono,
-              fontSize: '18px',
-              fontWeight: 700,
-              color: '#1B1D1F',
-              letterSpacing: '0.12em',
-              marginBottom: '28px',
-            }}
-          >
-            SIGN IN
+        {/* ═══ RIGHT PANEL — White form ═══ */}
+        <div style={{
+          flex: 1,
+          background: '#fff',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          padding: '48px 44px',
+        }}>
+          <h2 style={{
+            fontSize: 24,
+            fontWeight: 300,
+            color: 'var(--ink)',
+            letterSpacing: '-0.48px',
+            marginBottom: 8,
+          }}>
+            Masuk
           </h2>
+          <p style={{
+            fontSize: 14,
+            fontWeight: 300,
+            color: 'var(--mute)',
+            marginBottom: 32,
+          }}>
+            Masukkan kredensial untuk melanjutkan
+          </p>
 
-          <form onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <form onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {/* Email */}
+            <div>
+              <label htmlFor="login-email" style={{
+                display: 'block',
+                fontSize: 12,
+                fontWeight: 400,
+                color: 'var(--charcoal)',
+                marginBottom: 6,
+                letterSpacing: '0.02em',
+              }}>
+                Email
+              </label>
+              <input
+                id="login-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                required
+                placeholder="nama@toko.com"
+                className="input"
+              />
+            </div>
 
-            {/* Email field — floating label, matches reference */}
-            <FloatField
-              id="login-email"
-              type="email"
-              label="Email"
-              value={email}
-              onChange={setEmail}
-              autoComplete="email"
-            />
-
-            {/* Password field */}
-            <FloatField
-              id="login-password"
-              type="password"
-              label="Password"
-              value={password}
-              onChange={setPassword}
-              autoComplete="current-password"
-            />
+            {/* Password */}
+            <div>
+              <label htmlFor="login-password" style={{
+                display: 'block',
+                fontSize: 12,
+                fontWeight: 400,
+                color: 'var(--charcoal)',
+                marginBottom: 6,
+                letterSpacing: '0.02em',
+              }}>
+                Password
+              </label>
+              <input
+                id="login-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+                placeholder="••••••••"
+                className="input"
+              />
+            </div>
 
             {/* Error */}
             {error && (
-              <p
-                role="alert"
-                style={{
-                  fontFamily: mono,
-                  fontSize: '11px',
-                  color: '#ef4444',
-                  margin: '-4px 0 0',
-                }}
-              >
-                ✕ {error}
-              </p>
+              <div className="alert alert-danger" role="alert">
+                {error}
+              </div>
             )}
 
-            {/* Submit — rounded pill, Copper, matches "Sign In" button in reference */}
+            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
-              style={{
-                marginTop: '6px',
-                width: '100%',
-                padding: '13px',
-                background: loading ? '#a05a2c' : 'var(--copper)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '50px',
-                fontFamily: mono,
-                fontSize: '12px',
-                fontWeight: 700,
-                letterSpacing: '0.15em',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                transition: 'background 0.15s ease',
-              }}
-              onMouseEnter={(e) => {
-                if (!loading) (e.currentTarget as HTMLButtonElement).style.background = 'var(--copper-lt)'
-              }}
-              onMouseLeave={(e) => {
-                if (!loading) (e.currentTarget as HTMLButtonElement).style.background = 'var(--copper)'
-              }}
-              onFocus={(e) => {
-                ;(e.currentTarget as HTMLButtonElement).style.outline = '3px solid rgba(198,118,59,0.35)'
-                ;(e.currentTarget as HTMLButtonElement).style.outlineOffset = '2px'
-              }}
-              onBlur={(e) => {
-                ;(e.currentTarget as HTMLButtonElement).style.outline = 'none'
-              }}
+              className="btn-primary"
+              style={{ width: '100%', height: 44, marginTop: 4, fontSize: 14, fontWeight: 500 }}
             >
               {loading ? (
-                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                  <span
-                    style={{
-                      display: 'inline-block',
-                      width: '12px',
-                      height: '12px',
-                      border: '2px solid rgba(255,255,255,0.3)',
-                      borderTopColor: '#fff',
-                      borderRadius: '50%',
-                      animation: 'spin 0.7s linear infinite',
-                    }}
-                  />
-                  MEMVERIFIKASI...
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="spinner" style={{ width:14, height:14, borderWidth:2 }} />
+                  Memverifikasi...
                 </span>
               ) : (
-                'MASUK →'
+                'Masuk'
               )}
             </button>
           </form>
 
-          {/* Footer note */}
-          <p
-            style={{
-              marginTop: '24px',
-              textAlign: 'center',
-              fontFamily: sans,
-              fontSize: '11px',
-              color: '#9ca3af',
-            }}
-          >
+          <p style={{
+            marginTop: 24,
+            textAlign: 'center',
+            fontSize: 12,
+            fontWeight: 300,
+            color: 'var(--stone)',
+          }}>
             Butuh akses? Hubungi admin toko.
           </p>
         </div>
       </div>
-
-      {/* Spin keyframe for loading spinner */}
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
-    </div>
-  )
-}
-
-/* ─── Floating label input component ─────────────────────────────────────── */
-function FloatField({
-  id,
-  type,
-  label,
-  value,
-  onChange,
-  autoComplete,
-}: {
-  id: string
-  type: string
-  label: string
-  value: string
-  onChange: (v: string) => void
-  autoComplete?: string
-}) {
-  const [focused, setFocused] = useState(false)
-  const floated = focused || value.length > 0
-  const mono = 'var(--font-jetbrains-mono), monospace'
-
-  return (
-    <div style={{ position: 'relative', width: '100%' }}>
-      {/* Floating label */}
-      <label
-        htmlFor={id}
-        style={{
-          position: 'absolute',
-          left: '14px',
-          top: floated ? '7px' : '50%',
-          transform: floated ? 'none' : 'translateY(-50%)',
-          fontFamily: mono,
-          fontSize: floated ? '9px' : '12px',
-          fontWeight: 600,
-          color: focused ? 'var(--copper)' : '#9ca3af',
-          letterSpacing: floated ? '0.12em' : '0.04em',
-          textTransform: floated ? 'uppercase' : 'none',
-          pointerEvents: 'none',
-          transition: 'top 0.15s ease, font-size 0.15s ease, color 0.15s ease, transform 0.15s ease',
-          zIndex: 1,
-        }}
-      >
-        {label}
-      </label>
-
-      {/* Input */}
-      <input
-        id={id}
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        autoComplete={autoComplete}
-        required
-        style={{
-          width: '100%',
-          paddingTop: floated ? '20px' : '13px',
-          paddingBottom: floated ? '6px' : '13px',
-          paddingLeft: '14px',
-          paddingRight: '14px',
-          fontFamily: mono,
-          fontSize: '13px',
-          color: '#1B1D1F',
-          background: '#fff',
-          border: `1.5px solid ${focused ? 'var(--copper)' : '#e5e7eb'}`,
-          borderRadius: '8px',
-          outline: 'none',
-          transition: 'border-color 0.15s ease, box-shadow 0.15s ease, padding 0.15s ease',
-          boxShadow: focused ? '0 0 0 3px rgba(198,118,59,0.12)' : 'none',
-        }}
-      />
     </div>
   )
 }

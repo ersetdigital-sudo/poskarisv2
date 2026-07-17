@@ -14,9 +14,7 @@ export default function ServisPage() {
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [showForm, setShowForm] = useState(false)
 
-  useEffect(() => {
-    fetchServices()
-  }, [])
+  useEffect(() => { fetchServices() }, [])
 
   async function fetchServices() {
     try {
@@ -24,7 +22,6 @@ export default function ServisPage() {
         .from('services')
         .select('*')
         .order('created_at', { ascending: false })
-
       if (error) throw error
       setServices(data || [])
     } catch (error) {
@@ -43,56 +40,56 @@ export default function ServisPage() {
   })
 
   const statusBadge = (status: string) => {
-    const styles: Record<string, string> = {
-      proses: 'bg-yellow-100 text-yellow-700',
-      selesai: 'bg-green-100 text-green-700',
-      dibatalkan: 'bg-red-100 text-red-700',
+    const map: Record<string, string> = {
+      proses: 'badge-warning',
+      selesai: 'badge-success',
+      dibatalkan: 'badge-danger',
     }
-    return styles[status] || 'bg-gray-100 text-gray-700'
+    return map[status] || 'badge-info'
   }
 
   const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'center', padding:48 }}>
+        <div className="spinner" />
       </div>
     )
   }
 
   return (
     <div>
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Servis</h1>
-          <p className="text-sm text-gray-500">Kelola data servis pelanggan</p>
+      {/* Header */}
+      <div style={{ marginBottom: 24, display:'flex', flexDirection:'column', gap:16, alignItems:'flex-start' }}>
+        <div style={{ flex:1 }}>
+          <h1 style={{ fontSize:24, fontWeight:300, color:'var(--ink)', letterSpacing:'-0.48px', marginBottom:4 }}>Servis</h1>
+          <p style={{ fontSize:14, fontWeight:300, color:'var(--mute)' }}>Kelola data servis pelanggan</p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          <Plus className="h-4 w-4" />
+        <button onClick={() => setShowForm(true)} className="btn-primary">
+          <Plus size={16} />
           Servis Baru
         </button>
       </div>
 
       {/* Filters */}
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+      <div style={{ display:'flex', gap:12, marginBottom:16, flexWrap:'wrap' }}>
+        <div style={{ flex:1, minWidth:240, position:'relative' }}>
+          <Search size={16} style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'var(--stone)' }} />
           <input
             type="text"
             placeholder="Cari nama customer, nota, atau perangkat..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="input input-sm"
+            style={{ paddingLeft:36 }}
           />
         </div>
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="select select-sm"
+          style={{ width:160 }}
         >
           <option value="all">Semua Status</option>
           <option value="proses">Proses</option>
@@ -102,74 +99,94 @@ export default function ServisPage() {
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-gray-200 bg-gray-50">
+      <div className="table-wrapper">
+        <div style={{ overflowX:'auto' }}>
+          <table className="table">
+            <thead>
               <tr>
-                <th className="px-4 py-3 font-medium text-gray-600">Nota</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Customer</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Perangkat</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Total</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Status</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Tanggal</th>
-                <th className="px-4 py-3 font-medium text-gray-600">Aksi</th>
+                <th>Nota</th>
+                <th>Customer</th>
+                <th>Perangkat</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Tanggal</th>
+                <th>Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={7} style={{ textAlign:'center', padding:32, color:'var(--mute)' }}>
                     Belum ada data servis
                   </td>
                 </tr>
               ) : (
                 filtered.map((s) => (
-                  <tr key={s.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-gray-900">{s.nota_number}</td>
-                    <td className="px-4 py-3">
+                  <tr key={s.id}>
+                    <td style={{ fontWeight:500 }}>{s.nota_number}</td>
+                    <td>
                       <div>
-                        <p className="text-gray-900">{s.customer_name}</p>
-                        <p className="text-xs text-gray-500">{s.customer_phone}</p>
+                        <p style={{ fontWeight:400, color:'var(--ink)' }}>{s.customer_name}</p>
+                        <p style={{ fontSize:12, color:'var(--mute)' }}>{s.customer_phone}</p>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
+                    <td>
                       <div>
-                        <p className="text-gray-900">{s.device_type}</p>
-                        {s.device_brand && <p className="text-xs text-gray-500">{s.device_brand} {s.device_model}</p>}
+                        <p style={{ fontWeight:400, color:'var(--ink)' }}>{s.device_type}</p>
+                        {s.device_brand && <p style={{ fontSize:12, color:'var(--mute)' }}>{s.device_brand} {s.device_model}</p>}
                       </div>
                     </td>
-                    <td className="px-4 py-3 font-medium text-gray-900">{formatRupiah(s.total_fee)}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${statusBadge(s.status)}`}>
+                    <td style={{ fontWeight:500 }}>{formatRupiah(s.total_fee)}</td>
+                    <td>
+                      <span className={`badge ${statusBadge(s.status)}`}>
                         {s.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-500">
+                    <td style={{ color:'var(--mute)' }}>
                       {new Date(s.date_in).toLocaleDateString('id-ID')}
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
+                    <td>
+                      <div style={{ display:'flex', gap:4 }}>
                         <Link
                           href={`/servis/${s.id}`}
-                          className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                          style={{
+                            display:'flex', alignItems:'center', justifyContent:'center',
+                            width:32, height:32, borderRadius:4,
+                            color:'var(--mute)', transition:'background 120ms ease, color 120ms ease',
+                          }}
                           title="Detail"
+                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--background-bone)'; (e.currentTarget as HTMLElement).style.color = 'var(--ink)' }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--mute)' }}
                         >
-                          <Eye className="h-4 w-4" />
+                          <Eye size={16} />
                         </Link>
                         {s.status === 'selesai' && (
                           <>
                             <button
-                              className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                              style={{
+                                display:'flex', alignItems:'center', justifyContent:'center',
+                                width:32, height:32, borderRadius:4,
+                                background:'transparent', border:'none', cursor:'pointer',
+                                color:'var(--mute)', transition:'background 120ms ease, color 120ms ease',
+                              }}
                               title="Cetak Nota"
+                              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--background-bone)'; (e.currentTarget as HTMLElement).style.color = 'var(--ink)' }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--mute)' }}
                             >
-                              <FileText className="h-4 w-4" />
+                              <FileText size={16} />
                             </button>
                             <button
-                              className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-green-600"
+                              style={{
+                                display:'flex', alignItems:'center', justifyContent:'center',
+                                width:32, height:32, borderRadius:4,
+                                background:'transparent', border:'none', cursor:'pointer',
+                                color:'var(--mute)', transition:'background 120ms ease, color 120ms ease',
+                              }}
                               title="Kirim WhatsApp"
+                              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--success-bg)'; (e.currentTarget as HTMLElement).style.color = 'var(--success-text)' }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--mute)' }}
                             >
-                              <Send className="h-4 w-4" />
+                              <Send size={16} />
                             </button>
                           </>
                         )}
@@ -183,7 +200,7 @@ export default function ServisPage() {
         </div>
       </div>
 
-      {/* Modal Form Servis Baru */}
+      {/* Modal */}
       {showForm && <ServisForm onClose={() => setShowForm(false)} onSaved={fetchServices} />}
     </div>
   )
@@ -194,42 +211,28 @@ function ServisForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({
-    customer_name: '',
-    customer_phone: '',
-    device_type: 'Laptop',
-    device_brand: '',
-    device_model: '',
-    complaint: '',
-    service_fee: 0,
-    parts_fee: 0,
-    notes: '',
+    customer_name: '', customer_phone: '', device_type: 'Laptop',
+    device_brand: '', device_model: '', complaint: '',
+    service_fee: 0, parts_fee: 0, notes: '',
   })
 
   const total = form.service_fee + form.parts_fee
+  const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError('')
-
     try {
       const { error } = await supabase.from('services').insert({
-        customer_name: form.customer_name,
-        customer_phone: form.customer_phone,
-        device_type: form.device_type,
-        device_brand: form.device_brand || null,
-        device_model: form.device_model || null,
-        complaint: form.complaint || null,
-        service_fee: form.service_fee,
-        parts_fee: form.parts_fee,
-        total_fee: total,
-        status: 'proses',
-        created_by: user?.id,
+        customer_name: form.customer_name, customer_phone: form.customer_phone,
+        device_type: form.device_type, device_brand: form.device_brand || null,
+        device_model: form.device_model || null, complaint: form.complaint || null,
+        service_fee: form.service_fee, parts_fee: form.parts_fee,
+        total_fee: total, status: 'proses', created_by: user?.id,
       })
-
       if (error) throw error
-      onSaved()
-      onClose()
+      onSaved(); onClose()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Gagal menyimpan data')
     } finally {
@@ -238,134 +241,73 @@ function ServisForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
-        <h2 className="mb-4 text-lg font-bold text-gray-900">Servis Baru</h2>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" style={{ maxWidth: 520, padding: 24 }} onClick={e => e.stopPropagation()}>
+        <h2 style={{ fontSize:20, fontWeight:300, color:'var(--ink)', letterSpacing:'-0.4px', marginBottom:20 }}>
+          Servis Baru
+        </h2>
 
-        {error && (
-          <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>
-        )}
+        {error && <div className="alert alert-danger" style={{ marginBottom:16 }}>{error}</div>}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:16 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Nama Customer *</label>
-              <input
-                type="text"
-                required
-                value={form.customer_name}
-                onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+              <label style={labelStyle}>Nama Customer *</label>
+              <input type="text" required value={form.customer_name} onChange={(e) => setForm({ ...form, customer_name: e.target.value })} className="input input-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">No. WhatsApp *</label>
-              <input
-                type="text"
-                required
-                value={form.customer_phone}
-                onChange={(e) => setForm({ ...form, customer_phone: e.target.value })}
-                placeholder="08xxxxxxxxxx"
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+              <label style={labelStyle}>No. WhatsApp *</label>
+              <input type="text" required value={form.customer_phone} onChange={(e) => setForm({ ...form, customer_phone: e.target.value })} placeholder="08xxxxxxxxxx" className="input input-sm" />
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12 }}>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Jenis Perangkat *</label>
-              <select
-                value={form.device_type}
-                onChange={(e) => setForm({ ...form, device_type: e.target.value })}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                <option>Laptop</option>
-                <option>PC</option>
-                <option>Printer</option>
-                <option>Lainnya</option>
+              <label style={labelStyle}>Jenis Perangkat *</label>
+              <select value={form.device_type} onChange={(e) => setForm({ ...form, device_type: e.target.value })} className="select select-sm">
+                <option>Laptop</option><option>PC</option><option>Printer</option><option>Lainnya</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Merk</label>
-              <input
-                type="text"
-                value={form.device_brand}
-                onChange={(e) => setForm({ ...form, device_brand: e.target.value })}
-                placeholder="ASUS, Lenovo, dll"
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+              <label style={labelStyle}>Merk</label>
+              <input type="text" value={form.device_brand} onChange={(e) => setForm({ ...form, device_brand: e.target.value })} placeholder="ASUS, Lenovo" className="input input-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Tipe/Model</label>
-              <input
-                type="text"
-                value={form.device_model}
-                onChange={(e) => setForm({ ...form, device_model: e.target.value })}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+              <label style={labelStyle}>Tipe/Model</label>
+              <input type="text" value={form.device_model} onChange={(e) => setForm({ ...form, device_model: e.target.value })} className="input input-sm" />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Keluhan</label>
-            <textarea
-              value={form.complaint}
-              onChange={(e) => setForm({ ...form, complaint: e.target.value })}
-              rows={3}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
+            <label style={labelStyle}>Keluhan</label>
+            <textarea value={form.complaint} onChange={(e) => setForm({ ...form, complaint: e.target.value })} rows={3} className="input input-sm" style={{ height:'auto', resize:'vertical' }} />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Biaya Jasa (Rp)</label>
-              <input
-                type="number"
-                value={form.service_fee || ''}
-                onChange={(e) => setForm({ ...form, service_fee: Number(e.target.value) })}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+              <label style={labelStyle}>Biaya Jasa (Rp)</label>
+              <input type="number" value={form.service_fee || ''} onChange={(e) => setForm({ ...form, service_fee: Number(e.target.value) })} className="input input-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Biaya Sparepart (Rp)</label>
-              <input
-                type="number"
-                value={form.parts_fee || ''}
-                onChange={(e) => setForm({ ...form, parts_fee: Number(e.target.value) })}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+              <label style={labelStyle}>Biaya Sparepart (Rp)</label>
+              <input type="number" value={form.parts_fee || ''} onChange={(e) => setForm({ ...form, parts_fee: Number(e.target.value) })} className="input input-sm" />
             </div>
           </div>
 
-          <div className="rounded-lg bg-gray-50 px-4 py-3">
-            <p className="text-sm font-medium text-gray-700">
-              Total: <span className="text-lg font-bold text-blue-600">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(total)}</span>
+          <div style={{ background:'var(--background-bone)', borderRadius:4, padding:'10px 14px' }}>
+            <p style={{ fontSize:14, fontWeight:400, color:'var(--charcoal)' }}>
+              Total: <span style={{ fontWeight:600, color:'var(--primary)' }}>{formatRupiah(total)}</span>
             </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Catatan</label>
-            <textarea
-              value={form.notes}
-              onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              rows={2}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
+            <label style={labelStyle}>Catatan</label>
+            <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} className="input input-sm" style={{ height:'auto', resize:'vertical' }} />
           </div>
 
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-            >
+          <div style={{ display:'flex', gap:12, paddingTop:8 }}>
+            <button type="button" onClick={onClose} className="btn-ghost" style={{ flex:1 }}>Batal</button>
+            <button type="submit" disabled={loading} className="btn-primary" style={{ flex:1 }}>
               {loading ? 'Menyimpan...' : 'Simpan'}
             </button>
           </div>
@@ -373,4 +315,13 @@ function ServisForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
       </div>
     </div>
   )
+}
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: 12,
+  fontWeight: 400,
+  color: 'var(--charcoal)',
+  marginBottom: 4,
+  letterSpacing: '0.02em',
 }

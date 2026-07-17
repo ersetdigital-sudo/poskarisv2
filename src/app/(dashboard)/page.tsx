@@ -3,25 +3,8 @@
 import { useAuth } from '@/lib/auth-context'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Wrench, Laptop, Package, TrendingUp } from 'lucide-react'
+import { Wrench, Laptop, Package, TrendingUp, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
-
-// ─── Design tokens ────────────────────────────────────────────────────────────
-const T = {
-  ink:       '#15181C',
-  graphite:  '#2A2F36',
-  paper:     '#ECEDE7',
-  paperBright: '#F5F4F0',
-  copper:    '#C6763B',
-  copperDim: 'rgba(198,118,59,0.12)',
-  signal:    '#4FAE7C',
-  signalDim: 'rgba(79,174,124,0.12)',
-  inkText:   '#1B1D1F',
-  inkMuted:  '#6B7076',
-  border:    '#D8D9D4',
-  mono:      'var(--font-jetbrains-mono), monospace',
-  sans:      'var(--font-geist-sans), sans-serif',
-} as const
 
 interface DashboardStats {
   totalServis:    number
@@ -30,133 +13,6 @@ interface DashboardStats {
   sparepartStok:  number
 }
 
-// ─── Dotted leader helper ─────────────────────────────────────────────────────
-// Renders:  LABEL ···················· VALUE
-function ReceiptRow({
-  label,
-  value,
-  valueColor,
-  accent,
-}: {
-  label: string
-  value: string | number
-  valueColor?: string
-  accent?: boolean
-}) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, padding: '5px 0' }}>
-      <span
-        style={{
-          fontFamily: T.mono,
-          fontSize: 11,
-          fontWeight: 600,
-          color: accent ? T.copper : T.inkMuted,
-          textTransform: 'uppercase',
-          letterSpacing: '0.14em',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {label}
-      </span>
-      {/* dotted leader */}
-      <span
-        style={{
-          flex: 1,
-          borderBottom: `1px dashed ${T.border}`,
-          marginBottom: 3,
-          minWidth: 24,
-        }}
-      />
-      <span
-        style={{
-          fontFamily: T.mono,
-          fontSize: 13,
-          fontWeight: 700,
-          color: valueColor ?? T.inkText,
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {value}
-      </span>
-    </div>
-  )
-}
-
-// ─── Section label ────────────────────────────────────────────────────────────
-function SectionLabel({ children }: { children: string }) {
-  return (
-    <p
-      style={{
-        fontFamily: T.mono,
-        fontSize: 10,
-        fontWeight: 600,
-        color: T.inkMuted,
-        textTransform: 'uppercase',
-        letterSpacing: '0.2em',
-        marginBottom: 14,
-      }}
-    >
-      {children}
-    </p>
-  )
-}
-
-// ─── Stat tile — used inside the receipt strip ────────────────────────────────
-function StatTile({
-  label,
-  value,
-  icon: Icon,
-  loading,
-  last,
-}: {
-  label: string
-  value: number
-  icon: React.ComponentType<{ size?: number; color?: string }>
-  loading: boolean
-  last?: boolean
-}) {
-  return (
-    <div
-      style={{
-        flex: 1,
-        padding: '18px 20px',
-        borderRight: last ? 'none' : `1px dashed ${T.border}`,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 6,
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-        <span
-          style={{
-            fontFamily: T.mono,
-            fontSize: 10,
-            fontWeight: 600,
-            color: T.inkMuted,
-            textTransform: 'uppercase',
-            letterSpacing: '0.16em',
-          }}
-        >
-          {label}
-        </span>
-        <Icon size={14} color={T.copper} />
-      </div>
-      <span
-        style={{
-          fontFamily: T.mono,
-          fontSize: 28,
-          fontWeight: 700,
-          color: T.inkText,
-          lineHeight: 1,
-        }}
-      >
-        {loading ? '—' : value}
-      </span>
-    </div>
-  )
-}
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const { profile, isAdmin } = useAuth()
   const [stats, setStats] = useState<DashboardStats>({
@@ -205,234 +61,260 @@ export default function DashboardPage() {
   const dateStr = today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
   return (
-    <div style={{ maxWidth: 900 }}>
+    <div style={{ maxWidth: 960 }}>
 
-      {/* ── Page header ────────────────────────────────────────────────────── */}
-      <div style={{ marginBottom: 28 }}>
-        <h1
-          style={{
-            fontFamily: T.mono,
-            fontSize: 20,
-            fontWeight: 700,
-            color: T.inkText,
-            letterSpacing: '0.04em',
-            marginBottom: 4,
-          }}
-        >
+      {/* Page header */}
+      <div style={{ marginBottom: 32 }}>
+        <h1 style={{
+          fontSize: 32,
+          fontWeight: 300,
+          color: 'var(--ink)',
+          letterSpacing: '-0.64px',
+          lineHeight: 1.1,
+          marginBottom: 4,
+        }}>
           {profile?.name
             ? `Halo, ${profile.name.split(' ')[0]}.`
             : 'Dashboard'}
         </h1>
-        <p style={{ fontFamily: T.sans, fontSize: 13, color: T.inkMuted }}>
+        <p style={{ fontSize: 14, fontWeight: 300, color: 'var(--mute)' }}>
           {dateStr} · {isAdmin ? 'Admin' : 'Karyawan'}
         </p>
       </div>
 
-      {/* ── STRUK STRIP — horizontal metrics ──────────────────────────────── */}
-      {/*
-        One strip like a receipt header — divided by vertical dashed lines.
-        No separate cards, no shadows.
-      */}
-      <div
-        style={{
-          background: T.paperBright,
-          border: `1px solid ${T.border}`,
-          borderRadius: 4,
-          display: 'flex',
-          flexWrap: 'wrap',
-          marginBottom: 32,
-          overflow: 'hidden',
-        }}
-      >
-        {/* Top label bar */}
-        <div
-          style={{
-            width: '100%',
-            padding: '8px 20px',
-            borderBottom: `1px dashed ${T.border}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <span style={{ fontFamily: T.mono, fontSize: 10, color: T.inkMuted, letterSpacing: '0.18em', textTransform: 'uppercase' }}>
-            Ringkasan Hari Ini
-          </span>
-          <span style={{ fontFamily: T.mono, fontSize: 10, color: T.copper, letterSpacing: '0.12em' }}>
-            ● LIVE
-          </span>
-        </div>
-
-        {/* Tiles */}
-        <StatTile label="Total Servis"    value={stats.totalServis}    icon={Wrench}    loading={loading} />
+      {/* Stat Cards Grid */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: 16,
+        marginBottom: 32,
+      }}>
+        <StatCard
+          label="Total Servis"
+          value={stats.totalServis}
+          icon={Wrench}
+          loading={loading}
+          color="var(--primary)"
+          bgColor="rgba(83,58,253,0.08)"
+        />
         {isAdmin && (
           <>
-            <StatTile label="Unit Ready"      value={stats.unitReady}      icon={Laptop}    loading={loading} />
-            <StatTile label="Sparepart Stok"  value={stats.sparepartStok}  icon={Package}   loading={loading} />
-            <StatTile label="Servis Hari Ini" value={stats.servisHariIni}  icon={TrendingUp} loading={loading} last />
+            <StatCard
+              label="Unit Ready"
+              value={stats.unitReady}
+              icon={Laptop}
+              loading={loading}
+              color="#15be53"
+              bgColor="rgba(21,190,83,0.08)"
+            />
+            <StatCard
+              label="Sparepart Stok"
+              value={stats.sparepartStok}
+              icon={Package}
+              loading={loading}
+              color="#2874ad"
+              bgColor="rgba(40,116,173,0.08)"
+            />
+            <StatCard
+              label="Servis Hari Ini"
+              value={stats.servisHariIni}
+              icon={TrendingUp}
+              loading={loading}
+              color="#9b6829"
+              bgColor="rgba(155,104,41,0.08)"
+            />
           </>
         )}
         {!isAdmin && (
-          <StatTile label="Servis Hari Ini" value={stats.servisHariIni} icon={TrendingUp} loading={loading} last />
+          <StatCard
+            label="Servis Hari Ini"
+            value={stats.servisHariIni}
+            icon={TrendingUp}
+            loading={loading}
+            color="#9b6829"
+            bgColor="rgba(155,104,41,0.08)"
+          />
         )}
-
-        {/* Bottom footer — receipt style */}
-        <div
-          style={{
-            width: '100%',
-            padding: '6px 20px',
-            borderTop: `1px dashed ${T.border}`,
-            display: 'flex',
-            justifyContent: 'center',
-          }}
-        >
-          <span style={{ fontFamily: T.mono, fontSize: 9, color: '#C8C9C4', letterSpacing: '0.2em' }}>
-            * * * DATA DIPERBARUI OTOMATIS * * *
-          </span>
-        </div>
       </div>
 
-      {/* ── AKSI CEPAT ────────────────────────────────────────────────────── */}
-      <div>
-        <SectionLabel>Aksi Cepat</SectionLabel>
+      {/* Quick Actions */}
+      <div style={{ marginBottom: 32 }}>
+        <h2 style={{
+          fontSize: 14,
+          fontWeight: 500,
+          color: 'var(--ink)',
+          marginBottom: 16,
+          letterSpacing: '-0.01em',
+        }}>
+          Aksi Cepat
+        </h2>
 
-        <div
-          style={{
-            background: T.paperBright,
-            border: `1px solid ${T.border}`,
-            borderRadius: 4,
-            overflow: 'hidden',
-          }}
-        >
-          {/* Input Servis Baru */}
-          <QuickActionRow
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: 12,
+        }}>
+          <QuickActionCard
             href="/servis"
             icon={Wrench}
             title="Input Servis Baru"
             description="Catat servis masuk dari pelanggan"
-            first
           />
-
           {isAdmin && (
             <>
-              <QuickActionRow
+              <QuickActionCard
                 href="/unit-laptop/beli"
                 icon={Laptop}
                 title="Tambah Unit Laptop"
                 description="Tambah unit baru ke stok pembelian"
               />
-              <QuickActionRow
+              <QuickActionCard
                 href="/laporan"
                 icon={TrendingUp}
                 title="Lihat Laporan"
                 description="Cek laporan keuangan bulanan"
-                last
               />
             </>
           )}
-
           {!isAdmin && (
-            <QuickActionRow
+            <QuickActionCard
               href="/servis"
               icon={Wrench}
               title="Daftar Servis"
               description="Lihat semua order servis berjalan"
-              last
             />
           )}
         </div>
       </div>
 
-      {/* ── STATUS NOTA ── small receipt-style info box ────────────────────── */}
-      <div
-        style={{
-          marginTop: 28,
-          border: `1px solid ${T.border}`,
-          borderRadius: 4,
-          background: T.paperBright,
-          padding: '16px 20px',
-        }}
-      >
-        <SectionLabel>Status Sistem</SectionLabel>
-        <ReceiptRow label="Kasir POS"     value="v2.0"        valueColor={T.copper} />
-        <ReceiptRow label="Mode"          value={profile?.role === 'admin' ? 'Admin' : 'Karyawan'} />
-        <ReceiptRow label="Status"        value="● Online"    valueColor={T.signal} accent />
+      {/* System Status */}
+      <div className="card" style={{ padding: 20 }}>
+        <h2 style={{
+          fontSize: 14,
+          fontWeight: 500,
+          color: 'var(--ink)',
+          marginBottom: 16,
+        }}>
+          Status Sistem
+        </h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <StatusRow label="Versi" value="Kasir POS v2.0" />
+          <StatusRow label="Mode" value={profile?.role === 'admin' ? 'Admin' : 'Karyawan'} />
+          <StatusRow label="Status" value="Online" valueColor="var(--success-text)" />
+        </div>
       </div>
-
     </div>
   )
 }
 
-// ─── Quick action row — receipt list style ────────────────────────────────────
-function QuickActionRow({
+/* ── Stat Card ──────────────────────────────────── */
+function StatCard({
+  label,
+  value,
+  icon: Icon,
+  loading,
+  color,
+  bgColor,
+}: {
+  label: string
+  value: number
+  icon: React.ComponentType<{ size?: number; color?: string }>
+  loading: boolean
+  color: string
+  bgColor: string
+}) {
+  return (
+    <div className="card" style={{ padding: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--mute)', letterSpacing: '0.02em' }}>
+          {label}
+        </span>
+        <div style={{
+          width: 32, height: 32,
+          borderRadius: 6,
+          background: bgColor,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Icon size={16} color={color} />
+        </div>
+      </div>
+      <div style={{
+        fontSize: 28,
+        fontWeight: 300,
+        color: 'var(--ink)',
+        lineHeight: 1,
+        letterSpacing: '-0.56px',
+      }}>
+        {loading ? (
+          <div className="skeleton" style={{ width: 48, height: 28 }} />
+        ) : (
+          value
+        )}
+      </div>
+    </div>
+  )
+}
+
+/* ── Quick Action Card ───────────────────────────── */
+function QuickActionCard({
   href,
   icon: Icon,
   title,
   description,
-  first,
-  last,
 }: {
   href: string
   icon: React.ComponentType<{ size?: number; color?: string }>
   title: string
   description: string
-  first?: boolean
-  last?: boolean
 }) {
-  const T2 = {
-    border: '#D8D9D4',
-    copper: '#C6763B',
-    inkText: '#1B1D1F',
-    inkMuted: '#6B7076',
-    sans: 'var(--font-geist-sans), sans-serif',
-    mono: 'var(--font-jetbrains-mono), monospace',
-  }
-
   const [hovered, setHovered] = useState(false)
 
   return (
     <Link
       href={href}
+      className="card"
       style={{
         display: 'flex',
         alignItems: 'center',
         gap: 16,
-        padding: '14px 20px',
-        borderTop: first ? 'none' : `1px dashed ${T2.border}`,
+        padding: 16,
         textDecoration: 'none',
-        background: hovered ? 'rgba(198,118,59,0.05)' : 'transparent',
-        transition: 'background 0.12s ease',
+        borderColor: hovered ? 'var(--hairline-strong)' : 'var(--hairline)',
+        transition: 'border-color 200ms ease, box-shadow 200ms ease',
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Icon pip */}
-      <div
-        style={{
-          width: 32, height: 32, borderRadius: 4,
-          background: hovered ? 'rgba(198,118,59,0.15)' : 'rgba(198,118,59,0.08)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          flexShrink: 0,
-          transition: 'background 0.12s ease',
-        }}
-      >
-        <Icon size={15} color={T2.copper} />
+      <div style={{
+        width: 40, height: 40,
+        borderRadius: 6,
+        background: 'rgba(83,58,253,0.08)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        <Icon size={18} color="var(--primary)" />
       </div>
 
-      {/* Text */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontFamily: T2.sans, fontSize: 13, fontWeight: 600, color: T2.inkText, marginBottom: 1 }}>
+        <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink)', marginBottom: 2 }}>
           {title}
         </p>
-        <p style={{ fontFamily: T2.sans, fontSize: 12, color: T2.inkMuted }}>
+        <p style={{ fontSize: 13, fontWeight: 300, color: 'var(--mute)' }}>
           {description}
         </p>
       </div>
 
-      {/* Arrow */}
-      <span style={{ fontFamily: T2.mono, fontSize: 12, color: hovered ? T2.copper : T2.border, transition: 'color 0.12s ease' }}>
-        →
-      </span>
+      <ArrowRight size={16} style={{ color: hovered ? 'var(--primary)' : 'var(--hairline-strong)', transition: 'color 200ms ease', flexShrink: 0 }} />
     </Link>
+  )
+}
+
+/* ── Status Row ──────────────────────────────────── */
+function StatusRow({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <span style={{ fontSize: 13, fontWeight: 300, color: 'var(--mute)' }}>{label}</span>
+      <span style={{ fontSize: 13, fontWeight: 500, color: valueColor || 'var(--ink)' }}>{value}</span>
+    </div>
   )
 }
