@@ -61,7 +61,17 @@ export default function DashboardLayout({
     )
   }
 
-  if (!user || !profile) return null
+  if (!user) return null
+
+  if (!profile) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <p className="text-sm text-gray-500">Memuat profil...</p>
+        </div>
+      </div>
+    )
+  }
 
   const navItems = getNavItems(profile.role)
 
