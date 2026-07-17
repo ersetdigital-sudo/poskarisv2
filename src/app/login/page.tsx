@@ -3,7 +3,30 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
-import { Laptop, Shield, BarChart3, Package } from 'lucide-react'
+
+// ─── Receipt row types ────────────────────────────────────────────────────────
+type ReceiptRow =
+  | { type: 'header' }
+  | { type: 'divider' }
+  | { type: 'item'; label: string; value: string; accent?: boolean }
+  | { type: 'spacer' }
+  | { type: 'status'; label: string; ok: boolean }
+  | { type: 'footer' }
+
+const RECEIPT_ROWS: ReceiptRow[] = [
+  { type: 'header' },
+  { type: 'divider' },
+  { type: 'item', label: 'SERVIS', value: '↳ Terima & kelola order' },
+  { type: 'item', label: 'UNIT LAPTOP', value: '↳ Jual-beli & inventaris' },
+  { type: 'item', label: 'STOK', value: '↳ Spare part & aksesori' },
+  { type: 'item', label: 'LABA BERSIH', value: '↳ Laporan real-time' },
+  { type: 'divider' },
+  { type: 'item', label: 'NOTA', value: '↳ Cetak & kirim via WA', accent: true },
+  { type: 'spacer' },
+  { type: 'status', label: 'SISTEM', ok: true },
+  { type: 'divider' },
+  { type: 'footer' },
+]
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -17,9 +40,7 @@ export default function LoginPage() {
     e.preventDefault()
     setError('')
     setLoading(true)
-
     const { error } = await signIn(email, password)
-
     if (error) {
       setError('Email atau password salah')
       setLoading(false)
@@ -29,87 +50,115 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen">
-      {/* Left Panel - Branding */}
-      <div className="relative hidden w-[55%] overflow-hidden bg-[#0a0f1e] lg:flex lg:flex-col lg:justify-between">
-        {/* Subtle grid pattern */}
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: `
-              linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
-            `,
-            backgroundSize: '60px 60px',
-          }}
-        />
+    <div
+      className="flex min-h-screen"
+      style={{ background: 'var(--ink)' }}
+    >
+      {/* ── LEFT PANEL — receipt strip ─────────────────────────────────────── */}
+      <div
+        className="torn-edge-right thermal-noise relative hidden overflow-hidden lg:flex lg:w-[52%] lg:flex-col"
+        style={{ background: 'var(--ink)' }}
+      >
+        {/* Receipt paper content — sits above the ::before noise layer */}
+        <div className="relative z-10 flex h-full flex-col justify-between px-12 py-10">
 
-        {/* Glow accent */}
-        <div className="pointer-events-none absolute -top-32 -left-32 h-96 w-96 rounded-full bg-blue-600/10 blur-[120px]" />
-        <div className="pointer-events-none absolute -bottom-20 -right-20 h-72 w-72 rounded-full bg-indigo-500/10 blur-[100px]" />
-
-        {/* Top - Logo */}
-        <div className="relative z-10 p-10">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-600/20">
-              <Laptop className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <p className="text-[15px] font-semibold tracking-tight text-white">Kasir POS</p>
-              <p className="text-[11px] font-medium uppercase tracking-[0.15em] text-blue-400/70">Toko Laptop</p>
-            </div>
+          {/* Top logo row */}
+          <div className="print-in flex items-baseline gap-3">
+            <span
+              className="text-[11px] font-semibold uppercase tracking-[0.25em]"
+              style={{
+                fontFamily: 'var(--font-jetbrains-mono), monospace',
+                color: 'var(--copper)',
+              }}
+            >
+              ● REC #001
+            </span>
           </div>
-        </div>
 
-        {/* Middle - Hero Content */}
-        <div className="relative z-10 px-10">
-          <h1 className="mb-3 text-[2.5rem] font-bold leading-[1.1] tracking-tight text-white">
-            Kelola toko laptop<br />
-            <span className="text-blue-400">dalam satu tempat.</span>
-          </h1>
-          <p className="mb-10 max-w-md text-[15px] leading-relaxed text-gray-400">
-            Sistem manajemen terpadu untuk servis, jual-beli unit, inventaris stok, dan laporan keuangan. Dirancang untuk operasional harian yang efisien.
-          </p>
-
-          {/* Feature pills */}
-          <div className="flex flex-wrap gap-3">
-            <FeaturePill icon={Shield} label="Role-based Access" />
-            <FeaturePill icon={BarChart3} label="Laporan Real-time" />
-            <FeaturePill icon={Package} label="Manajemen Stok" />
+          {/* Receipt rows */}
+          <div className="flex flex-col gap-0">
+            {RECEIPT_ROWS.map((row, i) => (
+              <ReceiptRowItem key={i} row={row} />
+            ))}
           </div>
-        </div>
 
-        {/* Bottom - Footer */}
-        <div className="relative z-10 p-10">
-          <p className="text-[11px] font-medium tracking-wide text-gray-600">
-            &copy; 2026 Kasir POS &mdash; Sistem Internal Toko
-          </p>
+          {/* Bottom corner note */}
+          <div
+            className="print-in text-[10px] tracking-widest uppercase"
+            style={{
+              fontFamily: 'var(--font-jetbrains-mono), monospace',
+              color: '#3A3F47',
+            }}
+          >
+            SYS::KASIR-POS-V2 // BUILD 2026
+          </div>
         </div>
       </div>
 
-      {/* Right Panel - Form */}
-      <div className="flex flex-1 items-center justify-center bg-white px-6">
-        <div className="w-full max-w-[380px]">
-          {/* Mobile logo */}
-          <div className="mb-10 flex items-center gap-2.5 lg:hidden">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600">
-              <Laptop className="h-4 w-4 text-white" />
-            </div>
-            <span className="text-[15px] font-semibold text-gray-900">Kasir POS</span>
-          </div>
+      {/* ── RIGHT PANEL — login form ────────────────────────────────────────── */}
+      <div
+        className="flex flex-1 items-center justify-center px-6 py-12"
+        style={{ background: 'var(--paper)' }}
+      >
+        <div className="w-full max-w-[360px]">
 
-          <div className="mb-8">
-            <h2 className="text-[22px] font-semibold tracking-tight text-gray-900">
-              Masuk ke akun Anda
-            </h2>
-            <p className="mt-1.5 text-[13px] text-gray-400">
-              Masukkan email dan password untuk melanjutkan
+          {/* Mobile header — only visible below lg */}
+          <div className="mb-10 lg:hidden">
+            <p
+              className="text-[11px] font-semibold uppercase tracking-[0.25em]"
+              style={{
+                fontFamily: 'var(--font-jetbrains-mono), monospace',
+                color: 'var(--copper)',
+              }}
+            >
+              ● KASIR POS
+            </p>
+            <p
+              className="mt-1 text-[10px] uppercase tracking-widest"
+              style={{
+                fontFamily: 'var(--font-jetbrains-mono), monospace',
+                color: '#9ca3af',
+              }}
+            >
+              Toko Laptop
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label htmlFor="email" className="mb-1.5 block text-[13px] font-medium text-gray-700">
+          {/* Form header */}
+          <div className="mb-8">
+            <h1
+              className="text-[22px] font-semibold leading-tight tracking-tight"
+              style={{
+                fontFamily: 'var(--font-jetbrains-mono), monospace',
+                color: 'var(--ink-text)',
+                letterSpacing: '0.02em',
+              }}
+            >
+              SIGN IN
+            </h1>
+            <p
+              className="mt-2 text-[12px]"
+              style={{
+                fontFamily: 'var(--font-geist-sans), sans-serif',
+                color: '#6b7280',
+              }}
+            >
+              Masukkan kredensial akun Anda untuk melanjutkan.
+            </p>
+          </div>
+
+          {/* ── Form ── */}
+          <form onSubmit={handleSubmit} noValidate>
+            {/* Email */}
+            <div className="mb-7">
+              <label
+                htmlFor="email"
+                className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.18em]"
+                style={{
+                  fontFamily: 'var(--font-jetbrains-mono), monospace',
+                  color: '#6b7280',
+                }}
+              >
                 Email
               </label>
               <input
@@ -118,13 +167,23 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="block w-full rounded-xl border border-gray-200 bg-gray-50/60 px-4 py-3 text-[14px] text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-blue-500 focus:bg-white focus:ring-[3px] focus:ring-blue-500/10"
-                placeholder="email@tokolaptop.com"
+                autoComplete="email"
+                placeholder="user@tokolaptop.com"
+                className="input-underline"
+                aria-describedby={error ? 'login-error' : undefined}
               />
             </div>
 
-            <div>
-              <label htmlFor="password" className="mb-1.5 block text-[13px] font-medium text-gray-700">
+            {/* Password */}
+            <div className="mb-8">
+              <label
+                htmlFor="password"
+                className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.18em]"
+                style={{
+                  fontFamily: 'var(--font-jetbrains-mono), monospace',
+                  color: '#6b7280',
+                }}
+              >
                 Password
               </label>
               <input
@@ -133,36 +192,85 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="block w-full rounded-xl border border-gray-200 bg-gray-50/60 px-4 py-3 text-[14px] text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-blue-500 focus:bg-white focus:ring-[3px] focus:ring-blue-500/10"
-                placeholder="Masukkan password"
+                autoComplete="current-password"
+                placeholder="••••••••"
+                className="input-underline"
+                aria-describedby={error ? 'login-error' : undefined}
               />
             </div>
 
+            {/* Error */}
             {error && (
-              <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-[13px] font-medium text-red-600">
+              <div
+                id="login-error"
+                role="alert"
+                className="mb-5 flex items-center gap-2 border-l-2 pl-3 py-1"
+                style={{
+                  borderColor: '#ef4444',
+                  fontFamily: 'var(--font-jetbrains-mono), monospace',
+                  fontSize: '12px',
+                  color: '#ef4444',
+                }}
+              >
+                <span aria-hidden="true">✕</span>
                 {error}
               </div>
             )}
 
+            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
-              className="relative w-full overflow-hidden rounded-xl bg-gray-900 px-4 py-3 text-[14px] font-semibold text-white shadow-sm transition-all hover:bg-gray-800 focus:outline-none focus:ring-[3px] focus:ring-gray-900/20 disabled:opacity-60"
+              className="group relative w-full overflow-hidden py-3 text-[12px] font-semibold uppercase tracking-[0.18em] transition-colors"
+              style={{
+                fontFamily: 'var(--font-jetbrains-mono), monospace',
+                background: loading ? '#a05a2c' : 'var(--copper)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 0,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                outline: 'none',
+              }}
+              onMouseEnter={(e) => {
+                if (!loading) (e.currentTarget as HTMLButtonElement).style.background = 'var(--copper-lt)'
+              }}
+              onMouseLeave={(e) => {
+                if (!loading) (e.currentTarget as HTMLButtonElement).style.background = 'var(--copper)'
+              }}
+              onFocus={(e) => {
+                ;(e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 0 3px rgba(198,118,59,0.35)'
+              }}
+              onBlur={(e) => {
+                ;(e.currentTarget as HTMLButtonElement).style.boxShadow = 'none'
+              }}
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                  Memverifikasi...
+                  <span
+                    className="inline-block h-3 w-3 animate-spin rounded-full border-2"
+                    style={{ borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }}
+                  />
+                  MEMVERIFIKASI...
                 </span>
               ) : (
-                'Masuk'
+                'MASUK →'
               )}
             </button>
           </form>
 
-          <div className="mt-10 border-t border-gray-100 pt-6">
-            <p className="text-center text-[12px] text-gray-400">
-              Butuh akses? Hubungi admin toko untuk membuat akun.
+          {/* Footer note */}
+          <div
+            className="mt-10 border-t pt-5"
+            style={{ borderColor: '#d1d5d0' }}
+          >
+            <p
+              className="text-center text-[11px]"
+              style={{
+                fontFamily: 'var(--font-geist-sans), sans-serif',
+                color: '#9ca3af',
+              }}
+            >
+              Butuh akses? Hubungi admin toko.
             </p>
           </div>
         </div>
@@ -171,11 +279,108 @@ export default function LoginPage() {
   )
 }
 
-function FeaturePill({ icon: Icon, label }: { icon: React.ComponentType<{ className?: string }>; label: string }) {
-  return (
-    <div className="flex items-center gap-2.5 rounded-full border border-white/[0.06] bg-white/[0.04] px-4 py-2 backdrop-blur-sm">
-      <Icon className="h-3.5 w-3.5 text-blue-400" />
-      <span className="text-[12px] font-medium text-gray-300">{label}</span>
-    </div>
-  )
+// ─── Receipt row renderer ─────────────────────────────────────────────────────
+function ReceiptRowItem({ row }: { row: ReceiptRow }) {
+  const mono = { fontFamily: 'var(--font-jetbrains-mono), monospace' } as const
+
+  switch (row.type) {
+    case 'header':
+      return (
+        <div className="print-in mb-3">
+          <p
+            className="text-[22px] font-bold tracking-[0.08em]"
+            style={{ ...mono, color: '#fff' }}
+          >
+            KASIR POS
+          </p>
+          <p
+            className="text-[11px] uppercase tracking-[0.28em]"
+            style={{ ...mono, color: '#6b7280' }}
+          >
+            Toko Laptop — Sistem Internal
+          </p>
+        </div>
+      )
+
+    case 'divider':
+      return (
+        <div className="print-in my-3">
+          {/* Dotted line — mimics thermal receipt perforation */}
+          <div
+            className="w-full"
+            style={{
+              borderTop: '1px dashed #2A2F36',
+              /* extra gap dots via repeating gradient */
+              backgroundImage:
+                'repeating-linear-gradient(90deg, #2A2F36 0px, #2A2F36 6px, transparent 6px, transparent 12px)',
+              backgroundSize: '12px 1px',
+              backgroundRepeat: 'repeat-x',
+              backgroundPosition: 'center',
+              height: '1px',
+              border: 'none',
+            }}
+          />
+        </div>
+      )
+
+    case 'item':
+      return (
+        <div className="print-in flex items-baseline justify-between gap-4 py-[5px]">
+          <span
+            className="text-[11px] font-semibold uppercase tracking-[0.16em] whitespace-nowrap"
+            style={{ ...mono, color: row.accent ? 'var(--copper)' : '#9ca3af' }}
+          >
+            {row.label}
+          </span>
+          <span
+            className="text-right text-[11px] leading-snug"
+            style={{ ...mono, color: row.accent ? 'var(--copper)' : '#6b7280' }}
+          >
+            {row.value}
+          </span>
+        </div>
+      )
+
+    case 'spacer':
+      return <div className="print-in h-3" />
+
+    case 'status':
+      return (
+        <div className="print-in flex items-center justify-between py-[5px]">
+          <span
+            className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+            style={{ ...mono, color: '#9ca3af' }}
+          >
+            {row.label}
+          </span>
+          <span
+            className="text-[11px] font-bold uppercase tracking-[0.12em]"
+            style={{ ...mono, color: row.ok ? 'var(--signal)' : '#ef4444' }}
+          >
+            {row.ok ? '● ONLINE' : '○ OFFLINE'}
+          </span>
+        </div>
+      )
+
+    case 'footer':
+      return (
+        <div className="print-in mt-3 text-center">
+          <p
+            className="text-[10px] tracking-[0.2em]"
+            style={{ ...mono, color: '#3A3F47' }}
+          >
+            * * * &copy;2026 Kasir POS * * *
+          </p>
+          <p
+            className="mt-1 text-[10px] tracking-widest"
+            style={{ ...mono, color: '#2A2F36' }}
+          >
+            TERIMA KASIH ATAS KUNJUNGAN ANDA
+          </p>
+        </div>
+      )
+
+    default:
+      return null
+  }
 }

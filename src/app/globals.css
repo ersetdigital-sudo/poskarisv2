@@ -3,13 +3,15 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Kasir POS palette */
+  --ink:        #15181C;
+  --graphite:   #2A2F36;
+  --paper:      #ECEDE7;
+  --copper:     #C6763B;
+  --copper-lt:  #D98B50;
+  --signal:     #4FAE7C;
+  --ink-text:   #1B1D1F;
 }
 
 html,
@@ -28,4 +30,165 @@ body {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+/* ─── Torn paper edge (right side of left panel) ──────────────────────────── */
+/*
+  We use a CSS clip-path polygon that zigzags along the right edge to simulate
+  a torn receipt edge. The polygon is applied to a pseudo-element overlay so it
+  works without SVG files.
+*/
+.torn-edge-right {
+  position: relative;
+}
+.torn-edge-right::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  right: -18px;
+  /* Jagged right edge: each pair of points describes one "tooth" */
+  clip-path: polygon(
+    0% 0%,
+    calc(100% - 18px) 0%,
+    calc(100% - 18px)  2.0%, 100%  2.5%,
+    calc(100% - 18px)  3.0%, 100%  3.5%,
+    calc(100% - 18px)  4.0%, 100%  4.8%,
+    calc(100% - 18px)  5.6%, 100%  6.2%,
+    calc(100% - 18px)  7.0%, 100%  7.8%,
+    calc(100% - 18px)  8.6%, 100%  9.4%,
+    calc(100% - 18px) 10.2%, 100% 11.0%,
+    calc(100% - 18px) 11.8%, 100% 12.6%,
+    calc(100% - 18px) 13.4%, 100% 14.2%,
+    calc(100% - 18px) 15.0%, 100% 15.8%,
+    calc(100% - 18px) 16.6%, 100% 17.4%,
+    calc(100% - 18px) 18.2%, 100% 19.0%,
+    calc(100% - 18px) 19.8%, 100% 20.6%,
+    calc(100% - 18px) 21.4%, 100% 22.2%,
+    calc(100% - 18px) 23.0%, 100% 23.8%,
+    calc(100% - 18px) 24.6%, 100% 25.4%,
+    calc(100% - 18px) 26.2%, 100% 27.0%,
+    calc(100% - 18px) 27.8%, 100% 28.6%,
+    calc(100% - 18px) 29.4%, 100% 30.2%,
+    calc(100% - 18px) 31.0%, 100% 31.8%,
+    calc(100% - 18px) 32.6%, 100% 33.4%,
+    calc(100% - 18px) 34.2%, 100% 35.0%,
+    calc(100% - 18px) 35.8%, 100% 36.6%,
+    calc(100% - 18px) 37.4%, 100% 38.2%,
+    calc(100% - 18px) 39.0%, 100% 39.8%,
+    calc(100% - 18px) 40.6%, 100% 41.4%,
+    calc(100% - 18px) 42.2%, 100% 43.0%,
+    calc(100% - 18px) 43.8%, 100% 44.6%,
+    calc(100% - 18px) 45.4%, 100% 46.2%,
+    calc(100% - 18px) 47.0%, 100% 47.8%,
+    calc(100% - 18px) 48.6%, 100% 49.4%,
+    calc(100% - 18px) 50.2%, 100% 51.0%,
+    calc(100% - 18px) 51.8%, 100% 52.6%,
+    calc(100% - 18px) 53.4%, 100% 54.2%,
+    calc(100% - 18px) 55.0%, 100% 55.8%,
+    calc(100% - 18px) 56.6%, 100% 57.4%,
+    calc(100% - 18px) 58.2%, 100% 59.0%,
+    calc(100% - 18px) 59.8%, 100% 60.6%,
+    calc(100% - 18px) 61.4%, 100% 62.2%,
+    calc(100% - 18px) 63.0%, 100% 63.8%,
+    calc(100% - 18px) 64.6%, 100% 65.4%,
+    calc(100% - 18px) 66.2%, 100% 67.0%,
+    calc(100% - 18px) 67.8%, 100% 68.6%,
+    calc(100% - 18px) 69.4%, 100% 70.2%,
+    calc(100% - 18px) 71.0%, 100% 71.8%,
+    calc(100% - 18px) 72.6%, 100% 73.4%,
+    calc(100% - 18px) 74.2%, 100% 75.0%,
+    calc(100% - 18px) 75.8%, 100% 76.6%,
+    calc(100% - 18px) 77.4%, 100% 78.2%,
+    calc(100% - 18px) 79.0%, 100% 79.8%,
+    calc(100% - 18px) 80.6%, 100% 81.4%,
+    calc(100% - 18px) 82.2%, 100% 83.0%,
+    calc(100% - 18px) 83.8%, 100% 84.6%,
+    calc(100% - 18px) 85.4%, 100% 86.2%,
+    calc(100% - 18px) 87.0%, 100% 87.8%,
+    calc(100% - 18px) 88.6%, 100% 89.4%,
+    calc(100% - 18px) 90.2%, 100% 91.0%,
+    calc(100% - 18px) 91.8%, 100% 92.6%,
+    calc(100% - 18px) 93.4%, 100% 94.2%,
+    calc(100% - 18px) 95.0%, 100% 95.8%,
+    calc(100% - 18px) 96.6%, 100% 97.4%,
+    calc(100% - 18px) 98.2%, 100% 99.0%,
+    calc(100% - 18px) 100%,
+    0% 100%
+  );
+  background: var(--ink);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ─── Print-in animation for receipt rows ─────────────────────────────────── */
+@keyframes print-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.print-in {
+  opacity: 0;
+  animation: print-in 0.25s ease-out forwards;
+}
+
+/* stagger delays — up to 12 rows */
+.print-in:nth-child(1)  { animation-delay: 0.05s; }
+.print-in:nth-child(2)  { animation-delay: 0.15s; }
+.print-in:nth-child(3)  { animation-delay: 0.25s; }
+.print-in:nth-child(4)  { animation-delay: 0.35s; }
+.print-in:nth-child(5)  { animation-delay: 0.45s; }
+.print-in:nth-child(6)  { animation-delay: 0.55s; }
+.print-in:nth-child(7)  { animation-delay: 0.65s; }
+.print-in:nth-child(8)  { animation-delay: 0.72s; }
+.print-in:nth-child(9)  { animation-delay: 0.79s; }
+.print-in:nth-child(10) { animation-delay: 0.86s; }
+.print-in:nth-child(11) { animation-delay: 0.93s; }
+.print-in:nth-child(12) { animation-delay: 1.00s; }
+
+/* ─── Thermal noise texture overlay ──────────────────────────────────────── */
+/*
+  A very subtle repeating dot pattern on the left panel — mimics the uneven
+  ink distribution of a thermal printer head.
+*/
+.thermal-noise {
+  position: relative;
+}
+.thermal-noise::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 4px 4px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─── Input bottom-border style ──────────────────────────────────────────── */
+.input-underline {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--graphite);
+  border-radius: 0;
+  outline: none;
+  width: 100%;
+  padding: 8px 0;
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 13px;
+  color: var(--ink-text);
+  transition: border-color 0.15s ease;
+}
+.input-underline::placeholder {
+  color: #9ca3af;
+  font-family: var(--font-jetbrains-mono), monospace;
+}
+.input-underline:focus {
+  border-bottom-color: var(--copper);
+  outline: 2px solid transparent; /* reset */
+  box-shadow: 0 2px 0 0 var(--copper);
 }
