@@ -19,8 +19,10 @@ export default function StokPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [adjustProduct, setAdjustProduct] = useState<Product | null>(null)
+  const [showAddCategoryForm, setShowAddCategoryForm] = useState(false)
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => { fetchData(); fetchCategories() }, [])
 
   async function fetchData() {
     try {
@@ -31,6 +33,13 @@ export default function StokPage() {
       setProducts(prodRes.data || [])
       setMovements(movRes.data || [])
     } catch(e) { console.error(e) } finally { setLoading(false) }
+  }
+
+  async function fetchCategories() {
+    try {
+      const { data } = await supabase.from('categories').select('id, name').order('name')
+      setCategories(data || [])
+    } catch(e) { console.error(e) }
   }
 
   const filtered = products.filter(p => {
@@ -53,9 +62,14 @@ export default function StokPage() {
           <h1 className="text-h1" style={{ marginBottom:4 }}>Stok Barang</h1>
           <p className="text-small" style={{ color:'var(--mute)' }}>Kelola stok unit laptop dan sparepart</p>
         </div>
-        <button onClick={() => setShowAddForm(true)} className="btn btn-primary">
-          <Plus size={16} /> Tambah Stok
-        </button>
+        <div style={{ display:'flex', gap:8 }}>
+          <button onClick={() => setShowAddCategoryForm(true)} className="btn btn-secondary">
+            <Plus size={16} /> Kategori
+          </button>
+          <button onClick={() => setShowAddForm(true)} className="btn btn-primary">
+            <Plus size={16} /> Tambah Stok
+          </button>
+        </div>
       </div>
 
       {/* Low Stock Alert */}
@@ -131,9 +145,6 @@ export default function StokPage() {
         </div>
       </div>
 
-      {showAddForm && <AddStokForm onClose={() => setShowAddForm(false)} onSaved={fetchData} userId={user?.id} />}
-      {adjustProduct && <AdjustStokForm product={adjustProduct} onClose={() => setAdjustProduct(null)} onSaved={fetchData} userId={user?.id} />}
-
       {/* Mutasi Modal */}
       {selectedProduct && (
         <div className="modal-overlay" onClick={() => setSelectedProduct(null)}>
@@ -161,24 +172,38 @@ export default function StokPage() {
           </div>
         </div>
       )}
+
+      {showAddForm && <AddStokForm onClose={() => setShowAddForm(false)} onSaved={fetchData} userId={user?.id} onCategoryAdded={fetchCategories} />}
+      {adjustProduct && <AdjustStokForm product={adjustProduct} onClose={() => setAdjustProduct(null)} onSaved={fetchData} userId={user?.id} />}
+      {showAddCategoryForm && (
+        <AddCategoryForm
+          existingCategories={categories}
+          onClose={() => setShowAddCategoryForm(false)}
+          onSaved={() => { fetchCategories(); fetchData() }}
+        />
+      )}
     </div>
   )
 }
 
 /* ── Add Product Form ─────────────────────────── */
-function AddStokForm({ onClose, onSaved, userId }: { onClose: () => void; onSaved: () => void; userId?: string }) {
+function AddStokForm({ onClose, onSaved, userId, onCategoryAdded }: { onClose: () => void; onSaved: () => void; userId?: string; onCategoryAdded?: () => void }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
+  const [showCatForm, setShowCatForm] = useState(false)
   const [form, setForm] = useState({
     category_id:'', name:'', sku:'', brand:'', model:'', specs:'',
     condition:'baru' as 'baru' | 'bekas' | 'refurbished',
     buy_price:0, sell_price:0, quantity:1, min_quantity:0,
   })
 
-  useEffect(() => {
-    supabase.from('categories').select('id, name').then(({ data }) => setCategories(data || []))
-  }, [])
+  async function loadCategories() {
+    const { data } = await supabase.from('categories').select('id, name').order('name')
+    setCategories(data || [])
+  }
+
+  useEffect(() => { loadCategories() }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -218,10 +243,15 @@ function AddStokForm({ onClose, onSaved, userId }: { onClose: () => void; onSave
         <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:14 }}>
           <div>
             <label style={labelStyle}>Kategori *</label>
-            <select required value={form.category_id} onChange={e => setForm({...form, category_id:e.target.value})} className="select select-sm">
-              <option value="">Pilih kategori...</option>
-              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+            <div style={{ display:'flex', gap:8 }}>
+              <select required value={form.category_id} onChange={e => setForm({...form, category_id:e.target.value})} className="select select-sm" style={{ flex:1 }}>
+                <option value="">Pilih kategori...</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              <button type="button" onClick={() => setShowCatForm(true)} className="btn btn-secondary btn-sm" title="Tambah kategori baru">
+                <Plus size={14} />
+              </button>
+            </div>
           </div>
 
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
@@ -282,6 +312,62 @@ function AddStokForm({ onClose, onSaved, userId }: { onClose: () => void; onSave
           <div style={{ display:'flex', gap:8, paddingTop:8 }}>
             <button type="button" onClick={onClose} className="btn btn-secondary" style={{ flex:1 }}>Batal</button>
             <button type="submit" disabled={loading} className="btn btn-primary" style={{ flex:1 }}>{loading ? 'Menyimpan...' : 'Simpan Barang'}</button>
+          </div>
+        </form>
+
+        {showCatForm && (
+          <InlineAddCategory
+            onClose={() => setShowCatForm(false)}
+            onSaved={() => { loadCategories(); onCategoryAdded?.() }}
+          />
+        )}
+      </div>
+    </div>
+  )
+}
+
+/* ── Inline Add Category (inside AddStokForm) ──── */
+function InlineAddCategory({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [form, setForm] = useState({ name:'', description:'' })
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    try {
+      const { error } = await supabase.from('categories').insert({
+        name: form.name,
+        description: form.description || null,
+      })
+      if (error) throw error
+      onSaved(); onClose()
+    } catch(err: unknown) {
+      setError(err instanceof Error ? err.message : 'Gagal menyimpan kategori')
+    } finally { setLoading(false) }
+  }
+
+  return (
+    <div className="modal-overlay" style={{ zIndex:200 }} onClick={onClose}>
+      <div className="modal" style={{ maxWidth:380, padding:24 }} onClick={e => e.stopPropagation()}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+          <h2 className="text-h2" style={{ fontSize:16 }}>Tambah Kategori Baru</h2>
+          <button onClick={onClose} className="btn btn-ghost btn-sm" style={{ width:28, height:28, padding:0 }}><X size={14} /></button>
+        </div>
+        {error && <div className="alert alert-danger" style={{ marginBottom:12 }}>{error}</div>}
+        <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          <div>
+            <label style={labelStyle}>Nama Kategori *</label>
+            <input type="text" required value={form.name} onChange={e => setForm({...form, name:e.target.value})} placeholder="Aksesoris, Adapter, dll" className="input input-sm" />
+          </div>
+          <div>
+            <label style={labelStyle}>Deskripsi</label>
+            <textarea value={form.description} onChange={e => setForm({...form, description:e.target.value})} rows={2} className="textarea" style={{ minHeight:56 }} />
+          </div>
+          <div style={{ display:'flex', gap:8, paddingTop:4 }}>
+            <button type="button" onClick={onClose} className="btn btn-secondary btn-sm" style={{ flex:1 }}>Batal</button>
+            <button type="submit" disabled={loading} className="btn btn-primary btn-sm" style={{ flex:1 }}>{loading ? 'Menyimpan...' : 'Simpan'}</button>
           </div>
         </form>
       </div>
@@ -381,6 +467,72 @@ function AdjustStokForm({ product, onClose, onSaved, userId }: {
             <button type="submit" disabled={loading} className={`btn ${type === 'masuk' ? 'btn-success' : 'btn-danger'}`} style={{ flex:1 }}>
               {loading ? 'Menyimpan...' : type === 'masuk' ? 'Tambah Stok' : 'Kurangi Stok'}
             </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+/* ── Add Category Form (standalone modal) ──────── */
+function AddCategoryForm({ existingCategories, onClose, onSaved }: {
+  existingCategories: { id: string; name: string }[]
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [form, setForm] = useState({ name:'', description:'' })
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    try {
+      const { error } = await supabase.from('categories').insert({
+        name: form.name,
+        description: form.description || null,
+      })
+      if (error) throw error
+      onSaved(); onClose()
+    } catch(err: unknown) {
+      setError(err instanceof Error ? err.message : 'Gagal menyimpan kategori')
+    } finally { setLoading(false) }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" style={{ maxWidth:420, padding:24 }} onClick={e => e.stopPropagation()}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
+          <h2 className="text-h2">Tambah Kategori</h2>
+          <button onClick={onClose} className="btn btn-ghost btn-sm" style={{ width:32, height:32, padding:0 }}><X size={16} /></button>
+        </div>
+        <p style={{ fontSize:13, color:'var(--mute)', marginBottom:20 }}>Kategori untuk mengelompokkan produk</p>
+
+        {error && <div className="alert alert-danger" style={{ marginBottom:16 }}>{error}</div>}
+
+        <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:14 }}>
+          <div>
+            <label style={labelStyle}>Nama Kategori *</label>
+            <input type="text" required value={form.name} onChange={e => setForm({...form, name:e.target.value})} placeholder="Aksesoris, Adapter, dll" className="input input-sm" />
+          </div>
+          <div>
+            <label style={labelStyle}>Deskripsi</label>
+            <textarea value={form.description} onChange={e => setForm({...form, description:e.target.value})} rows={2} placeholder="Keterangan kategori..." className="textarea" style={{ minHeight:60 }} />
+          </div>
+
+          {existingCategories.length > 0 && (
+            <div style={{ padding:'10px 14px', background:'var(--surface-muted)', borderRadius:8 }}>
+              <p style={{ fontSize:12, color:'var(--mute)', marginBottom:6 }}>Kategori yang sudah ada:</p>
+              <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                {existingCategories.map(c => <span key={c.id} className="badge badge-neutral">{c.name}</span>)}
+              </div>
+            </div>
+          )}
+
+          <div style={{ display:'flex', gap:8, paddingTop:8 }}>
+            <button type="button" onClick={onClose} className="btn btn-secondary" style={{ flex:1 }}>Batal</button>
+            <button type="submit" disabled={loading} className="btn btn-primary" style={{ flex:1 }}>{loading ? 'Menyimpan...' : 'Simpan Kategori'}</button>
           </div>
         </form>
       </div>
