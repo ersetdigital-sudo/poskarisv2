@@ -49,6 +49,18 @@ CREATE TABLE public.categories (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Enable RLS untuk categories
+ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
+
+-- Policies untuk categories
+CREATE POLICY "Authenticated users can view categories" ON public.categories
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Admin can manage categories" ON public.categories
+  FOR ALL USING (
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
 -- Seed categories
 INSERT INTO public.categories (name, description) VALUES
   ('Unit Laptop', 'Laptop bekas/baru untuk dijual kembali'),
