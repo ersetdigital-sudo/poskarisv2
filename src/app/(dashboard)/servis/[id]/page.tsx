@@ -3,8 +3,13 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase, Service } from '@/lib/supabase'
-import { ArrowLeft, FileText, Send, CheckCircle } from 'lucide-react'
+import { ArrowLeft, FileText, Send, CheckCircle, Download } from 'lucide-react'
 import Link from 'next/link'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { NotaServisPDF } from '@/components/pdf/nota-servis'
+import { downloadPDF } from '@/components/pdf/utils'
 
 export default function ServisDetailPage() {
   const params = useParams()
@@ -12,6 +17,7 @@ export default function ServisDetailPage() {
   const [service, setService] = useState<Service | null>(null)
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
+  const [pdfLoading, setPdfLoading] = useState(false)
 
   useEffect(() => { if (params.id) fetchService(params.id as string) }, [params.id])
 
@@ -33,133 +39,182 @@ export default function ServisDetailPage() {
     } catch (e) { console.error(e) } finally { setUpdating(false) }
   }
 
+  async function handleDownloadPDF() {
+    if (!service) return
+    setPdfLoading(true)
+    try {
+      const doc = NotaServisPDF({ service })
+      await downloadPDF(doc, `nota-${service.nota_number}.pdf`)
+    } catch (e) {
+      console.error('Gagal generate PDF:', e)
+    } finally {
+      setPdfLoading(false)
+    }
+  }
+
   const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
 
-  if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-3xl)' }}><div className="spinner" /></div>
+  if (loading) return <div className="flex items-center justify-center p-12"><div className="spinner" /></div>
 
   if (!service) {
     return (
-      <div style={{ padding: 'var(--space-3xl)', textAlign: 'center' }}>
-        <p style={{ color: 'var(--color-ink-3)' }}>Data servis tidak ditemukan</p>
-        <Link href="/servis" style={{ marginTop: 'var(--space-xs)', display: 'inline-block', fontSize: 'var(--text-body)', color: 'var(--color-accent)' }}>Kembali ke daftar servis</Link>
+      <div className="p-12 text-center">
+        <p className="text-muted-foreground">Data servis tidak ditemukan</p>
+        <Link href="/servis" className="mt-2 inline-block text-sm font-medium text-primary hover:underline">Kembali ke daftar servis</Link>
       </div>
     )
   }
 
-  const statusClass = service.status === 'selesai' ? 'badge-success' : service.status === 'proses' ? 'badge-warning' : 'badge-danger'
+  const statusVariant: Record<string, 'success' | 'warning' | 'destructive'> = {
+    selesai: 'success',
+    proses: 'warning',
+    dibatalkan: 'destructive',
+  }
 
   return (
-    <div>
-      <div style={{ marginBottom: 'var(--space-lg)', display: 'flex', alignItems: 'center', gap: 'var(--space-xs)' }}>
-        <button onClick={() => router.back()} className="btn btn-secondary btn-sm" style={{ width: 36, height: 36, padding: 0 }}>
+    <div className="space-y-3">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <Button onClick={() => router.back()} variant="secondary" className="h-9 w-9 shrink-0 p-0">
           <ArrowLeft size={16} />
-        </button>
+        </Button>
         <div>
-          <h1 className="text-h1" style={{ fontSize: 'var(--text-h2)', marginBottom: 2 }}>Detail Servis {service.nota_number}</h1>
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-ink-3)' }}>Detail transaksi servis pelanggan</p>
+          <h1 className="font-serif text-lg font-bold tracking-tight text-foreground">Detail Servis {service.nota_number}</h1>
+          <p className="text-xs text-muted-foreground">Detail transaksi servis pelanggan</p>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--space-lg)' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-          <div className="card" style={{ padding: 'var(--space-lg)' }}>
-            <h3 className="text-h3" style={{ marginBottom: 'var(--space-sm)' }}>Informasi Customer</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-sm)' }}>
-              <div>
-                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-ink-3)', marginBottom: 2 }}>Nama</p>
-                <p style={{ fontSize: 'var(--text-body)', fontWeight: 500, color: 'var(--color-ink)' }}>{service.customer_name}</p>
+      <div className="grid gap-4 lg:grid-cols-3">
+        {/* Left: Info */}
+        <div className="space-y-3 lg:col-span-2">
+          <Card className="shadow-card">
+            <CardContent className="p-4 sm:p-5">
+              <h3 className="mb-3 text-sm font-bold text-foreground">Informasi Customer</h3>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Nama</p>
+                  <p className="text-sm font-semibold text-foreground">{service.customer_name}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">No. WhatsApp</p>
+                  <p className="text-sm font-semibold text-foreground">{service.customer_phone}</p>
+                </div>
               </div>
-              <div>
-                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-ink-3)', marginBottom: 2 }}>No. WhatsApp</p>
-                <p style={{ fontSize: 'var(--text-body)', fontWeight: 500, color: 'var(--color-ink)' }}>{service.customer_phone}</p>
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          <div className="card" style={{ padding: 'var(--space-lg)' }}>
-            <h3 className="text-h3" style={{ marginBottom: 'var(--space-sm)' }}>Informasi Perangkat</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-sm)' }}>
-              <div>
-                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-ink-3)', marginBottom: 2 }}>Jenis</p>
-                <p style={{ fontSize: 'var(--text-body)', fontWeight: 500, color: 'var(--color-ink)' }}>{service.device_type}</p>
+          <Card className="shadow-card">
+            <CardContent className="p-4 sm:p-5">
+              <h3 className="mb-3 text-sm font-bold text-foreground">Informasi Perangkat</h3>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Jenis</p>
+                  <p className="text-sm font-semibold text-foreground">{service.device_type}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Merk</p>
+                  <p className="text-sm font-semibold text-foreground">{service.device_brand || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Model</p>
+                  <p className="text-sm font-semibold text-foreground">{service.device_model || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Keluhan</p>
+                  <p className="text-sm font-semibold text-foreground">{service.complaint || '-'}</p>
+                </div>
               </div>
-              <div>
-                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-ink-3)', marginBottom: 2 }}>Merk</p>
-                <p style={{ fontSize: 'var(--text-body)', fontWeight: 500, color: 'var(--color-ink)' }}>{service.device_brand || '-'}</p>
-              </div>
-              <div>
-                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-ink-3)', marginBottom: 2 }}>Model</p>
-                <p style={{ fontSize: 'var(--text-body)', fontWeight: 500, color: 'var(--color-ink)' }}>{service.device_model || '-'}</p>
-              </div>
-              <div>
-                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-ink-3)', marginBottom: 2 }}>Keluhan</p>
-                <p style={{ fontSize: 'var(--text-body)', fontWeight: 500, color: 'var(--color-ink)' }}>{service.complaint || '-'}</p>
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {service.notes && (
-            <div className="card" style={{ padding: 'var(--space-lg)' }}>
-              <h3 className="text-h3" style={{ marginBottom: 'var(--space-2xs)' }}>Catatan</h3>
-              <p style={{ fontSize: 'var(--text-body)', color: 'var(--color-ink-2)' }}>{service.notes}</p>
-            </div>
+            <Card className="shadow-card">
+              <CardContent className="p-4 sm:p-5">
+                <h3 className="mb-2 text-sm font-bold text-foreground">Catatan</h3>
+                <p className="text-sm text-muted-foreground">{service.notes}</p>
+              </CardContent>
+            </Card>
           )}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-          <div className="card" style={{ padding: 'var(--space-lg)' }}>
-            <h3 className="text-h3" style={{ marginBottom: 'var(--space-sm)' }}>Status & Biaya</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-ink-3)' }}>Status</span>
-                <span className={`badge ${statusClass}`}>{service.status}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-ink-3)' }}>Biaya Jasa</span>
-                <span style={{ fontSize: 'var(--text-sm)', fontWeight: 500 }}>{formatRupiah(service.service_fee)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-ink-3)' }}>Biaya Sparepart</span>
-                <span style={{ fontSize: 'var(--text-sm)', fontWeight: 500 }}>{formatRupiah(service.parts_fee)}</span>
-              </div>
-              <div style={{ borderTop: '1px solid var(--color-rule)', paddingTop: 'var(--space-xs)', display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-body)', fontWeight: 500, color: 'var(--color-ink)' }}>Total</span>
-                <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-h3)', fontWeight: 600, color: 'var(--color-accent)' }}>{formatRupiah(service.total_fee)}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="card" style={{ padding: 'var(--space-lg)' }}>
-            <h3 className="text-h3" style={{ marginBottom: 'var(--space-sm)' }}>Tanggal</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2xs)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-ink-3)' }}>Masuk</span>
-                <span style={{ fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-ink)' }}>{new Date(service.date_in).toLocaleString('id-ID')}</span>
-              </div>
-              {service.date_out && (
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-ink-3)' }}>Keluar</span>
-                  <span style={{ fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-ink)' }}>{new Date(service.date_out).toLocaleString('id-ID')}</span>
+        {/* Right: Status + Actions */}
+        <div className="space-y-3">
+          <Card className="shadow-card">
+            <CardContent className="p-4 sm:p-5">
+              <h3 className="mb-3 text-sm font-bold text-foreground">Status & Biaya</h3>
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Status</span>
+                  <Badge variant={statusVariant[service.status] || 'secondary'} className="text-[10px] capitalize">
+                    {service.status}
+                  </Badge>
                 </div>
-              )}
-            </div>
-          </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Biaya Jasa</span>
+                  <span className="font-mono text-sm font-medium text-foreground">{formatRupiah(service.service_fee)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Biaya Sparepart</span>
+                  <span className="font-mono text-sm font-medium text-foreground">{formatRupiah(service.parts_fee)}</span>
+                </div>
+                <div className="flex justify-between border-t border-border pt-2.5">
+                  <span className="text-sm font-bold text-foreground">Total</span>
+                  <span className="font-mono text-lg font-bold text-foreground">{formatRupiah(service.total_fee)}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2xs)' }}>
+          <Card className="shadow-card">
+            <CardContent className="p-4 sm:p-5">
+              <h3 className="mb-3 text-sm font-bold text-foreground">Tanggal</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Masuk</span>
+                  <span className="text-sm font-medium text-foreground">{new Date(service.date_in).toLocaleString('id-ID')}</span>
+                </div>
+                {service.date_out && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Keluar</span>
+                    <span className="text-sm font-medium text-foreground">{new Date(service.date_out).toLocaleString('id-ID')}</span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Action buttons */}
+          <div className="space-y-2">
             {service.status === 'proses' && (
-              <button onClick={markSelesai} disabled={updating} className="btn btn-success" style={{ width: '100%' }}>
+              <Button onClick={markSelesai} disabled={updating} className="h-11 w-full gap-2">
                 <CheckCircle size={16} />
                 {updating ? 'Memperbarui...' : 'Tandai Selesai'}
-              </button>
+              </Button>
             )}
             {service.status === 'selesai' && (
               <>
-                <button className="btn btn-primary" style={{ width: '100%' }}><FileText size={16} /> Cetak Nota PDF</button>
+                <Button
+                  onClick={handleDownloadPDF}
+                  disabled={pdfLoading}
+                  variant="secondary"
+                  className="h-11 w-full gap-2"
+                >
+                  {pdfLoading ? (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-foreground" />
+                  ) : (
+                    <Download size={16} />
+                  )}
+                  {pdfLoading ? 'Generating...' : 'Cetak Nota PDF'}
+                </Button>
                 <a
                   href={`https://wa.me/${service.customer_phone.replace(/^0/, '62')}?text=Halo%20${encodeURIComponent(service.customer_name)}%2C%20servis%20${service.nota_number}%20sudah%20selesai.%20Total%20biaya%3A%20${encodeURIComponent(formatRupiah(service.total_fee))}`}
-                  target="_blank" rel="noopener noreferrer"
-                  className="btn btn-success" style={{ width: '100%', textDecoration: 'none' }}
-                ><Send size={16} /> Kirim WhatsApp</a>
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-badge-success/90 px-4 text-sm font-medium text-white no-underline hover:bg-badge-success"
+                >
+                  <Send size={16} />
+                  Kirim WhatsApp
+                </a>
               </>
             )}
           </div>
