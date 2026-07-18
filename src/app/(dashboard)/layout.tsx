@@ -58,11 +58,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex h-screen bg-background">
       {/* Mobile overlay */}
-      <div className={`sidebar-overlay ${open ? 'show' : ''}`} onClick={() => setOpen(false)} />
+      <div
+        className={`sidebar-overlay ${open ? 'show' : ''}`}
+        onClick={() => setOpen(false)}
+        aria-hidden="true"
+      />
 
       {/* Sidebar */}
       <aside
-        className={`sidebar-panel flex w-64 flex-col border-r`}
+        className={`sidebar-panel ${open ? 'open' : ''} flex w-64 flex-col border-r`}
         style={{
           background: 'var(--sidebar)',
           borderColor: 'var(--sidebar-border)',
@@ -148,7 +152,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Topbar */}
-        <header className="flex h-14 shrink-0 items-center justify-between border-b bg-card px-6">
+        <header className="flex h-14 shrink-0 items-center justify-between border-b bg-card px-4 sm:px-6">
           <button onClick={() => setOpen(true)} aria-label="Buka menu" className="mobile-only h-8 w-8 border-none bg-transparent p-0 cursor-pointer text-muted-foreground">
             <Menu size={20} />
           </button>
@@ -160,7 +164,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="text-right sm:block" style={{ display: 'none' }}>
+            <div className="sm-block text-right">
               <p className="text-sm font-semibold text-foreground leading-tight">{profile.name}</p>
               <p className="text-xs capitalize text-muted-foreground">{profile.role}</p>
             </div>
@@ -173,7 +177,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto bg-background p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 lg:p-8">
           <div className="mx-auto max-w-6xl">
             {children}
           </div>

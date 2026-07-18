@@ -3,11 +3,15 @@
 import { useEffect, useState } from 'react'
 import { supabase, Profile } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
-import { Plus, UserCheck, UserX, X } from 'lucide-react'
+import { Plus, UserCheck, UserX } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Modal } from '@/components/ui/modal'
+import PageHeader from '@/components/dashboard/PageHeader'
 
-const labelStyle: React.CSSProperties = {
-  display: 'block', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-ink)', marginBottom: 6,
-}
+const labelClass = 'mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground'
 
 export default function PengaturanPage() {
   const { user } = useAuth()
@@ -50,67 +54,110 @@ export default function PengaturanPage() {
     }
   }
 
-  if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-3xl)' }}><div className="spinner" /></div>
+  if (loading) return <div className="flex items-center justify-center p-12"><div className="spinner" /></div>
 
   return (
-    <div>
-      <div style={{ marginBottom: 'var(--space-lg)', display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)', alignItems: 'flex-start' }}>
-        <div style={{ flex: 1 }}>
-          <h1 className="text-h1" style={{ marginBottom: 4 }}>Pengaturan</h1>
-          <p className="text-small" style={{ color: 'var(--color-ink-3)' }}>Kelola user dan pengaturan sistem</p>
-        </div>
-        <button onClick={() => setShowForm(true)} className="btn btn-primary"><Plus size={16} /> Tambah User</button>
-      </div>
+    <div className="space-y-3">
+      <PageHeader title="Pengaturan" subtitle="Kelola user dan pengaturan sistem">
+        <Button onClick={() => setShowForm(true)} className="gap-2">
+          <Plus size={16} strokeWidth={2} />
+          Tambah User
+        </Button>
+      </PageHeader>
 
-      <div className="table-wrapper">
-        <div style={{ overflowX: 'auto' }}>
-          <table className="table">
-            <thead><tr><th>User</th><th>Role</th><th>No. HP</th><th>Status</th><th>Aksi</th></tr></thead>
-            <tbody>
-              {profiles.map(p => (
-                <tr key={p.id}>
-                  <td>
-                    <p style={{ fontWeight: 500, color: 'var(--color-ink)' }}>{p.name}</p>
-                    {p.id === user?.id && <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-accent)' }}>(Anda)</p>}
-                  </td>
-                  <td><span className={`badge ${p.role === 'admin' ? 'badge-info' : 'badge-neutral'}`}>{p.role}</span></td>
-                  <td style={{ color: 'var(--color-ink-2)' }}>{p.phone || '-'}</td>
-                  <td><span className={`badge ${p.is_active ? 'badge-success' : 'badge-danger'}`}>{p.is_active ? 'Aktif' : 'Nonaktif'}</span></td>
-                  <td>
-                    {p.id !== user?.id && (
-                      <button onClick={() => toggleActive(p.id, p.is_active)} className="btn btn-ghost btn-xs" style={{ width: 28, height: 28, padding: 0 }} title={p.is_active ? 'Nonaktifkan' : 'Aktifkan'}>
-                        {p.is_active ? <UserX size={14} /> : <UserCheck size={14} />}
-                      </button>
-                    )}
-                  </td>
+      {/* User table */}
+      <Card className="shadow-card">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="p-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">User</th>
+                  <th className="p-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Role</th>
+                  <th className="p-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">No. HP</th>
+                  <th className="p-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Status</th>
+                  <th className="p-3 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">Aksi</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+              </thead>
+              <tbody>
+                {profiles.map(p => (
+                  <tr key={p.id} className="border-b border-border transition-colors hover:bg-secondary/30">
+                    <td className="p-3">
+                      <p className="text-sm font-semibold text-foreground">{p.name}</p>
+                      {p.id === user?.id && <p className="text-[10px] text-primary">(Anda)</p>}
+                    </td>
+                    <td className="p-3">
+                      <Badge variant={p.role === 'admin' ? 'default' : 'secondary'} className="text-[10px] capitalize">
+                        {p.role}
+                      </Badge>
+                    </td>
+                    <td className="p-3 text-xs text-muted-foreground">{p.phone || '-'}</td>
+                    <td className="p-3">
+                      <Badge variant={p.is_active ? 'success' : 'destructive'} className="text-[10px]">
+                        {p.is_active ? 'Aktif' : 'Nonaktif'}
+                      </Badge>
+                    </td>
+                    <td className="p-3">
+                      <div className="flex justify-center">
+                        {p.id !== user?.id && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleActive(p.id, p.is_active)}
+                            className="h-7 w-7 p-0"
+                            title={p.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                          >
+                            {p.is_active ? <UserX size={13} /> : <UserCheck size={13} />}
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
 
       {showForm && (
-        <div className="modal-overlay" onClick={() => setShowForm(false)}>
-          <div className="modal" style={{ maxWidth: 420, padding: 'var(--space-lg)' }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-lg)' }}>
-              <h2 className="text-h2">Tambah User Baru</h2>
-              <button onClick={() => setShowForm(false)} className="btn btn-ghost btn-sm" style={{ width: 32, height: 32, padding: 0 }}><X size={16} /></button>
+        <Modal title="Tambah User Baru" onClose={() => { setShowForm(false); setError('') }} maxWidth="sm">
+          {error && (
+            <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 p-3">
+              <p className="text-xs text-destructive">{error}</p>
             </div>
-            {error && <div className="alert alert-danger" style={{ marginBottom: 'var(--space-sm)' }}>{error}</div>}
-            <form onSubmit={handleCreateUser} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-              <div><label style={labelStyle}>Nama *</label><input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="input input-sm" /></div>
-              <div><label style={labelStyle}>Email *</label><input type="email" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="input input-sm" /></div>
-              <div><label style={labelStyle}>Password *</label><input type="password" required minLength={6} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} className="input input-sm" /></div>
-              <div><label style={labelStyle}>No. HP</label><input type="text" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="input input-sm" /></div>
-              <div><label style={labelStyle}>Role *</label><select value={form.role} onChange={e => setForm({ ...form, role: e.target.value as 'admin' | 'karyawan' })} className="select select-sm"><option value="karyawan">Karyawan</option><option value="admin">Admin</option></select></div>
-              <div style={{ display: 'flex', gap: 'var(--space-2xs)', paddingTop: 'var(--space-2xs)' }}>
-                <button type="button" onClick={() => setShowForm(false)} className="btn btn-secondary" style={{ flex: 1 }}>Batal</button>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Buat User</button>
-              </div>
-            </form>
-          </div>
-        </div>
+          )}
+
+          <form onSubmit={handleCreateUser} className="space-y-4">
+            <div>
+              <label className={labelClass}>Nama *</label>
+              <Input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="h-10 w-full" />
+            </div>
+            <div>
+              <label className={labelClass}>Email *</label>
+              <Input type="email" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="h-10 w-full" />
+            </div>
+            <div>
+              <label className={labelClass}>Password *</label>
+              <Input type="password" required minLength={6} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} className="h-10 w-full" />
+            </div>
+            <div>
+              <label className={labelClass}>No. HP</label>
+              <Input type="text" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="h-10 w-full" />
+            </div>
+            <div>
+              <label className={labelClass}>Role *</label>
+              <select value={form.role} onChange={e => setForm({ ...form, role: e.target.value as 'admin' | 'karyawan' })} className="h-10 w-full rounded-lg border border-input bg-surface px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20">
+                <option value="karyawan">Karyawan</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row">
+              <Button type="button" onClick={() => { setShowForm(false); setError('') }} variant="secondary" className="h-11 w-full sm:flex-1">Batal</Button>
+              <Button type="submit" className="h-11 w-full sm:flex-1">Buat User</Button>
+            </div>
+          </form>
+        </Modal>
       )}
     </div>
   )

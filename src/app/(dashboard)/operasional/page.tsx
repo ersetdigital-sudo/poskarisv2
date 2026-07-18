@@ -3,11 +3,16 @@
 import { useEffect, useState } from 'react'
 import { supabase, OperationalCost } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
-import { Plus, Trash2, Edit, X } from 'lucide-react'
+import { Plus, Trash2, Edit } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Modal } from '@/components/ui/modal'
+import { RupiahInput } from '@/components/ui/rupiah-input'
+import PageHeader from '@/components/dashboard/PageHeader'
 
-const labelStyle: React.CSSProperties = {
-  display: 'block', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-ink)', marginBottom: 6,
-}
+const labelClass = 'mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground'
+const textareaClass = 'w-full resize-none rounded-lg border border-input bg-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20'
 
 export default function OperasionalPage() {
   const { user } = useAuth()
@@ -15,13 +20,21 @@ export default function OperasionalPage() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingCost, setEditingCost] = useState<OperationalCost | null>(null)
-  const [filterMonth, setFilterMonth] = useState(() => { const now = new Date(); return { month: now.getMonth() + 1, year: now.getFullYear() } })
+  const [filterMonth, setFilterMonth] = useState(() => {
+    const now = new Date()
+    return { month: now.getMonth() + 1, year: now.getFullYear() }
+  })
 
   useEffect(() => { fetchCosts() }, [filterMonth])
 
   async function fetchCosts() {
     try {
-      const { data, error } = await supabase.from('operational_costs').select('*').eq('period_month', filterMonth.month).eq('period_year', filterMonth.year).order('created_at', { ascending: false })
+      const { data, error } = await supabase
+        .from('operational_costs')
+        .select('*')
+        .eq('period_month', filterMonth.month)
+        .eq('period_year', filterMonth.year)
+        .order('created_at', { ascending: false })
       if (error) throw error
       setCosts(data || [])
     } catch (e) { console.error(e) } finally { setLoading(false) }
@@ -37,58 +50,96 @@ export default function OperasionalPage() {
   const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
   const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
 
-  if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-3xl)' }}><div className="spinner" /></div>
+  if (loading) return <div className="flex items-center justify-center p-12"><div className="spinner" /></div>
 
   return (
-    <div>
-      <div style={{ marginBottom: 'var(--space-lg)', display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)', alignItems: 'flex-start' }}>
-        <div style={{ flex: 1 }}>
-          <h1 className="text-h1" style={{ marginBottom: 4 }}>Biaya Operasional</h1>
-          <p className="text-small" style={{ color: 'var(--color-ink-3)' }}>Kelola biaya operasional bulanan</p>
-        </div>
-        <button onClick={() => { setEditingCost(null); setShowForm(true) }} className="btn btn-primary"><Plus size={16} /> Tambah Biaya</button>
-      </div>
+    <div className="space-y-3">
+      <PageHeader title="Biaya Operasional" subtitle="Kelola biaya operasional bulanan">
+        <Button onClick={() => { setEditingCost(null); setShowForm(true) }} className="gap-2">
+          <Plus size={16} strokeWidth={2} />
+          Tambah Biaya
+        </Button>
+      </PageHeader>
 
-      <div style={{ display: 'flex', gap: 'var(--space-2xs)', marginBottom: 'var(--space-sm)' }}>
-        <select value={filterMonth.month} onChange={e => setFilterMonth({ ...filterMonth, month: Number(e.target.value) })} className="select select-sm" style={{ width: 160 }}>
-          {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
-        </select>
-        <select value={filterMonth.year} onChange={e => setFilterMonth({ ...filterMonth, year: Number(e.target.value) })} className="select select-sm" style={{ width: 120 }}>
-          {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
-        </select>
-      </div>
+      {/* Filter bulan */}
+      <Card className="shadow-card">
+        <CardContent className="p-3">
+          <div className="flex flex-wrap gap-2">
+            <select
+              value={filterMonth.month}
+              onChange={e => setFilterMonth({ ...filterMonth, month: Number(e.target.value) })}
+              className="h-9 w-[160px] rounded-lg border border-input bg-surface px-3 text-sm"
+            >
+              {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+            </select>
+            <select
+              value={filterMonth.year}
+              onChange={e => setFilterMonth({ ...filterMonth, year: Number(e.target.value) })}
+              className="h-9 w-[120px] rounded-lg border border-input bg-surface px-3 text-sm"
+            >
+              {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </div>
+        </CardContent>
+      </Card>
 
-      <div className="card" style={{ padding: 'var(--space-lg)', marginBottom: 'var(--space-lg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: 'var(--text-body)', color: 'var(--color-ink-3)' }}>Total Biaya Operasional</span>
-        <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-h2)', fontWeight: 600, color: 'var(--color-danger)' }}>{formatRupiah(totalBiaya)}</span>
-      </div>
+      {/* Total card */}
+      <Card className="shadow-card">
+        <CardContent className="flex items-center justify-between p-5">
+          <span className="text-sm text-muted-foreground">Total Biaya Operasional</span>
+          <span className="text-xl font-bold text-destructive">{formatRupiah(totalBiaya)}</span>
+        </CardContent>
+      </Card>
 
-      <div className="table-wrapper">
-        <div style={{ overflowX: 'auto' }}>
-          <table className="table">
-            <thead><tr><th>Nama Biaya</th><th>Jumlah</th><th>Catatan</th><th>Aksi</th></tr></thead>
-            <tbody>
-              {costs.length === 0 ? (
-                <tr><td colSpan={4} style={{ textAlign: 'center', padding: 'var(--space-xl)', color: 'var(--color-ink-3)' }}>Belum ada biaya operasional bulan ini</td></tr>
-              ) : costs.map(c => (
-                <tr key={c.id}>
-                  <td style={{ fontWeight: 500, color: 'var(--color-ink)' }}>{c.name}</td>
-                  <td style={{ fontWeight: 500, color: 'var(--color-danger)' }}>{formatRupiah(c.amount)}</td>
-                  <td style={{ color: 'var(--color-ink-3)' }}>{c.notes || '-'}</td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 4 }}>
-                      <button onClick={() => { setEditingCost(c); setShowForm(true) }} className="btn btn-ghost btn-xs" style={{ width: 28, height: 28, padding: 0 }}><Edit size={14} /></button>
-                      <button onClick={() => deleteCost(c.id)} className="btn btn-ghost btn-xs" style={{ width: 28, height: 28, padding: 0 }}><Trash2 size={14} /></button>
-                    </div>
-                  </td>
+      {/* Table */}
+      <Card className="shadow-card">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="p-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Nama Biaya</th>
+                  <th className="p-3 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">Jumlah</th>
+                  <th className="p-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Catatan</th>
+                  <th className="p-3 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">Aksi</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+              </thead>
+              <tbody>
+                {costs.length === 0 ? (
+                  <tr><td colSpan={4} className="p-8 text-center text-xs text-muted-foreground">Belum ada biaya operasional bulan ini</td></tr>
+                ) : costs.map(c => (
+                  <tr key={c.id} className="border-b border-border transition-colors hover:bg-secondary/30">
+                    <td className="p-3 text-sm font-medium text-foreground">{c.name}</td>
+                    <td className="p-3 text-right text-sm font-semibold text-destructive">{formatRupiah(c.amount)}</td>
+                    <td className="p-3 text-xs text-muted-foreground">{c.notes || '-'}</td>
+                    <td className="p-3">
+                      <div className="flex justify-center gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => { setEditingCost(c); setShowForm(true) }} className="h-7 w-7 p-0">
+                          <Edit size={13} />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => deleteCost(c.id)} className="h-7 w-7 p-0">
+                          <Trash2 size={13} />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
 
-      {showForm && <OperasionalForm cost={editingCost} month={filterMonth.month} year={filterMonth.year} userId={user?.id} onClose={() => { setShowForm(false); setEditingCost(null) }} onSaved={fetchCosts} />}
+      {showForm && (
+        <OperasionalForm
+          cost={editingCost}
+          month={filterMonth.month}
+          year={filterMonth.year}
+          userId={user?.id}
+          onClose={() => { setShowForm(false); setEditingCost(null) }}
+          onSaved={fetchCosts}
+        />
+      )}
     </div>
   )
 }
@@ -119,23 +170,31 @@ function OperasionalForm({ cost, month, year, userId, onClose, onSaved }: {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: 420, padding: 'var(--space-lg)' }} onClick={e => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-lg)' }}>
-          <h2 className="text-h2">{cost ? 'Edit Biaya' : 'Tambah Biaya'}</h2>
-          <button onClick={onClose} className="btn btn-ghost btn-sm" style={{ width: 32, height: 32, padding: 0 }}><X size={16} /></button>
+    <Modal title={cost ? 'Edit Biaya' : 'Tambah Biaya'} onClose={onClose} maxWidth="sm">
+      {error && (
+        <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 p-3">
+          <p className="text-xs text-destructive">{error}</p>
         </div>
-        {error && <div className="alert alert-danger" style={{ marginBottom: 'var(--space-sm)' }}>{error}</div>}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-          <div><label style={labelStyle}>Nama Biaya *</label><input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Sewa Tempat, Listrik" className="input input-sm" /></div>
-          <div><label style={labelStyle}>Jumlah (Rp) *</label><input type="number" required value={form.amount || ''} onChange={e => setForm({ ...form, amount: Number(e.target.value) })} className="input input-sm" /></div>
-          <div><label style={labelStyle}>Catatan</label><textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} className="textarea" style={{ minHeight: 60 }} /></div>
-          <div style={{ display: 'flex', gap: 'var(--space-2xs)', paddingTop: 'var(--space-2xs)' }}>
-            <button type="button" onClick={onClose} className="btn btn-secondary" style={{ flex: 1 }}>Batal</button>
-            <button type="submit" disabled={loading} className="btn btn-primary" style={{ flex: 1 }}>{loading ? 'Menyimpan...' : 'Simpan'}</button>
-          </div>
-        </form>
-      </div>
-    </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className={labelClass}>Nama Biaya *</label>
+          <Input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Sewa Tempat, Listrik" className="h-10 w-full" />
+        </div>
+        <div>
+          <label className={labelClass}>Jumlah (Rp) *</label>
+          <RupiahInput value={form.amount} onChange={v => setForm({ ...form, amount: v })} className="h-10 w-full font-mono" />
+        </div>
+        <div>
+          <label className={labelClass}>Catatan</label>
+          <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} className={textareaClass} />
+        </div>
+        <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row">
+          <Button type="button" onClick={onClose} variant="secondary" className="h-11 w-full sm:flex-1">Batal</Button>
+          <Button type="submit" disabled={loading} className="h-11 w-full sm:flex-1">{loading ? 'Menyimpan...' : 'Simpan'}</Button>
+        </div>
+      </form>
+    </Modal>
   )
 }

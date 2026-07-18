@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react'
 import { supabase, Service } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
-import { Plus, Search, Eye, FileText, Send, X } from 'lucide-react'
+import { Plus, Search, Eye, FileText, Send } from 'lucide-react'
 import Link from 'next/link'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Modal } from '@/components/ui/modal'
+import { RupiahInput } from '@/components/ui/rupiah-input'
 import PageHeader from '@/components/dashboard/PageHeader'
 
 export default function ServisPage() {
@@ -206,183 +208,164 @@ function ServisForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
-      <Card className="w-full max-w-2xl shadow-elevated my-8" onClick={e => e.stopPropagation()}>
-        <CardHeader className="border-b border-hairline">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-bold" style={{ fontWeight: 700 }}>Servis Baru</CardTitle>
-            <Button onClick={onClose} variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-secondary">
-              <X size={16} />
-            </Button>
+    <Modal title="Servis Baru" onClose={onClose} maxWidth="2xl">
+      {error && (
+        <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 p-3">
+          <p className="text-xs text-destructive">{error}</p>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Customer Info */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Nama Customer <span className="text-destructive">*</span>
+            </label>
+            <Input
+              type="text"
+              required
+              value={form.customer_name}
+              onChange={e => setForm({ ...form, customer_name: e.target.value })}
+              className="h-10 w-full"
+              placeholder="Masukkan nama customer"
+            />
           </div>
-        </CardHeader>
+          <div>
+            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              No. WhatsApp <span className="text-destructive">*</span>
+            </label>
+            <Input
+              type="text"
+              required
+              value={form.customer_phone}
+              onChange={e => setForm({ ...form, customer_phone: e.target.value })}
+              placeholder="08xxxxxxxxxx"
+              className="h-10 w-full"
+            />
+          </div>
+        </div>
 
-        <CardContent className="pt-4">
-          {error && (
-            <div className="mb-4 p-3 bg-danger/10 border border-danger/20 rounded-lg">
-              <p className="text-xs text-danger">{error}</p>
-            </div>
-          )}
+        {/* Device Info */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Jenis Perangkat <span className="text-destructive">*</span>
+            </label>
+            <select
+              value={form.device_type}
+              onChange={e => setForm({ ...form, device_type: e.target.value })}
+              className="h-10 w-full rounded-lg border border-input bg-surface px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20"
+            >
+              <option>Laptop</option>
+              <option>PC</option>
+              <option>Printer</option>
+              <option>Lainnya</option>
+            </select>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Merk
+            </label>
+            <Input
+              type="text"
+              value={form.device_brand}
+              onChange={e => setForm({ ...form, device_brand: e.target.value })}
+              className="h-10 w-full"
+              placeholder="Contoh: Asus"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Model/Tipe
+            </label>
+            <Input
+              type="text"
+              value={form.device_model}
+              onChange={e => setForm({ ...form, device_model: e.target.value })}
+              className="h-10 w-full"
+              placeholder="Contoh: ROG"
+            />
+          </div>
+        </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Customer Info */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[11px] font-medium text-ash uppercase tracking-wide mb-1.5">
-                  Nama Customer <span className="text-danger">*</span>
-                </label>
-                <Input 
-                  type="text" 
-                  required 
-                  value={form.customer_name} 
-                  onChange={e => setForm({ ...form, customer_name: e.target.value })} 
-                  className="h-10"
-                  placeholder="Masukkan nama customer"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-medium text-ash uppercase tracking-wide mb-1.5">
-                  No. WhatsApp <span className="text-danger">*</span>
-                </label>
-                <Input 
-                  type="text" 
-                  required 
-                  value={form.customer_phone} 
-                  onChange={e => setForm({ ...form, customer_phone: e.target.value })} 
-                  placeholder="08xxxxxxxxxx" 
-                  className="h-10"
-                />
-              </div>
-            </div>
+        {/* Complaint */}
+        <div>
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            Keluhan/Kerusakan
+          </label>
+          <textarea
+            value={form.complaint}
+            onChange={e => setForm({ ...form, complaint: e.target.value })}
+            rows={3}
+            className="w-full resize-none rounded-lg border border-input bg-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20"
+            placeholder="Deskripsikan keluhan atau kerusakan perangkat..."
+          />
+        </div>
 
-            {/* Device Info */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-[11px] font-medium text-ash uppercase tracking-wide mb-1.5">
-                  Jenis Perangkat <span className="text-danger">*</span>
-                </label>
-                <select 
-                  value={form.device_type} 
-                  onChange={e => setForm({ ...form, device_type: e.target.value })} 
-                  className="h-10 w-full rounded-lg border border-hairline-strong bg-surface px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  <option>Laptop</option>
-                  <option>PC</option>
-                  <option>Printer</option>
-                  <option>Lainnya</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-[11px] font-medium text-ash uppercase tracking-wide mb-1.5">
-                  Merk
-                </label>
-                <Input 
-                  type="text" 
-                  value={form.device_brand} 
-                  onChange={e => setForm({ ...form, device_brand: e.target.value })} 
-                  className="h-10"
-                  placeholder="Contoh: Asus"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-medium text-ash uppercase tracking-wide mb-1.5">
-                  Model/Tipe
-                </label>
-                <Input 
-                  type="text" 
-                  value={form.device_model} 
-                  onChange={e => setForm({ ...form, device_model: e.target.value })} 
-                  className="h-10"
-                  placeholder="Contoh: ROG"
-                />
-              </div>
-            </div>
+        {/* Fees */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Biaya Jasa (Rp)
+            </label>
+            <RupiahInput
+              value={form.service_fee}
+              onChange={v => setForm({ ...form, service_fee: v })}
+              className="h-10 w-full font-mono"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Biaya Sparepart (Rp)
+            </label>
+            <RupiahInput
+              value={form.parts_fee}
+              onChange={v => setForm({ ...form, parts_fee: v })}
+              className="h-10 w-full font-mono"
+            />
+          </div>
+        </div>
 
-            {/* Complaint */}
-            <div>
-              <label className="block text-[11px] font-medium text-ash uppercase tracking-wide mb-1.5">
-                Keluhan/Kerusakan
-              </label>
-              <textarea 
-                value={form.complaint} 
-                onChange={e => setForm({ ...form, complaint: e.target.value })} 
-                rows={3} 
-                className="w-full rounded-lg border border-hairline-strong bg-surface px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"
-                placeholder="Deskripsikan keluhan atau kerusakan perangkat..."
-              />
-            </div>
+        {/* Total */}
+        <div className="rounded-lg border border-border bg-secondary/50 p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-muted-foreground">Total Biaya</span>
+            <span className="font-mono text-xl font-bold text-foreground">
+              {formatRupiah(total)}
+            </span>
+          </div>
+        </div>
 
-            {/* Fees */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[11px] font-medium text-ash uppercase tracking-wide mb-1.5">
-                  Biaya Jasa (Rp)
-                </label>
-                <Input 
-                  type="number" 
-                  value={form.service_fee || ''} 
-                  onChange={e => setForm({ ...form, service_fee: Number(e.target.value) })} 
-                  className="h-10 font-mono"
-                  placeholder="0"
-                  min="0"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-medium text-ash uppercase tracking-wide mb-1.5">
-                  Biaya Sparepart (Rp)
-                </label>
-                <Input 
-                  type="number" 
-                  value={form.parts_fee || ''} 
-                  onChange={e => setForm({ ...form, parts_fee: Number(e.target.value) })} 
-                  className="h-10 font-mono"
-                  placeholder="0"
-                  min="0"
-                />
-              </div>
-            </div>
+        {/* Notes */}
+        <div>
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            Catatan Tambahan
+          </label>
+          <textarea
+            value={form.notes}
+            onChange={e => setForm({ ...form, notes: e.target.value })}
+            rows={2}
+            className="w-full resize-none rounded-lg border border-input bg-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20"
+            placeholder="Catatan internal (opsional)..."
+          />
+        </div>
 
-            {/* Total */}
-            <div className="p-4 bg-secondary/50 rounded-lg border border-hairline">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-ash">Total Biaya</span>
-                <span className="text-xl font-bold text-ink font-mono" style={{ fontWeight: 700 }}>
-                  {formatRupiah(total)}
-                </span>
-              </div>
-            </div>
-
-            {/* Notes */}
-            <div>
-              <label className="block text-[11px] font-medium text-ash uppercase tracking-wide mb-1.5">
-                Catatan Tambahan
-              </label>
-              <textarea 
-                value={form.notes} 
-                onChange={e => setForm({ ...form, notes: e.target.value })} 
-                rows={2} 
-                className="w-full rounded-lg border border-hairline-strong bg-surface px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"
-                placeholder="Catatan internal (opsional)..."
-              />
-            </div>
-
-            {/* Actions */}
-            <div className="flex flex-col-reverse sm:flex-row gap-2 pt-2 border-t border-hairline">
-              <Button type="button" onClick={onClose} variant="secondary" className="flex-1 h-11">
-                Batal
-              </Button>
-              <Button type="submit" disabled={loading} className="flex-1 h-11">
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Menyimpan...
-                  </span>
-                ) : 'Simpan Servis'}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+        {/* Actions — stack full-width di mobile, side-by-side di desktop */}
+        <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row">
+          <Button type="button" onClick={onClose} variant="secondary" className="h-11 w-full sm:flex-1">
+            Batal
+          </Button>
+          <Button type="submit" disabled={loading} className="h-11 w-full sm:flex-1">
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                Menyimpan...
+              </span>
+            ) : 'Simpan Servis'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   )
 }

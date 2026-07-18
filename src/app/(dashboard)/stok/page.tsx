@@ -8,6 +8,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Modal } from '@/components/ui/modal'
+import { RupiahInput } from '@/components/ui/rupiah-input'
 import PageHeader from '@/components/dashboard/PageHeader'
 
 export default function StokPage() {
@@ -217,56 +219,44 @@ export default function StokPage() {
 
       {/* Mutasi Modal */}
       {selectedProduct && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setSelectedProduct(null)}>
-          <Card className="w-full max-w-md shadow-elevated" onClick={e => e.stopPropagation()}>
-            <CardContent className="p-4">
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <h2 className="text-base font-bold text-ink" style={{ fontWeight: 700 }}>Mutasi Stok</h2>
-                  <p className="text-xs text-stone mt-1">
-                    {selectedProduct.name} — Stok: <span className="font-bold text-ink">{selectedProduct.quantity}</span>
-                  </p>
-                </div>
-                <Button onClick={() => setSelectedProduct(null)} variant="ghost" size="sm" className="h-8 w-8 p-0">
-                  <X size={16} />
-                </Button>
-              </div>
+        <Modal title="Mutasi Stok" onClose={() => setSelectedProduct(null)} maxWidth="md">
+          <p className="mb-3 -mt-1 text-xs text-muted-foreground">
+            {selectedProduct.name} — Stok: <span className="font-bold text-foreground">{selectedProduct.quantity}</span>
+          </p>
 
-              <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                {movements.filter(m => m.product_id === selectedProduct.id).map(m => (
-                  <div 
-                    key={m.id} 
-                    className="flex items-center gap-3 p-3 rounded-lg border border-hairline hover:bg-secondary/30 transition-colors"
-                  >
-                    <div className={`flex h-8 w-8 items-center justify-center rounded-full flex-shrink-0 ${
-                      m.type === 'masuk' ? 'bg-badge-success/10' : 'bg-danger/10'
-                    }`}>
-                      {m.type === 'masuk' ? (
-                        <ArrowDown size={14} className="text-badge-success" />
-                      ) : (
-                        <ArrowUp size={14} className="text-danger" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-ink">
-                        {m.type === 'masuk' ? '+' : '-'}{m.quantity}
-                      </p>
-                      <p className="text-[10px] text-stone truncate">{m.notes || m.reference_type}</p>
-                    </div>
-                    <span className="text-[10px] text-stone whitespace-nowrap">
-                      {new Date(m.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
-                    </span>
-                  </div>
-                ))}
-                {movements.filter(m => m.product_id === selectedProduct.id).length === 0 && (
-                  <div className="py-8 text-center">
-                    <p className="text-xs text-stone">Belum ada mutasi stok</p>
-                  </div>
-                )}
+          <div className="space-y-2">
+            {movements.filter(m => m.product_id === selectedProduct.id).map(m => (
+              <div
+                key={m.id}
+                className="flex items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-secondary/30"
+              >
+                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                  m.type === 'masuk' ? 'bg-badge-success/10' : 'bg-destructive/10'
+                }`}>
+                  {m.type === 'masuk' ? (
+                    <ArrowDown size={14} className="text-badge-success" />
+                  ) : (
+                    <ArrowUp size={14} className="text-destructive" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-foreground">
+                    {m.type === 'masuk' ? '+' : '-'}{m.quantity}
+                  </p>
+                  <p className="truncate text-[10px] text-muted-foreground">{m.notes || m.reference_type}</p>
+                </div>
+                <span className="whitespace-nowrap text-[10px] text-muted-foreground">
+                  {new Date(m.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                </span>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            ))}
+            {movements.filter(m => m.product_id === selectedProduct.id).length === 0 && (
+              <div className="py-8 text-center">
+                <p className="text-xs text-muted-foreground">Belum ada mutasi stok</p>
+              </div>
+            )}
+          </div>
+        </Modal>
       )}
 
       {showAddForm && <AddStokForm onClose={() => setShowAddForm(false)} onSaved={fetchData} userId={user?.id} onCategoryAdded={fetchCategories} />}
@@ -282,10 +272,9 @@ export default function StokPage() {
   )
 }
 
-const labelStyle: React.CSSProperties = {
-  display: 'block', fontSize: '11px', fontWeight: 500, color: 'var(--color-ash)', marginBottom: 6,
-  textTransform: 'uppercase', letterSpacing: '0.05em',
-}
+const labelClass = 'mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground'
+const selectClass = 'h-10 w-full rounded-lg border border-input bg-surface px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20'
+const textareaClass = 'w-full resize-none rounded-lg border border-input bg-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20'
 
 /* ── Add Product Form ─────────────────────────── */
 function AddStokForm({ onClose, onSaved, userId, onCategoryAdded }: { onClose: () => void; onSaved: () => void; userId?: string; onCategoryAdded?: () => void }) {
@@ -329,101 +318,97 @@ function AddStokForm({ onClose, onSaved, userId, onCategoryAdded }: { onClose: (
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: 560, padding: 'var(--space-lg)' }} onClick={e => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-lg)' }}>
-          <div>
-            <h2 className="text-h2">Tambah Stok Barang</h2>
-            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-ink-3)', marginTop: 2 }}>Tambah barang baru ke inventaris</p>
+    <>
+      <Modal title="Tambah Stok Barang" onClose={onClose} maxWidth="xl">
+        {error && (
+          <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 p-3">
+            <p className="text-xs text-destructive">{error}</p>
           </div>
-          <button onClick={onClose} className="btn btn-ghost btn-sm" style={{ width: 32, height: 32, padding: 0 }}><X size={16} /></button>
-        </div>
+        )}
 
-        {error && <div className="alert alert-danger" style={{ marginBottom: 'var(--space-sm)' }}>{error}</div>}
-
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label style={labelStyle}>Kategori *</label>
-            <div style={{ display: 'flex', gap: 'var(--space-2xs)' }}>
-              <select required value={form.category_id} onChange={e => setForm({ ...form, category_id: e.target.value })} className="select select-sm" style={{ flex: 1 }}>
+            <label className={labelClass}>Kategori *</label>
+            <div className="flex gap-2">
+              <select required value={form.category_id} onChange={e => setForm({ ...form, category_id: e.target.value })} className={selectClass}>
                 <option value="">Pilih kategori...</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
-              <button type="button" onClick={() => setShowCatForm(true)} className="btn btn-secondary btn-sm" title="Tambah kategori baru">
+              <Button type="button" variant="secondary" onClick={() => setShowCatForm(true)} title="Tambah kategori baru" className="h-10 w-10 shrink-0 p-0">
                 <Plus size={14} />
-              </button>
+              </Button>
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-xs)' }}>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label style={labelStyle}>Nama Barang *</label>
-              <input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="RAM 8GB DDR4" className="input input-sm" />
+              <label className={labelClass}>Nama Barang *</label>
+              <Input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="RAM 8GB DDR4" className="h-10 w-full" />
             </div>
             <div>
-              <label style={labelStyle}>SKU</label>
-              <input type="text" value={form.sku} onChange={e => setForm({ ...form, sku: e.target.value })} placeholder="SKU-001" className="input input-sm" style={{ fontFamily: 'var(--font-mono)' }} />
+              <label className={labelClass}>SKU</label>
+              <Input type="text" value={form.sku} onChange={e => setForm({ ...form, sku: e.target.value })} placeholder="SKU-001" className="h-10 w-full font-mono" />
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-xs)' }}>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label style={labelStyle}>Merk</label>
-              <input type="text" value={form.brand} onChange={e => setForm({ ...form, brand: e.target.value })} className="input input-sm" />
+              <label className={labelClass}>Merk</label>
+              <Input type="text" value={form.brand} onChange={e => setForm({ ...form, brand: e.target.value })} className="h-10 w-full" />
             </div>
             <div>
-              <label style={labelStyle}>Model</label>
-              <input type="text" value={form.model} onChange={e => setForm({ ...form, model: e.target.value })} className="input input-sm" />
+              <label className={labelClass}>Model</label>
+              <Input type="text" value={form.model} onChange={e => setForm({ ...form, model: e.target.value })} className="h-10 w-full" />
             </div>
           </div>
 
           <div>
-            <label style={labelStyle}>Spesifikasi</label>
-            <textarea value={form.specs} onChange={e => setForm({ ...form, specs: e.target.value })} rows={2} placeholder="DDR4 3200MHz, SODIMM" className="textarea" style={{ minHeight: 60 }} />
+            <label className={labelClass}>Spesifikasi</label>
+            <textarea value={form.specs} onChange={e => setForm({ ...form, specs: e.target.value })} rows={2} placeholder="DDR4 3200MHz, SODIMM" className={textareaClass} />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-xs)' }}>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label style={labelStyle}>Kondisi</label>
-              <select value={form.condition} onChange={e => setForm({ ...form, condition: e.target.value as 'baru' | 'bekas' | 'refurbished' })} className="select select-sm">
+              <label className={labelClass}>Kondisi</label>
+              <select value={form.condition} onChange={e => setForm({ ...form, condition: e.target.value as 'baru' | 'bekas' | 'refurbished' })} className={selectClass}>
                 <option value="baru">Baru</option><option value="bekas">Bekas</option><option value="refurbished">Refurbished</option>
               </select>
             </div>
             <div>
-              <label style={labelStyle}>Stok Awal *</label>
-              <input type="number" required min={0} value={form.quantity} onChange={e => setForm({ ...form, quantity: Number(e.target.value) })} className="input input-sm" />
+              <label className={labelClass}>Stok Awal *</label>
+              <Input type="number" required min={0} value={form.quantity} onChange={e => setForm({ ...form, quantity: Number(e.target.value) })} className="h-10 w-full" />
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-xs)' }}>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div>
-              <label style={labelStyle}>Harga Beli *</label>
-              <input type="number" required min={0} value={form.buy_price || ''} onChange={e => setForm({ ...form, buy_price: Number(e.target.value) })} className="input input-sm" />
+              <label className={labelClass}>Harga Beli (Rp) *</label>
+              <RupiahInput value={form.buy_price} onChange={v => setForm({ ...form, buy_price: v })} className="h-10 w-full font-mono" />
             </div>
             <div>
-              <label style={labelStyle}>Harga Jual</label>
-              <input type="number" min={0} value={form.sell_price || ''} onChange={e => setForm({ ...form, sell_price: Number(e.target.value) })} className="input input-sm" />
+              <label className={labelClass}>Harga Jual (Rp)</label>
+              <RupiahInput value={form.sell_price} onChange={v => setForm({ ...form, sell_price: v })} className="h-10 w-full font-mono" />
             </div>
             <div>
-              <label style={labelStyle}>Min. Stok</label>
-              <input type="number" min={0} value={form.min_quantity} onChange={e => setForm({ ...form, min_quantity: Number(e.target.value) })} className="input input-sm" />
+              <label className={labelClass}>Min. Stok</label>
+              <Input type="number" min={0} value={form.min_quantity} onChange={e => setForm({ ...form, min_quantity: Number(e.target.value) })} className="h-10 w-full" />
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 'var(--space-2xs)', paddingTop: 'var(--space-2xs)' }}>
-            <button type="button" onClick={onClose} className="btn btn-secondary" style={{ flex: 1 }}>Batal</button>
-            <button type="submit" disabled={loading} className="btn btn-primary" style={{ flex: 1 }}>{loading ? 'Menyimpan...' : 'Simpan Barang'}</button>
+          <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row">
+            <Button type="button" onClick={onClose} variant="secondary" className="h-11 w-full sm:flex-1">Batal</Button>
+            <Button type="submit" disabled={loading} className="h-11 w-full sm:flex-1">{loading ? 'Menyimpan...' : 'Simpan Barang'}</Button>
           </div>
         </form>
+      </Modal>
 
-        {showCatForm && (
-          <InlineAddCategory
-            onClose={() => setShowCatForm(false)}
-            onSaved={() => { loadCategories(); onCategoryAdded?.() }}
-          />
-        )}
-      </div>
-    </div>
+      {showCatForm && (
+        <InlineAddCategory
+          onClose={() => setShowCatForm(false)}
+          onSaved={() => { loadCategories(); onCategoryAdded?.() }}
+        />
+      )}
+    </>
   )
 }
 
@@ -447,25 +432,29 @@ function InlineAddCategory({ onClose, onSaved }: { onClose: () => void; onSaved:
   }
 
   return (
-    <div className="modal-overlay" style={{ zIndex: 'var(--z-popover)' }} onClick={onClose}>
-      <div className="modal" style={{ maxWidth: 380, padding: 'var(--space-lg)' }} onClick={e => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-sm)' }}>
-          <h2 className="text-h2" style={{ fontSize: 'var(--text-h3)' }}>Tambah Kategori Baru</h2>
-          <button onClick={onClose} className="btn btn-ghost btn-sm" style={{ width: 28, height: 28, padding: 0 }}><X size={14} /></button>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div className="w-full max-w-sm rounded-2xl bg-card p-5 shadow-elevated" onClick={e => e.stopPropagation()}>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-sm font-bold text-foreground">Tambah Kategori Baru</h2>
+          <Button onClick={onClose} variant="ghost" size="sm" aria-label="Tutup" className="h-7 w-7 p-0"><X size={14} /></Button>
         </div>
-        {error && <div className="alert alert-danger" style={{ marginBottom: 'var(--space-xs)' }}>{error}</div>}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
+        {error && (
+          <div className="mb-3 rounded-lg border border-destructive/20 bg-destructive/10 p-2.5">
+            <p className="text-xs text-destructive">{error}</p>
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label style={labelStyle}>Nama Kategori *</label>
-            <input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Aksesoris, Adapter, dll" className="input input-sm" />
+            <label className={labelClass}>Nama Kategori *</label>
+            <Input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Aksesoris, Adapter, dll" className="h-10 w-full" />
           </div>
           <div>
-            <label style={labelStyle}>Deskripsi</label>
-            <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={2} className="textarea" style={{ minHeight: 56 }} />
+            <label className={labelClass}>Deskripsi</label>
+            <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={2} className={textareaClass} />
           </div>
-          <div style={{ display: 'flex', gap: 'var(--space-2xs)', paddingTop: 4 }}>
-            <button type="button" onClick={onClose} className="btn btn-secondary btn-sm" style={{ flex: 1 }}>Batal</button>
-            <button type="submit" disabled={loading} className="btn btn-primary btn-sm" style={{ flex: 1 }}>{loading ? 'Menyimpan...' : 'Simpan'}</button>
+          <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row">
+            <Button type="button" onClick={onClose} variant="secondary" className="h-10 w-full sm:flex-1">Batal</Button>
+            <Button type="submit" disabled={loading} className="h-10 w-full sm:flex-1">{loading ? 'Menyimpan...' : 'Simpan'}</Button>
           </div>
         </form>
       </div>
@@ -503,80 +492,75 @@ function AdjustStokForm({ product, onClose, onSaved, userId }: {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: 400, padding: 'var(--space-lg)' }} onClick={e => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-          <h2 className="text-h2">Penyesuaian Stok</h2>
-          <button onClick={onClose} className="btn btn-ghost btn-sm" style={{ width: 32, height: 32, padding: 0 }}><X size={16} /></button>
+    <Modal title="Penyesuaian Stok" onClose={onClose} maxWidth="sm">
+      <p className="mb-4 -mt-1 text-sm text-muted-foreground">
+        {product.name} — Stok saat ini: <strong className="text-foreground">{product.quantity}</strong>
+      </p>
+
+      {error && (
+        <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 p-3">
+          <p className="text-xs text-destructive">{error}</p>
         </div>
-        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-ink-3)', marginBottom: 'var(--space-lg)' }}>{product.name} — Stok saat ini: <strong style={{ color: 'var(--color-ink)' }}>{product.quantity}</strong></p>
+      )}
 
-        {error && <div className="alert alert-danger" style={{ marginBottom: 'var(--space-sm)' }}>{error}</div>}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setType('masuk')}
+            className={`flex flex-col items-center gap-1.5 rounded-lg border p-3 text-sm font-medium transition-colors ${
+              type === 'masuk'
+                ? 'border-badge-success bg-badge-success/10 text-badge-success'
+                : 'border-border bg-card text-muted-foreground hover:bg-secondary/50'
+            }`}
+          >
+            <ArrowDown size={16} />
+            Stok Masuk
+          </button>
+          <button
+            type="button"
+            onClick={() => setType('keluar')}
+            className={`flex flex-col items-center gap-1.5 rounded-lg border p-3 text-sm font-medium transition-colors ${
+              type === 'keluar'
+                ? 'border-destructive bg-destructive/10 text-destructive'
+                : 'border-border bg-card text-muted-foreground hover:bg-secondary/50'
+            }`}
+          >
+            <ArrowUp size={16} />
+            Stok Keluar
+          </button>
+        </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2xs)' }}>
-            <button type="button"
-              style={{
-                padding: 'var(--space-sm) var(--space-2xs)', borderRadius: 'var(--radius-md)', cursor: 'pointer',
-                fontSize: 'var(--text-sm)', fontWeight: 500,
-                border: type === 'masuk' ? '1.5px solid var(--color-accent)' : '1px solid var(--color-rule-strong)',
-                background: type === 'masuk' ? 'var(--color-accent-soft)' : 'var(--color-paper-2)',
-                color: type === 'masuk' ? 'var(--color-accent)' : 'var(--color-ink-3)',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                transition: 'all var(--dur-short) var(--ease-out)',
-              }} onClick={() => setType('masuk')}
-            >
-              <ArrowDown size={16} />
-              Stok Masuk
-            </button>
-            <button type="button"
-              style={{
-                padding: 'var(--space-sm) var(--space-2xs)', borderRadius: 'var(--radius-md)', cursor: 'pointer',
-                fontSize: 'var(--text-sm)', fontWeight: 500,
-                border: type === 'keluar' ? '1.5px solid var(--color-danger)' : '1px solid var(--color-rule-strong)',
-                background: type === 'keluar' ? 'var(--color-danger-bg)' : 'var(--color-paper-2)',
-                color: type === 'keluar' ? 'var(--color-danger)' : 'var(--color-ink-3)',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                transition: 'all var(--dur-short) var(--ease-out)',
-              }} onClick={() => setType('keluar')}
-            >
-              <ArrowUp size={16} />
-              Stok Keluar
-            </button>
-          </div>
+        <div>
+          <label className={labelClass}>Jumlah *</label>
+          <Input type="number" required min={1} value={quantity} onChange={e => setQuantity(Number(e.target.value))} className="h-10 w-full" />
+        </div>
 
-          <div>
-            <label style={labelStyle}>Jumlah *</label>
-            <input type="number" required min={1} value={quantity} onChange={e => setQuantity(Number(e.target.value))} className="input input-sm" />
-          </div>
+        <div>
+          <label className={labelClass}>Catatan</label>
+          <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Keterangan..." className={textareaClass} />
+        </div>
 
-          <div>
-            <label style={labelStyle}>Catatan</label>
-            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Keterangan..." className="textarea" style={{ minHeight: 60 }} />
-          </div>
+        <div className="flex items-center justify-between rounded-lg border border-border bg-secondary/50 p-3">
+          <span className="text-sm text-muted-foreground">Stok setelah</span>
+          <span className={`text-lg font-bold ${type === 'masuk' ? 'text-badge-success' : 'text-destructive'}`}>
+            {type === 'masuk' ? product.quantity + quantity : product.quantity - quantity}
+          </span>
+        </div>
 
-          <div style={{
-            padding: 'var(--space-xs) var(--space-sm)', background: 'var(--color-paper-3)',
-            borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          }}>
-            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-ink-3)' }}>Stok setelah</span>
-            <span style={{
-              fontFamily: 'var(--font-display)', fontSize: 'var(--text-h3)', fontWeight: 600,
-              color: type === 'masuk' ? 'var(--color-success)' : 'var(--color-danger)',
-            }}>
-              {type === 'masuk' ? product.quantity + quantity : product.quantity - quantity}
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', gap: 'var(--space-2xs)', paddingTop: 4 }}>
-            <button type="button" onClick={onClose} className="btn btn-secondary" style={{ flex: 1 }}>Batal</button>
-            <button type="submit" disabled={loading} className={`btn ${type === 'masuk' ? 'btn-success' : 'btn-danger'}`} style={{ flex: 1 }}>
-              {loading ? 'Menyimpan...' : type === 'masuk' ? 'Tambah Stok' : 'Kurangi Stok'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row">
+          <Button type="button" onClick={onClose} variant="secondary" className="h-11 w-full sm:flex-1">Batal</Button>
+          <Button
+            type="submit"
+            disabled={loading}
+            variant={type === 'masuk' ? 'default' : 'destructive'}
+            className="h-11 w-full sm:flex-1"
+          >
+            {loading ? 'Menyimpan...' : type === 'masuk' ? 'Tambah Stok' : 'Kurangi Stok'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   )
 }
 
@@ -604,41 +588,39 @@ function AddCategoryForm({ existingCategories, onClose, onSaved }: {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: 420, padding: 'var(--space-lg)' }} onClick={e => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-          <h2 className="text-h2">Tambah Kategori</h2>
-          <button onClick={onClose} className="btn btn-ghost btn-sm" style={{ width: 32, height: 32, padding: 0 }}><X size={16} /></button>
+    <Modal title="Tambah Kategori" onClose={onClose} maxWidth="md">
+      <p className="mb-4 -mt-1 text-sm text-muted-foreground">Kategori untuk mengelompokkan produk</p>
+
+      {error && (
+        <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 p-3">
+          <p className="text-xs text-destructive">{error}</p>
         </div>
-        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-ink-3)', marginBottom: 'var(--space-lg)' }}>Kategori untuk mengelompokkan produk</p>
+      )}
 
-        {error && <div className="alert alert-danger" style={{ marginBottom: 'var(--space-sm)' }}>{error}</div>}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className={labelClass}>Nama Kategori *</label>
+          <Input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Aksesoris, Adapter, dll" className="h-10 w-full" />
+        </div>
+        <div>
+          <label className={labelClass}>Deskripsi</label>
+          <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={2} placeholder="Keterangan kategori..." className={textareaClass} />
+        </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-          <div>
-            <label style={labelStyle}>Nama Kategori *</label>
-            <input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Aksesoris, Adapter, dll" className="input input-sm" />
-          </div>
-          <div>
-            <label style={labelStyle}>Deskripsi</label>
-            <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={2} placeholder="Keterangan kategori..." className="textarea" style={{ minHeight: 60 }} />
-          </div>
-
-          {existingCategories.length > 0 && (
-            <div style={{ padding: 'var(--space-xs) var(--space-sm)', background: 'var(--color-paper-3)', borderRadius: 'var(--radius-md)' }}>
-              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-ink-3)', marginBottom: 6 }}>Kategori yang sudah ada:</p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {existingCategories.map(c => <span key={c.id} className="badge badge-neutral">{c.name}</span>)}
-              </div>
+        {existingCategories.length > 0 && (
+          <div className="rounded-lg border border-border bg-secondary/50 p-3">
+            <p className="mb-2 text-xs text-muted-foreground">Kategori yang sudah ada:</p>
+            <div className="flex flex-wrap gap-1.5">
+              {existingCategories.map(c => <Badge key={c.id} variant="secondary" className="text-[10px]">{c.name}</Badge>)}
             </div>
-          )}
-
-          <div style={{ display: 'flex', gap: 'var(--space-2xs)', paddingTop: 'var(--space-2xs)' }}>
-            <button type="button" onClick={onClose} className="btn btn-secondary" style={{ flex: 1 }}>Batal</button>
-            <button type="submit" disabled={loading} className="btn btn-primary" style={{ flex: 1 }}>{loading ? 'Menyimpan...' : 'Simpan Kategori'}</button>
           </div>
-        </form>
-      </div>
-    </div>
+        )}
+
+        <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row">
+          <Button type="button" onClick={onClose} variant="secondary" className="h-11 w-full sm:flex-1">Batal</Button>
+          <Button type="submit" disabled={loading} className="h-11 w-full sm:flex-1">{loading ? 'Menyimpan...' : 'Simpan Kategori'}</Button>
+        </div>
+      </form>
+    </Modal>
   )
 }

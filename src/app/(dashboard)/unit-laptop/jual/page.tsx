@@ -5,10 +5,14 @@ import { useRouter } from 'next/navigation'
 import { supabase, Product } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
 import { ArrowLeft } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { RupiahInput } from '@/components/ui/rupiah-input'
 
-const labelStyle: React.CSSProperties = {
-  display: 'block', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-ink)', marginBottom: 6,
-}
+const labelClass = 'mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground'
+const selectClass = 'h-10 w-full rounded-lg border border-input bg-surface px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20'
+const textareaClass = 'w-full resize-none rounded-lg border border-input bg-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20'
 
 export default function JualUnitPage() {
   const router = useRouter()
@@ -56,65 +60,101 @@ export default function JualUnitPage() {
   }
 
   return (
-    <div>
-      <div style={{ marginBottom: 'var(--space-lg)', display: 'flex', alignItems: 'center', gap: 'var(--space-xs)' }}>
-        <button onClick={() => router.back()} className="btn btn-secondary btn-sm" style={{ width: 36, height: 36, padding: 0 }}>
+    <div className="space-y-3">
+      {/* Back + header */}
+      <div className="flex items-center gap-3">
+        <Button onClick={() => router.back()} variant="secondary" className="h-9 w-9 shrink-0 p-0">
           <ArrowLeft size={16} />
-        </button>
+        </Button>
         <div>
-          <h1 className="text-h1" style={{ fontSize: 'var(--text-h2)', marginBottom: 2 }}>Jual Unit Laptop</h1>
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-ink-3)' }}>Catat penjualan unit laptop</p>
+          <h1 className="font-serif text-lg font-bold tracking-tight text-foreground">Jual Unit Laptop</h1>
+          <p className="text-xs text-muted-foreground">Catat penjualan unit laptop</p>
         </div>
       </div>
 
-      <div style={{ maxWidth: 640 }}>
-        <div className="card" style={{ padding: 'var(--space-lg)' }}>
-          {error && <div className="alert alert-danger" style={{ marginBottom: 'var(--space-sm)' }}>{error}</div>}
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-            <div>
-              <label style={labelStyle}>Pilih Unit *</label>
-              <select value={selectedUnit?.id || ''} onChange={e => { const unit = units.find(u => u.id === e.target.value); setSelectedUnit(unit || null); if (unit) setForm({ ...form, sell_price: unit.sell_price || 0 }) }} className="select select-sm">
-                <option value="">Pilih unit...</option>
-                {units.map(u => <option key={u.id} value={u.id}>{u.brand} {u.model} - {u.specs} (Beli: {formatRupiah(u.buy_price)})</option>)}
-              </select>
-            </div>
-            {selectedUnit && (
-              <div style={{ padding: 'var(--space-xs) var(--space-sm)', background: 'var(--color-paper-3)', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2xs)', fontSize: 'var(--text-sm)' }}>
-                  <div><span style={{ color: 'var(--color-ink-3)' }}>Unit: </span><span style={{ fontWeight: 500, color: 'var(--color-ink)' }}>{selectedUnit.brand} {selectedUnit.model}</span></div>
-                  <div><span style={{ color: 'var(--color-ink-3)' }}>Kondisi: </span><span style={{ fontWeight: 500, color: 'var(--color-ink)', textTransform: 'capitalize' }}>{selectedUnit.condition}</span></div>
-                  <div><span style={{ color: 'var(--color-ink-3)' }}>Harga Beli: </span><span style={{ fontWeight: 500, color: 'var(--color-ink)' }}>{formatRupiah(selectedUnit.buy_price)}</span></div>
-                  {selectedUnit.imei_serial && <div><span style={{ color: 'var(--color-ink-3)' }}>SN: </span><span style={{ fontWeight: 500, color: 'var(--color-ink)', fontFamily: 'var(--font-mono)' }}>{selectedUnit.imei_serial}</span></div>}
+      <div className="mx-auto max-w-2xl">
+        <Card className="shadow-card">
+          <CardContent className="p-4 sm:p-6">
+            {error && (
+              <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 p-3">
+                <p className="text-xs text-destructive">{error}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className={labelClass}>Pilih Unit *</label>
+                <select
+                  value={selectedUnit?.id || ''}
+                  onChange={e => {
+                    const unit = units.find(u => u.id === e.target.value)
+                    setSelectedUnit(unit || null)
+                    if (unit) setForm({ ...form, sell_price: unit.sell_price || 0 })
+                  }}
+                  className={selectClass}
+                >
+                  <option value="">Pilih unit...</option>
+                  {units.map(u => <option key={u.id} value={u.id}>{u.brand} {u.model} - {u.specs} (Beli: {formatRupiah(u.buy_price)})</option>)}
+                </select>
+              </div>
+
+              {selectedUnit && (
+                <div className="rounded-lg border border-border bg-secondary/50 p-3">
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div><span className="text-muted-foreground">Unit: </span><span className="font-medium text-foreground">{selectedUnit.brand} {selectedUnit.model}</span></div>
+                    <div><span className="text-muted-foreground">Kondisi: </span><span className="font-medium capitalize text-foreground">{selectedUnit.condition}</span></div>
+                    <div><span className="text-muted-foreground">Harga Beli: </span><span className="font-medium text-foreground">{formatRupiah(selectedUnit.buy_price)}</span></div>
+                    {selectedUnit.imei_serial && <div><span className="text-muted-foreground">SN: </span><span className="font-mono font-medium text-foreground">{selectedUnit.imei_serial}</span></div>}
+                  </div>
+                </div>
+              )}
+
+              <div className="border-t border-border pt-4">
+                <h3 className="mb-3 text-sm font-bold text-foreground">Data Pembeli</h3>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className={labelClass}>Nama Pembeli *</label>
+                    <Input type="text" required value={form.buyer_name} onChange={e => setForm({ ...form, buyer_name: e.target.value })} className="h-10 w-full" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>No. HP</label>
+                    <Input type="text" value={form.buyer_phone} onChange={e => setForm({ ...form, buyer_phone: e.target.value })} className="h-10 w-full" />
+                  </div>
                 </div>
               </div>
-            )}
-            <div style={{ borderTop: '1px solid var(--color-rule)', paddingTop: 'var(--space-sm)' }}>
-              <h3 className="text-h3" style={{ marginBottom: 'var(--space-xs)' }}>Data Pembeli</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-xs)' }}>
-                <div><label style={labelStyle}>Nama Pembeli *</label><input type="text" required value={form.buyer_name} onChange={e => setForm({ ...form, buyer_name: e.target.value })} className="input input-sm" /></div>
-                <div><label style={labelStyle}>No. HP</label><input type="text" value={form.buyer_phone} onChange={e => setForm({ ...form, buyer_phone: e.target.value })} className="input input-sm" /></div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className={labelClass}>Harga Jual (Rp) *</label>
+                  <RupiahInput value={form.sell_price} onChange={v => setForm({ ...form, sell_price: v })} className="h-10 w-full font-mono" />
+                </div>
+                <div>
+                  <label className={labelClass}>Metode Bayar</label>
+                  <select value={form.payment_method} onChange={e => setForm({ ...form, payment_method: e.target.value as 'tunai' | 'transfer' | 'tempo' })} className={selectClass}>
+                    <option value="tunai">Tunai</option><option value="transfer">Transfer</option><option value="tempo">Tempo</option>
+                  </select>
+                </div>
               </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-xs)' }}>
-              <div><label style={labelStyle}>Harga Jual (Rp) *</label><input type="number" required value={form.sell_price || ''} onChange={e => setForm({ ...form, sell_price: Number(e.target.value) })} className="input input-sm" /></div>
-              <div><label style={labelStyle}>Metode Bayar</label><select value={form.payment_method} onChange={e => setForm({ ...form, payment_method: e.target.value as 'tunai' | 'transfer' | 'tempo' })} className="select select-sm"><option value="tunai">Tunai</option><option value="transfer">Transfer</option><option value="tempo">Tempo</option></select></div>
-            </div>
-            {selectedUnit && (
-              <div style={{
-                padding: 'var(--space-xs) var(--space-sm)', background: 'var(--color-accent-soft)',
-                borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              }}>
-                <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-ink-3)' }}>Margin</span>
-                <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-h3)', fontWeight: 600, color: 'var(--color-accent)' }}>{formatRupiah(form.sell_price - selectedUnit.buy_price)}</span>
+
+              {selectedUnit && (
+                <div className="flex items-center justify-between rounded-lg border border-border bg-secondary/50 p-3">
+                  <span className="text-sm text-muted-foreground">Margin</span>
+                  <span className="font-mono text-lg font-bold text-primary">{formatRupiah(form.sell_price - selectedUnit.buy_price)}</span>
+                </div>
+              )}
+
+              <div>
+                <label className={labelClass}>Catatan</label>
+                <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} className={textareaClass} />
               </div>
-            )}
-            <div><label style={labelStyle}>Catatan</label><textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} className="textarea" style={{ minHeight: 60 }} /></div>
-            <div style={{ display: 'flex', gap: 'var(--space-2xs)', paddingTop: 'var(--space-2xs)' }}>
-              <button type="button" onClick={() => router.back()} className="btn btn-secondary" style={{ flex: 1 }}>Batal</button>
-              <button type="submit" disabled={loading || !selectedUnit} className="btn btn-primary" style={{ flex: 1 }}>{loading ? 'Menyimpan...' : 'Simpan Penjualan'}</button>
-            </div>
-          </form>
-        </div>
+
+              <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row">
+                <Button type="button" onClick={() => router.back()} variant="secondary" className="h-11 w-full sm:flex-1">Batal</Button>
+                <Button type="submit" disabled={loading || !selectedUnit} className="h-11 w-full sm:flex-1">{loading ? 'Menyimpan...' : 'Simpan Penjualan'}</Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

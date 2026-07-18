@@ -5,10 +5,14 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
 import { ArrowLeft } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { RupiahInput } from '@/components/ui/rupiah-input'
 
-const labelStyle: React.CSSProperties = {
-  display: 'block', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-ink)', marginBottom: 6,
-}
+const labelClass = 'mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground'
+const selectClass = 'h-10 w-full rounded-lg border border-input bg-surface px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20'
+const textareaClass = 'w-full resize-none rounded-lg border border-input bg-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20'
 
 export default function BeliUnitPage() {
   const router = useRouter()
@@ -51,56 +55,105 @@ export default function BeliUnitPage() {
   }
 
   return (
-    <div>
-      <div style={{ marginBottom: 'var(--space-lg)', display: 'flex', alignItems: 'center', gap: 'var(--space-xs)' }}>
-        <button onClick={() => router.back()} className="btn btn-secondary btn-sm" style={{ width: 36, height: 36, padding: 0 }}>
+    <div className="space-y-3">
+      {/* Back + header */}
+      <div className="flex items-center gap-3">
+        <Button onClick={() => router.back()} variant="secondary" className="h-9 w-9 shrink-0 p-0">
           <ArrowLeft size={16} />
-        </button>
+        </Button>
         <div>
-          <h1 className="text-h1" style={{ fontSize: 'var(--text-h2)', marginBottom: 2 }}>Beli Unit Laptop</h1>
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-ink-3)' }}>Tambah unit laptop baru ke stok</p>
+          <h1 className="font-serif text-lg font-bold tracking-tight text-foreground">Beli Unit Laptop</h1>
+          <p className="text-xs text-muted-foreground">Tambah unit laptop baru ke stok</p>
         </div>
       </div>
 
-      <div style={{ maxWidth: 640 }}>
-        <div className="card" style={{ padding: 'var(--space-lg)' }}>
-          {error && <div className="alert alert-danger" style={{ marginBottom: 'var(--space-sm)' }}>{error}</div>}
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-xs)' }}>
-              <div><label style={labelStyle}>Merk *</label><input type="text" required value={form.brand} onChange={e => setForm({ ...form, brand: e.target.value })} placeholder="ASUS, Lenovo" className="input input-sm" /></div>
-              <div><label style={labelStyle}>Tipe/Model *</label><input type="text" required value={form.model} onChange={e => setForm({ ...form, model: e.target.value })} className="input input-sm" /></div>
-            </div>
-            <div><label style={labelStyle}>Spesifikasi</label><textarea value={form.specs} onChange={e => setForm({ ...form, specs: e.target.value })} placeholder="RAM 8GB, SSD 256GB, i5-1135G7" rows={2} className="textarea" style={{ minHeight: 60 }} /></div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-xs)' }}>
-              <div><label style={labelStyle}>Kondisi *</label><select value={form.condition} onChange={e => setForm({ ...form, condition: e.target.value as 'baru' | 'bekas' | 'refurbished' })} className="select select-sm"><option value="bekas">Bekas</option><option value="baru">Baru</option><option value="refurbished">Refurbished</option></select></div>
-              <div><label style={labelStyle}>IMEI/SN</label><input type="text" value={form.imei_serial} onChange={e => setForm({ ...form, imei_serial: e.target.value })} className="input input-sm" style={{ fontFamily: 'var(--font-mono)' }} /></div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-xs)' }}>
-              <div><label style={labelStyle}>Harga Beli (Rp) *</label><input type="number" required value={form.buy_price || ''} onChange={e => setForm({ ...form, buy_price: Number(e.target.value) })} className="input input-sm" /></div>
-              <div><label style={labelStyle}>Harga Jual (Rp)</label><input type="number" value={form.sell_price || ''} onChange={e => setForm({ ...form, sell_price: Number(e.target.value) })} className="input input-sm" /></div>
-            </div>
-            <div style={{
-              padding: 'var(--space-xs) var(--space-sm)', background: 'var(--color-paper-3)',
-              borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            }}>
-              <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-ink-3)' }}>Potensi Margin</span>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-body)', fontWeight: 600, color: 'var(--color-success)' }}>{formatRupiah(form.sell_price - form.buy_price)}</span>
-            </div>
-            <div style={{ borderTop: '1px solid var(--color-rule)', paddingTop: 'var(--space-sm)' }}>
-              <h3 className="text-h3" style={{ marginBottom: 'var(--space-xs)' }}>Sumber Pembelian</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-xs)' }}>
-                <div><label style={labelStyle}>Tipe</label><select value={form.source_type} onChange={e => setForm({ ...form, source_type: e.target.value as 'supplier' | 'customer' })} className="select select-sm"><option value="supplier">Supplier</option><option value="customer">Customer</option></select></div>
-                <div><label style={labelStyle}>Nama</label><input type="text" value={form.source_name} onChange={e => setForm({ ...form, source_name: e.target.value })} className="input input-sm" /></div>
-                <div><label style={labelStyle}>No. HP</label><input type="text" value={form.source_phone} onChange={e => setForm({ ...form, source_phone: e.target.value })} className="input input-sm" /></div>
+      <div className="mx-auto max-w-2xl">
+        <Card className="shadow-card">
+          <CardContent className="p-4 sm:p-6">
+            {error && (
+              <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 p-3">
+                <p className="text-xs text-destructive">{error}</p>
               </div>
-            </div>
-            <div><label style={labelStyle}>Catatan</label><textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} className="textarea" style={{ minHeight: 60 }} /></div>
-            <div style={{ display: 'flex', gap: 'var(--space-2xs)', paddingTop: 'var(--space-2xs)' }}>
-              <button type="button" onClick={() => router.back()} className="btn btn-secondary" style={{ flex: 1 }}>Batal</button>
-              <button type="submit" disabled={loading} className="btn btn-primary" style={{ flex: 1 }}>{loading ? 'Menyimpan...' : 'Simpan Pembelian'}</button>
-            </div>
-          </form>
-        </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className={labelClass}>Merk *</label>
+                  <Input type="text" required value={form.brand} onChange={e => setForm({ ...form, brand: e.target.value })} placeholder="ASUS, Lenovo" className="h-10 w-full" />
+                </div>
+                <div>
+                  <label className={labelClass}>Tipe/Model *</label>
+                  <Input type="text" required value={form.model} onChange={e => setForm({ ...form, model: e.target.value })} className="h-10 w-full" />
+                </div>
+              </div>
+
+              <div>
+                <label className={labelClass}>Spesifikasi</label>
+                <textarea value={form.specs} onChange={e => setForm({ ...form, specs: e.target.value })} placeholder="RAM 8GB, SSD 256GB, i5-1135G7" rows={2} className={textareaClass} />
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className={labelClass}>Kondisi *</label>
+                  <select value={form.condition} onChange={e => setForm({ ...form, condition: e.target.value as 'baru' | 'bekas' | 'refurbished' })} className={selectClass}>
+                    <option value="bekas">Bekas</option><option value="baru">Baru</option><option value="refurbished">Refurbished</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>IMEI/SN</label>
+                  <Input type="text" value={form.imei_serial} onChange={e => setForm({ ...form, imei_serial: e.target.value })} className="h-10 w-full font-mono" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className={labelClass}>Harga Beli (Rp) *</label>
+                  <RupiahInput value={form.buy_price} onChange={v => setForm({ ...form, buy_price: v })} className="h-10 w-full font-mono" />
+                </div>
+                <div>
+                  <label className={labelClass}>Harga Jual (Rp)</label>
+                  <RupiahInput value={form.sell_price} onChange={v => setForm({ ...form, sell_price: v })} className="h-10 w-full font-mono" />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg border border-border bg-secondary/50 p-3">
+                <span className="text-sm text-muted-foreground">Potensi Margin</span>
+                <span className="font-mono text-base font-bold text-badge-success">{formatRupiah(form.sell_price - form.buy_price)}</span>
+              </div>
+
+              <div className="border-t border-border pt-4">
+                <h3 className="mb-3 text-sm font-bold text-foreground">Sumber Pembelian</h3>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div>
+                    <label className={labelClass}>Tipe</label>
+                    <select value={form.source_type} onChange={e => setForm({ ...form, source_type: e.target.value as 'supplier' | 'customer' })} className={selectClass}>
+                      <option value="supplier">Supplier</option><option value="customer">Customer</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Nama</label>
+                    <Input type="text" value={form.source_name} onChange={e => setForm({ ...form, source_name: e.target.value })} className="h-10 w-full" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>No. HP</label>
+                    <Input type="text" value={form.source_phone} onChange={e => setForm({ ...form, source_phone: e.target.value })} className="h-10 w-full" />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className={labelClass}>Catatan</label>
+                <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} className={textareaClass} />
+              </div>
+
+              <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row">
+                <Button type="button" onClick={() => router.back()} variant="secondary" className="h-11 w-full sm:flex-1">Batal</Button>
+                <Button type="submit" disabled={loading} className="h-11 w-full sm:flex-1">{loading ? 'Menyimpan...' : 'Simpan Pembelian'}</Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
