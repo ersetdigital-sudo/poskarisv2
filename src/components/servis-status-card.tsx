@@ -1,5 +1,7 @@
 'use client'
 
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+
 interface ServisStatusCardProps {
   pending: number
   proses: number
@@ -11,51 +13,45 @@ export function ServisStatusCard({ pending, proses, selesai, loading }: ServisSt
   const total = pending + proses + selesai || 1
 
   return (
-    <div className="card card-hover" style={{ padding: 'var(--space-md)' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--space-xs)' }}>
-        <span className="text-caption">Servis Hari Ini</span>
-      </div>
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">Servis Hari Ini</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="h-8 w-20 animate-pulse rounded bg-muted" />
+        ) : (
+          <div className="mb-3 font-serif text-3xl font-bold tracking-tight text-foreground">
+            {pending + proses + selesai}
+          </div>
+        )}
 
-      {loading ? (
-        <div className="skeleton" style={{ width: 80, height: 26, marginBottom: 'var(--space-xs)' }} />
-      ) : (
-        <div style={{
-          fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600,
-          color: 'var(--color-ink)', letterSpacing: 'var(--tracking-display)', lineHeight: 1,
-          marginBottom: 'var(--space-xs)',
-        }}>
-          {pending + proses + selesai}
+        {/* Progress bar */}
+        <div className="mb-3 flex h-1.5 overflow-hidden rounded-full bg-muted">
+          {selesai > 0 && <div style={{ width: `${(selesai / total) * 100}%` }} className="bg-emerald-500" />}
+          {proses > 0 && <div style={{ width: `${(proses / total) * 100}%` }} className="bg-amber-500" />}
+          {pending > 0 && <div style={{ width: `${(pending / total) * 100}%` }} className="bg-muted-foreground/30" />}
         </div>
-      )}
 
-      {/* Breakdown bar */}
-      <div style={{
-        display: 'flex', height: 6, borderRadius: 3, overflow: 'hidden',
-        background: 'var(--color-paper-3)', marginBottom: 'var(--space-xs)',
-      }}>
-        {selesai > 0 && <div style={{ width: `${(selesai / total) * 100}%`, background: 'var(--color-success)' }} />}
-        {proses > 0 && <div style={{ width: `${(proses / total) * 100}%`, background: 'var(--color-warning)' }} />}
-        {pending > 0 && <div style={{ width: `${(pending / total) * 100}%`, background: 'var(--color-rule-strong)' }} />}
-      </div>
-
-      {/* Legend */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <StatusRow label="Selesai" value={selesai} color="var(--color-success)" loading={loading} />
-        <StatusRow label="Proses" value={proses} color="var(--color-warning)" loading={loading} />
-        <StatusRow label="Pending" value={pending} color="var(--color-rule-strong)" loading={loading} />
-      </div>
-    </div>
+        {/* Legend */}
+        <div className="space-y-1.5">
+          <StatusRow label="Selesai" value={selesai} color="bg-emerald-500" loading={loading} />
+          <StatusRow label="Proses" value={proses} color="bg-amber-500" loading={loading} />
+          <StatusRow label="Pending" value={pending} color="bg-muted-foreground/30" loading={loading} />
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
 function StatusRow({ label, value, color, loading }: { label: string; value: number; color: string; loading: boolean }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <div style={{ width: 8, height: 8, borderRadius: 2, background: color }} />
-        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-ink-3)' }}>{label}</span>
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <div className={`h-2 w-2 rounded-full ${color}`} />
+        <span className="text-xs text-muted-foreground">{label}</span>
       </div>
-      <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--color-ink)' }}>
+      <span className="font-mono text-xs font-semibold text-foreground">
         {loading ? '—' : value}
       </span>
     </div>

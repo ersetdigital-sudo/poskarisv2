@@ -1,26 +1,24 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
-import { Inter } from 'next/font/google'
+import { Geist, Geist_Mono, Instrument_Serif } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/lib/auth-context'
 import './globals.css'
 
-const geist = Geist({
+const geistSans = Geist({
   subsets: ['latin'],
-  variable: '--font-geist',
-  weight: ['400', '500', '600', '700'],
+  variable: '--font-geist-sans',
 })
 
 const geistMono = Geist_Mono({
   subsets: ['latin'],
   variable: '--font-geist-mono',
-  weight: ['400', '500'],
 })
 
-const inter = Inter({
+const instrumentSerif = Instrument_Serif({
   subsets: ['latin'],
-  variable: '--font-inter',
-  weight: ['400', '500', '600'],
+  weight: '400',
+  style: ['normal', 'italic'],
+  variable: '--font-instrument',
 })
 
 export const metadata: Metadata = {
@@ -40,7 +38,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id" suppressHydrationWarning>
-      <body className={`${geist.variable} ${geistMono.variable} ${inter.variable} antialiased`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

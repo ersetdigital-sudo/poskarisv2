@@ -2,11 +2,12 @@
 
 import { Area, AreaChart, ResponsiveContainer } from 'recharts'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
 
 interface StatCardProps {
   label: string
   value: number | string
-  icon: React.ComponentType<{ size?: number; color?: string }>
+  icon: React.ComponentType<{ size?: number; color?: string; className?: string }>
   loading?: boolean
   trendPct?: number
   trendDirection?: 'up' | 'down' | 'flat'
@@ -15,11 +16,11 @@ interface StatCardProps {
   accent?: 'primary' | 'success' | 'warning' | 'neutral'
 }
 
-const accentVars = {
-  primary: 'var(--color-accent)',
-  success: 'var(--color-success)',
-  warning: 'var(--color-warning)',
-  neutral: 'var(--color-ink-3)',
+const accentColors = {
+  primary: { stroke: 'var(--primary)', fill: 'var(--primary)' },
+  success: { stroke: '#10b981', fill: '#10b981' },
+  warning: { stroke: '#f59e0b', fill: '#f59e0b' },
+  neutral: { stroke: 'var(--muted-foreground)', fill: 'var(--muted-foreground)' },
 }
 
 export function StatCard({
@@ -27,59 +28,48 @@ export function StatCard({
   trendPct, trendDirection, trendLabel,
   sparkData, accent = 'neutral',
 }: StatCardProps) {
-  const color = accentVars[accent]
-
+  const colors = accentColors[accent]
   const TrendIcon = trendDirection === 'up' ? TrendingUp : trendDirection === 'down' ? TrendingDown : Minus
-  const trendColor = trendDirection === 'up' ? 'var(--color-success)' : trendDirection === 'down' ? 'var(--color-danger)' : 'var(--color-ink-3)'
+  const trendClass = trendDirection === 'up' ? 'text-emerald-600' : trendDirection === 'down' ? 'text-destructive' : 'text-muted-foreground'
 
   return (
-    <div className="card card-hover" style={{ padding: 'var(--space-md)' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--space-2xs)' }}>
-        <span className="text-caption">{label}</span>
-        <Icon size={15} color="var(--color-ink-3)" />
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 'var(--space-2xs)' }}>
-        <div style={{
-          fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600,
-          color: 'var(--color-ink)', letterSpacing: 'var(--tracking-display)', lineHeight: 1,
-        }}>
-          {loading ? <div className="skeleton" style={{ width: 50, height: 26 }} /> : value}
+    <Card>
+      <CardContent className="p-4">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-xs font-medium text-muted-foreground">{label}</span>
+          <Icon size={15} className="text-muted-foreground" />
         </div>
-
-        {sparkData && sparkData.length > 0 && !loading && (
-          <div style={{ width: 70, height: 32 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={sparkData} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
-                <defs>
-                  <linearGradient id={`spark-${accent}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={color} stopOpacity={0.25} />
-                    <stop offset="100%" stopColor={color} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke={color}
-                  strokeWidth={1.5}
-                  fill={`url(#spark-${accent})`}
-                  isAnimationActive={false}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+        <div className="flex items-end justify-between gap-2">
+          <div className="font-serif text-2xl font-bold tracking-tight text-foreground">
+            {loading ? <div className="h-7 w-12 animate-pulse rounded bg-muted" /> : value}
+          </div>
+          {sparkData && sparkData.length > 0 && !loading && (
+            <div className="h-8 w-16">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={sparkData} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
+                  <defs>
+                    <linearGradient id={`spark-${accent}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={colors.fill} stopOpacity={0.25} />
+                      <stop offset="100%" stopColor={colors.fill} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <Area type="monotone" dataKey="value" stroke={colors.stroke} strokeWidth={1.5}
+                    fill={`url(#spark-${accent})`} isAnimationActive={false} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+        {trendLabel && !loading && (
+          <div className="mt-2 flex items-center gap-1">
+            <TrendIcon size={12} className={trendClass} />
+            <span className={`text-xs font-medium ${trendClass}`}>
+              {trendPct !== undefined && trendPct > 0 ? `${trendPct}%` : ''}
+            </span>
+            <span className="text-xs text-muted-foreground">{trendLabel}</span>
           </div>
         )}
-      </div>
-
-      {trendLabel && !loading && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 'var(--space-2xs)' }}>
-          <TrendIcon size={12} color={trendColor} />
-          <span style={{ fontSize: 'var(--text-xs)', fontWeight: 500, color: trendColor }}>
-            {trendPct !== undefined && trendPct > 0 ? `${trendPct}%` : ''}
-          </span>
-          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-ink-3)' }}>{trendLabel}</span>
-        </div>
-      )}
-    </div>
+      </CardContent>
+    </Card>
   )
 }

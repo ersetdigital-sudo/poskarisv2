@@ -2,6 +2,7 @@
 
 import { Wrench, ShoppingCart, Package, AlertTriangle, CheckCircle } from 'lucide-react'
 import { timeAgo } from '@/lib/format'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export interface Activity {
   id: string
@@ -12,70 +13,66 @@ export interface Activity {
 }
 
 const iconMap = {
-  servis: { icon: Wrench, color: 'var(--color-accent)' },
-  sale: { icon: ShoppingCart, color: 'var(--color-success)' },
-  stock_in: { icon: Package, color: 'var(--color-success)' },
-  stock_out: { icon: Package, color: 'var(--color-danger)' },
-  alert: { icon: AlertTriangle, color: 'var(--color-warning)' },
-  complete: { icon: CheckCircle, color: 'var(--color-success)' },
+  servis: { icon: Wrench, color: 'text-primary' },
+  sale: { icon: ShoppingCart, color: 'text-emerald-600' },
+  stock_in: { icon: Package, color: 'text-emerald-600' },
+  stock_out: { icon: Package, color: 'text-destructive' },
+  alert: { icon: AlertTriangle, color: 'text-amber-500' },
+  complete: { icon: CheckCircle, color: 'text-emerald-600' },
 }
 
 export function ActivityFeed({ activities, loading }: { activities: Activity[]; loading: boolean }) {
   return (
-    <div className="card" style={{ padding: 'var(--space-lg)', height: '100%' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-sm)' }}>
-        <h3 className="text-h3">Aktivitas Terbaru</h3>
-        <span style={{ fontSize: 11, color: 'var(--color-ink-3)' }}>{activities.length} aktivitas</span>
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {loading ? (
-          [1, 2, 3, 4, 5].map(i => (
-            <div key={i} style={{ display: 'flex', gap: 'var(--space-xs)', padding: 'var(--space-xs) 0' }}>
-              <div className="skeleton" style={{ width: 28, height: 28, borderRadius: 'var(--radius-sm)', flexShrink: 0 }} />
-              <div style={{ flex: 1 }}>
-                <div className="skeleton" style={{ width: '70%', height: 14, marginBottom: 4 }} />
-                <div className="skeleton" style={{ width: '40%', height: 11 }} />
+    <Card className="h-full">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-medium">Aktivitas Terbaru</CardTitle>
+          <span className="text-xs text-muted-foreground">{activities.length} aktivitas</span>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="space-y-1">
+          {loading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex gap-3 py-2.5">
+                <div className="h-7 w-7 shrink-0 animate-pulse rounded-md bg-muted" />
+                <div className="flex-1">
+                  <div className="mb-1 h-3.5 w-3/4 animate-pulse rounded bg-muted" />
+                  <div className="h-3 w-1/2 animate-pulse rounded bg-muted" />
+                </div>
               </div>
+            ))
+          ) : activities.length === 0 ? (
+            <div className="py-8 text-center">
+              <p className="text-sm text-muted-foreground">Belum ada aktivitas</p>
             </div>
-          ))
-        ) : activities.length === 0 ? (
-          <div style={{ padding: 'var(--space-xl) 0', textAlign: 'center' }}>
-            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-ink-3)' }}>Belum ada aktivitas</p>
-          </div>
-        ) : (
-          activities.slice(0, 5).map((act, i) => {
-            const config = iconMap[act.type] || iconMap.servis
-            const Icon = config.icon
-            return (
-              <div key={act.id} style={{ display: 'flex', gap: 'var(--space-xs)', padding: 'var(--space-xs) 0', position: 'relative' }}>
-                {i < Math.min(activities.length, 5) - 1 && (
-                  <div style={{
-                    position: 'absolute', left: 14, top: 38, bottom: -10,
-                    width: 1, background: 'var(--color-rule)',
-                  }} />
-                )}
-                <div style={{
-                  width: 28, height: 28, borderRadius: 'var(--radius-sm)',
-                  background: 'var(--color-paper-3)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, zIndex: 1,
-                }}>
-                  <Icon size={14} color={config.color} />
+          ) : (
+            activities.slice(0, 6).map((act, i) => {
+              const config = iconMap[act.type] || iconMap.servis
+              const Icon = config.icon
+              return (
+                <div key={act.id} className="relative flex gap-3 py-2.5">
+                  {i < Math.min(activities.length, 6) - 1 && (
+                    <div className="absolute left-[13px] top-[38px] -bottom-2.5 w-px bg-border" />
+                  )}
+                  <div className="relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted">
+                    <Icon size={14} className={config.color} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium leading-tight text-foreground">
+                      {act.title}
+                    </p>
+                    <p className="mt-0.5 text-xs leading-tight text-muted-foreground">
+                      {act.description}
+                    </p>
+                    <p className="mt-1 text-[11px] text-muted-foreground/70">{timeAgo(act.timestamp)}</p>
+                  </div>
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-ink)', marginBottom: 1, lineHeight: 1.3 }}>
-                    {act.title}
-                  </p>
-                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-ink-3)', marginBottom: 2, lineHeight: 1.3 }}>
-                    {act.description}
-                  </p>
-                  <p style={{ fontSize: 11, color: 'var(--color-ink-3)' }}>{timeAgo(act.timestamp)}</p>
-                </div>
-              </div>
-            )
-          })
-        )}
-      </div>
-    </div>
+              )
+            })
+          )}
+        </div>
+      </CardContent>
+    </Card>
   )
 }

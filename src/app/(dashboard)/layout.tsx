@@ -8,6 +8,8 @@ import {
   BarChart3, Users, LogOut, Menu, X,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 const getNavItems = (role: string) => {
   const base = [
@@ -36,22 +38,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (loading) {
     return (
-      <div style={{
-        display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center',
-        background: 'var(--color-paper)',
-      }}>
-        <div className="spinner" />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-muted border-t-primary" />
       </div>
     )
   }
   if (!user) return null
   if (!profile) {
     return (
-      <div style={{
-        display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center',
-        background: 'var(--color-paper)',
-      }}>
-        <p style={{ color: 'var(--color-ink-3)' }}>Memuat profil...</p>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <p className="text-muted-foreground">Memuat profil...</p>
       </div>
     )
   }
@@ -60,162 +56,116 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const currentPage = navItems.find(n => n.href === pathname || (n.href !== '/' && pathname.startsWith(n.href)))
 
   return (
-    <div style={{ display: 'flex', height: '100vh', background: 'var(--color-paper)' }}>
+    <div className="flex h-screen bg-background">
       {/* Mobile overlay */}
       <div className={`sidebar-overlay ${open ? 'show' : ''}`} onClick={() => setOpen(false)} />
 
-      {/* Sidebar — dark */}
-      <aside className={`sidebar-panel ${open ? 'open' : ''}`}
+      {/* Sidebar */}
+      <aside
+        className={`sidebar-panel flex w-64 flex-col border-r`}
         style={{
-          width: 256,
-          background: 'var(--color-sidebar)',
-          borderRight: '1px solid oklch(25% 0.02 275)',
-          flexShrink: 0,
-          display: 'flex',
-          flexDirection: 'column',
+          background: 'var(--sidebar)',
+          borderColor: 'var(--sidebar-border)',
         }}
       >
         {/* Logo */}
-        <div style={{
-          height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0 var(--space-lg)', borderBottom: '1px solid oklch(25% 0.02 275)', flexShrink: 0,
-        }}>
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 'var(--radius-md)',
-              background: 'var(--color-accent)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 0 20px oklch(54% 0.24 275 / 0.3)',
-            }}>
+        <div
+          className="flex h-16 items-center justify-between px-5 shrink-0"
+          style={{ borderBottom: '1px solid var(--sidebar-border)' }}
+        >
+          <Link href="/" className="flex items-center gap-3 no-underline">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shadow-lg shadow-primary/25">
               <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-                <rect x="3" y="2" width="14" height="16" rx="2" stroke="var(--color-accent-ink)" strokeWidth="1.5"/>
-                <line x1="6.5" y1="6" x2="13.5" y2="6" stroke="var(--color-accent-ink)" strokeWidth="1.2" strokeLinecap="round"/>
-                <line x1="6.5" y1="9.5" x2="13.5" y2="9.5" stroke="var(--color-accent-ink)" strokeWidth="1.2" strokeLinecap="round"/>
-                <line x1="6.5" y1="13" x2="10" y2="13" stroke="var(--color-accent-ink)" strokeWidth="1.2" strokeLinecap="round"/>
+                <rect x="3" y="2" width="14" height="16" rx="2" stroke="var(--primary-foreground)" strokeWidth="1.5"/>
+                <line x1="6.5" y1="6" x2="13.5" y2="6" stroke="var(--primary-foreground)" strokeWidth="1.2" strokeLinecap="round"/>
+                <line x1="6.5" y1="9.5" x2="13.5" y2="9.5" stroke="var(--primary-foreground)" strokeWidth="1.2" strokeLinecap="round"/>
+                <line x1="6.5" y1="13" x2="10" y2="13" stroke="var(--primary-foreground)" strokeWidth="1.2" strokeLinecap="round"/>
               </svg>
             </div>
-            <span style={{
-              fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700,
-              color: '#fff', letterSpacing: 'var(--tracking-tight)',
-            }}>
+            <span className="font-serif text-lg font-bold tracking-tight text-white">
               Kasir POS
             </span>
           </Link>
-          <button onClick={() => setOpen(false)} aria-label="Tutup menu" className="mobile-only"
-            style={{
-              width: 28, height: 28, background: 'transparent', border: 'none',
-              cursor: 'pointer', color: 'var(--color-sidebar-text)', padding: 0,
-            }}>
+          <button onClick={() => setOpen(false)} aria-label="Tutup menu"
+            className="mobile-only h-7 w-7 border-none bg-transparent p-0 cursor-pointer"
+            style={{ color: 'var(--sidebar-foreground)' }}>
             <X size={18} />
           </button>
         </div>
 
         {/* Nav */}
-        <nav style={{ flex: 1, padding: 'var(--space-sm) var(--space-xs)', overflowY: 'auto' }}>
+        <nav className="flex-1 overflow-y-auto p-3">
           {navItems.map((item) => {
             const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
             return (
-              <Link key={item.href} href={item.href} onClick={() => setOpen(false)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '10px 14px', marginBottom: 2,
-                  borderRadius: 'var(--radius-md)', textDecoration: 'none',
-                  background: isActive ? 'var(--color-sidebar-active)' : 'transparent',
-                  transition: 'background var(--dur-short) var(--ease-out)',
-                  outline: 'none',
-                }}
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setOpen(false)}
+                className={`mb-0.5 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm no-underline transition-colors ${
+                  isActive
+                    ? 'bg-white/10 font-semibold text-white'
+                    : 'font-medium hover:bg-white/5'
+                }`}
+                style={{ color: isActive ? '#fff' : 'var(--sidebar-foreground)' }}
               >
-                <item.icon size={18} style={{
-                  color: isActive ? '#fff' : 'var(--color-sidebar-text)',
-                  flexShrink: 0, strokeWidth: isActive ? 2 : 1.5,
-                }} />
-                <span style={{
-                  fontSize: 'var(--text-body)', fontWeight: isActive ? 600 : 400,
-                  color: isActive ? '#fff' : 'var(--color-sidebar-text)',
-                }}>
-                  {item.label}
-                </span>
+                <item.icon size={18} strokeWidth={isActive ? 2 : 1.5} />
+                {item.label}
               </Link>
             )
           })}
         </nav>
 
         {/* User footer */}
-        <div style={{ padding: 'var(--space-sm)', borderTop: '1px solid oklch(25% 0.02 275)', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, padding: '4px 8px' }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 'var(--radius-md)',
-              background: 'var(--color-sidebar-2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            }}>
-              <span style={{
-                fontFamily: 'var(--font-display)', fontSize: 'var(--text-sm)', fontWeight: 700,
-                color: 'var(--color-accent)',
-              }}>
+        <div className="shrink-0 p-3" style={{ borderTop: '1px solid var(--sidebar-border)' }}>
+          <div className="mb-2 flex items-center gap-3 px-2">
+            <div
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+              style={{ background: 'var(--sidebar-accent)' }}
+            >
+              <span className="font-serif text-sm font-bold text-primary">
                 {profile.name.charAt(0).toUpperCase()}
               </span>
             </div>
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <p style={{
-                fontSize: 'var(--text-sm)', fontWeight: 500, color: '#fff',
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>{profile.name}</p>
-              <p style={{ fontSize: 11, color: 'var(--color-sidebar-text)', textTransform: 'capitalize' }}>{profile.role}</p>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-white">{profile.name}</p>
+              <p className="text-xs capitalize" style={{ color: 'var(--sidebar-foreground)' }}>{profile.role}</p>
             </div>
           </div>
-          <button onClick={() => { signOut(); router.push('/login') }} className="btn btn-ghost btn-sm"
-            style={{
-              width: '100%', justifyContent: 'flex-start',
-              background: 'transparent', color: 'var(--color-sidebar-text)',
-              border: 'none',
-            }}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start border-none"
+            style={{ color: 'var(--sidebar-foreground)', background: 'transparent' }}
+            onClick={() => { signOut(); router.push('/login') }}
+          >
             <LogOut size={14} />
             <span>Keluar</span>
-          </button>
+          </Button>
         </div>
       </aside>
 
       {/* Main */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Topbar */}
-        <header style={{
-          height: 60, background: 'var(--color-paper-2)', borderBottom: '1px solid var(--color-rule)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0 var(--space-xl)', flexShrink: 0,
-        }}>
-          <button onClick={() => setOpen(true)} aria-label="Buka menu" className="mobile-only"
-            style={{
-              width: 32, height: 32, background: 'transparent', border: 'none',
-              cursor: 'pointer', color: 'var(--color-ink-3)', padding: 0,
-            }}>
+        <header className="flex h-14 shrink-0 items-center justify-between border-b bg-card px-6">
+          <button onClick={() => setOpen(true)} aria-label="Buka menu" className="mobile-only h-8 w-8 border-none bg-transparent p-0 cursor-pointer text-muted-foreground">
             <Menu size={20} />
           </button>
 
-          <div className="desktop-only" style={{ alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 'var(--text-body)', color: 'var(--color-ink-3)' }}>Kasir POS</span>
-            <span style={{ color: 'var(--color-rule-strong)', fontSize: 'var(--text-xs)' }}>/</span>
-            <span style={{
-              fontFamily: 'var(--font-display)', fontSize: 'var(--text-body)',
-              color: 'var(--color-ink)', fontWeight: 600,
-            }}>{currentPage?.label ?? 'Dashboard'}</span>
+          <div className="desktop-only items-center gap-2">
+            <span className="text-sm text-muted-foreground">Kasir POS</span>
+            <span className="text-xs text-muted-foreground/50">/</span>
+            <span className="font-serif text-sm font-semibold text-foreground">{currentPage?.label ?? 'Dashboard'}</span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ textAlign: 'right' }} className="sm-block">
-              <p style={{
-                fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-ink)', lineHeight: 1.2,
-              }}>{profile.name}</p>
-              <p style={{ fontSize: 11, color: 'var(--color-ink-3)', textTransform: 'capitalize' }}>{profile.role}</p>
+          <div className="flex items-center gap-3">
+            <div className="text-right sm:block" style={{ display: 'none' }}>
+              <p className="text-sm font-semibold text-foreground leading-tight">{profile.name}</p>
+              <p className="text-xs capitalize text-muted-foreground">{profile.role}</p>
             </div>
-            <div style={{
-              width: 36, height: 36, borderRadius: 'var(--radius-md)',
-              background: 'var(--color-accent-soft)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <span style={{
-                fontFamily: 'var(--font-display)', fontSize: 'var(--text-sm)', fontWeight: 700,
-                color: 'var(--color-accent)',
-              }}>
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+              <span className="font-serif text-sm font-bold text-primary">
                 {profile.name.charAt(0).toUpperCase()}
               </span>
             </div>
@@ -223,12 +173,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Page content */}
-        <main style={{
-          flex: 1, overflowY: 'auto',
-          padding: 'var(--space-xl) var(--space-2xl)',
-          background: 'var(--color-paper)',
-        }}>
-          <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+        <main className="flex-1 overflow-y-auto bg-background p-6 lg:p-8">
+          <div className="mx-auto max-w-6xl">
             {children}
           </div>
         </main>
