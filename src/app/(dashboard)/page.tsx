@@ -1,242 +1,262 @@
 'use client'
 
 import { useAuth } from '@/lib/auth-context'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Wrench, Laptop, Package, TrendingUp, ArrowUpRight, DollarSign, ShoppingCart } from 'lucide-react'
-import Link from 'next/link'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { ServisWeeklyChart, OmzetWeeklyChart } from '@/components/charts'
-import { ActivityFeed, type Activity } from '@/components/activity-feed'
-import { AttentionCard, type AlertItem } from '@/components/attention-card'
-import { ServisStatusCard } from '@/components/servis-status-card'
-import { formatRupiahFull, getLast7Days } from '@/lib/format'
+import { Wrench, TrendingUp, DollarSign, ShoppingCart, Package, Receipt } from 'lucide-react'
+
+import PageHeader from '@/components/dashboard/PageHeader'
+import MonthPicker from '@/components/dashboard/MonthPicker'
+import StatCard from '@/components/dashboard/StatCard'
+import RevenueChart from '@/components/dashboard/RevenueChart'
+import CategoryChart from '@/components/dashboard/CategoryChart'
+import TopProducts from '@/components/dashboard/TopProducts'
+import TopCustomers from '@/components/dashboard/TopCustomers'
+import RecentTransactions from '@/components/dashboard/RecentTransactions'
+
+const MONTHS = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+]
 
 interface DashboardStats {
-  totalServis: number; servisHariIni: number; unitReady: number;
-  sparepartStok: number; omzetHariIni: number; marginUnit: number;
+  totalServis: number
+  totalOmzet: number
+  totalProfit: number
+  totalBiaya: number
+  unitTerjual: number
+  sparepartDigunakan: number
 }
 
 export default function DashboardPage() {
   const { profile, isAdmin } = useAuth()
-  const [stats, setStats] = useState<DashboardStats>({ totalServis: 0, servisHariIni: 0, unitReady: 0, sparepartStok: 0, omzetHariIni: 0, marginUnit: 0 })
+  const params = useSearchParams()
+  const month = params?.get('m') ?? 'all'
+  const year = params?.get('y') ?? String(new Date().getFullYear())
+  
+  const [stats, setStats] = useState<DashboardStats>({ 
+    totalServis: 0, totalOmzet: 0, totalProfit: 0, 
+    totalBiaya: 0, unitTerjual: 0, sparepartDigunakan: 0 
+  })
   const [loading, setLoading] = useState(true)
-  const [servisChart, setServisChart] = useState<{ day: string; masuk: number; selesai: number }[]>([])
-  const [omzetChart, setOmzetChart] = useState<{ day: string; omzet: number }[]>([])
-  const [stockDist, setStockDist] = useState<{ name: string; value: number; color: string }[]>([])
-  const [activities, setActivities] = useState<Activity[]>([])
-  const [alerts, setAlerts] = useState<AlertItem[]>([])
-  const [servisBreakdown, setServisBreakdown] = useState({ pending: 0, proses: 0, selesai: 0 })
+  const [monthlyData, setMonthlyData] = useState<any[]>([])
+  const [categoryData, setCategoryData] = useState<any[]>([])
+  const [marketplaceData, setMarketplaceData] = useState<any[]>([])
+  const [topProducts, setTopProducts] = useState<any[]>([])
+  const [topCustomers, setTopCustomers] = useState<any[]>([])
+  const [recentTransactions, setRecentTransactions] = useState<any[]>([])
 
-  useEffect(() => { fetchAll() }, [])
+  useEffect(() => { fetchAll() }, [month, year])
 
   async function fetchAll() {
     try {
-      const today = new Date(); today.setHours(0, 0, 0, 0)
-      const todayStr = today.toISOString()
-      const days = getLast7Days()
-
-      const [sTotal, sToday, sWeek, uReady, products, rServices, rSales, rStock, sTodayStatus, oServis, oSales] = await Promise.all([
-        supabase.from('services').select('id', { count: 'exact' }),
-        supabase.from('services').select('id', { count: 'exact' }).gte('created_at', todayStr),
-        supabase.from('services').select('created_at, status').gte('created_at', days[0].date.toISOString()),
-        supabase.from('products').select('id', { count: 'exact' }).eq('status', 'ready'),
-        supabase.from('products').select('*, categories(name)').order('created_at', { ascending: false }),
-        supabase.from('services').select('*').order('created_at', { ascending: false }).limit(5),
-        supabase.from('sales').select('*').order('created_at', { ascending: false }).limit(5),
-        supabase.from('stock_movements').select('*, products(name)').order('created_at', { ascending: false }).limit(5),
-        supabase.from('services').select('status').gte('created_at', todayStr),
-        supabase.from('services').select('total_fee, created_at, status').eq('status', 'selesai').gte('created_at', days[0].date.toISOString()),
-        supabase.from('sales').select('sell_price, margin, date').eq('status', 'completed').gte('date', days[0].date.toISOString()),
+      const yearNum = Number(year)
+      const monthNum = month === 'all' ? null : Number(month)
+      
+      // Fetch services & sales for the period
+      let servicesQuery = supabase.from('services').select('*')
+      let salesQuery = supabase.from('sales').select('*')
+      
+      // Filter by year
+      servicesQuery = servicesQuery.gte('created_at', `${yearNum}-01-01`).lt('created_at', `${yearNum + 1}-01-01`)
+      salesQuery = salesQuery.gte('created_at', `${yearNum}-01-01`).lt('created_at', `${yearNum + 1}-01-01`)
+      
+      // Filter by month if not 'all'
+      if (monthNum !== null) {
+        const monthStart = new Date(yearNum, monthNum, 1).toISOString()
+        const monthEnd = new Date(yearNum, monthNum + 1, 1).toISOString()
+        servicesQuery = servicesQuery.gte('created_at', monthStart).lt('created_at', monthEnd)
+        salesQuery = salesQuery.gte('created_at', monthStart).lt('created_at', monthEnd)
+      }
+      
+      const [servicesRes, salesRes, productsRes, stockRes] = await Promise.all([
+        servicesQuery,
+        salesQuery,
+        supabase.from('products').select('*, categories(name)'),
+        supabase.from('stock_movements').select('*, products(name)').order('created_at', { ascending: false }).limit(50)
       ])
-
-      const prods = products.data || []
-
-      // Stats
-      setStats({
-        totalServis: sTotal.count || 0,
-        servisHariIni: sToday.count || 0,
-        unitReady: uReady.count || 0,
-        sparepartStok: prods.filter(p => p.categories?.name === 'Sparepart').reduce((s, p) => s + p.quantity, 0),
-        omzetHariIni: (oServis.data || []).filter(s => s.created_at.slice(0, 10) === today.toISOString().slice(0, 10)).reduce((s, r) => s + r.total_fee, 0),
-        marginUnit: (oSales.data || []).filter(s => s.date.slice(0, 10) === today.toISOString().slice(0, 10)).reduce((s, r) => s + (r.margin || r.sell_price), 0),
+      
+      const services = servicesRes.data || []
+      const sales = salesRes.data || []
+      const products = productsRes.data || []
+      
+      // Calculate stats
+      const totalServis = services.length
+      const totalOmzet = services.reduce((sum, s) => sum + (s.total_fee || 0), 0) + 
+                         sales.reduce((sum, s) => sum + (s.sell_price || 0), 0)
+      const totalProfit = services.reduce((sum, s) => sum + (s.total_fee - (s.sparepart_cost || 0)), 0) +
+                         sales.reduce((sum, s) => sum + ((s.sell_price || 0) - (s.buy_price || 0)), 0)
+      const totalBiaya = services.reduce((sum, s) => sum + (s.sparepart_cost || 0), 0)
+      const unitTerjual = sales.filter(s => s.status === 'completed').length
+      const sparepartDigunakan = services.reduce((sum, s) => sum + (s.sparepart_used?.length || 0), 0)
+      
+      setStats({ totalServis, totalOmzet, totalProfit, totalBiaya, unitTerjual, sparepartDigunakan })
+      
+      // Monthly chart data (all 12 months for the year)
+      const monthly = MONTHS.map((name, idx) => {
+        const monthServices = services.filter(s => new Date(s.created_at).getMonth() === idx)
+        const monthSales = sales.filter(s => new Date(s.created_at).getMonth() === idx)
+        const omzet = monthServices.reduce((sum, s) => sum + (s.total_fee || 0), 0) +
+                      monthSales.reduce((sum, s) => sum + (s.sell_price || 0), 0)
+        const profit = monthServices.reduce((sum, s) => sum + (s.total_fee - (s.sparepart_cost || 0)), 0) +
+                       monthSales.reduce((sum, s) => sum + ((s.sell_price || 0) - (s.buy_price || 0)), 0)
+        return { name: name.slice(0, 3), omzet, profit }
       })
-
-      // Servis chart
-      const servisData = sWeek.data || []
-      setServisChart(days.map(d => ({
-        day: d.label,
-        masuk: servisData.filter(s => s.created_at.slice(0, 10) === d.key).length,
-        selesai: servisData.filter(s => s.created_at.slice(0, 10) === d.key && s.status === 'selesai').length,
-      })))
-
-      // Omzet chart
-      const sO = oServis.data || []
-      const oS = oSales.data || []
-      setOmzetChart(days.map(d => ({
-        day: d.label,
-        omzet: sO.filter(s => s.created_at.slice(0, 10) === d.key).reduce((s, r) => s + r.total_fee, 0)
-               + oS.filter(s => s.date.slice(0, 10) === d.key).reduce((s, r) => s + (r.margin || r.sell_price), 0),
-      })))
-
-      // Stock dist
-      setStockDist([
-        { name: 'Unit Ready', value: prods.filter(p => p.status === 'ready' && p.categories?.name === 'Unit Laptop').length, color: 'var(--primary)' },
-        { name: 'Terjual', value: prods.filter(p => p.status === 'sold').length, color: 'var(--muted-foreground)' },
-        { name: 'Sparepart', value: prods.filter(p => p.categories?.name === 'Sparepart').reduce((s, p) => s + p.quantity, 0), color: 'var(--success)' },
+      setMonthlyData(monthly)
+      
+      // Category breakdown (Servis vs Unit)
+      const servisProfit = services.reduce((sum, s) => sum + (s.total_fee - (s.sparepart_cost || 0)), 0)
+      const unitProfit = sales.reduce((sum, s) => sum + ((s.sell_price || 0) - (s.buy_price || 0)), 0)
+      setCategoryData([
+        { name: 'Servis', value: Math.round(servisProfit), pct: Math.round((servisProfit / totalProfit) * 100) || 0 },
+        { name: 'Unit Laptop', value: Math.round(unitProfit), pct: Math.round((unitProfit / totalProfit) * 100) || 0 }
       ])
-
-      // Servis breakdown
-      const todayS = sTodayStatus.data || []
-      setServisBreakdown({
-        pending: todayS.filter(s => s.status === 'proses').length,
-        proses: todayS.filter(s => s.status === 'proses').length,
-        selesai: todayS.filter(s => s.status === 'selesai').length,
+      
+      // Marketplace placeholder (can be customized based on your data)
+      setMarketplaceData([
+        { name: 'Walk-in', value: Math.round(totalProfit * 0.6), pct: 60 },
+        { name: 'Online', value: Math.round(totalProfit * 0.4), pct: 40 }
+      ])
+      
+      // Top products by quantity
+      const productMap: Record<string, { qty: number; revenue: number; category: string }> = {}
+      sales.forEach(s => {
+        const prodName = s.product_id || 'Unknown'
+        if (!productMap[prodName]) productMap[prodName] = { qty: 0, revenue: 0, category: 'Unit' }
+        productMap[prodName].qty += 1
+        productMap[prodName].revenue += s.sell_price || 0
       })
-
-      // Activities
-      const recentS = (rServices.data || []).map(s => ({
-        id: s.id, type: 'servis' as const,
-        title: `Servis ${s.nota_number} — ${s.customer_name}`,
-        description: `${s.device_type} · ${formatRupiahFull(s.total_fee)}`,
-        timestamp: s.created_at,
-      }))
-      const recentSl = (rSales.data || []).map(s => ({
-        id: s.id, type: 'sale' as const,
-        title: `Penjualan ke ${s.buyer_name}`,
-        description: formatRupiahFull(s.sell_price),
-        timestamp: s.created_at,
-      }))
-      const recentSt = (rStock.data || []).map(m => ({
-        id: m.id, type: m.type === 'masuk' ? 'stock_in' as const : 'stock_out' as const,
-        title: `Stok ${m.type === 'masuk' ? 'masuk' : 'keluar'}: ${m.products?.name || ''}`,
-        description: `${m.type === 'masuk' ? '+' : '-'}${m.quantity} · ${m.notes || ''}`,
-        timestamp: m.created_at,
-      }))
-      setActivities([...recentS, ...recentSl, ...recentSt].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 8))
-
-      // Alerts
-      setAlerts(prods.filter(p => p.quantity <= p.min_quantity && p.min_quantity > 0).map(p => ({
-        id: p.id, type: 'low_stock' as const,
-        title: `${p.name} stok menipis`,
-        description: `Sisa ${p.quantity} unit (min: ${p.min_quantity})`,
-      })))
-    } catch (e) { console.error(e) } finally { setLoading(false) }
+      const topProds = Object.entries(productMap)
+        .map(([name, data]) => ({ name, ...data }))
+        .sort((a, b) => b.qty - a.qty)
+      setTopProducts(topProds)
+      
+      // Top customers
+      const customerMap: Record<string, { total: number; count: number }> = {}
+      services.forEach(s => {
+        const name = s.customer_name || 'Unknown'
+        if (!customerMap[name]) customerMap[name] = { total: 0, count: 0 }
+        customerMap[name].total += s.total_fee || 0
+        customerMap[name].count += 1
+      })
+      sales.forEach(s => {
+        const name = s.buyer_name || 'Unknown'
+        if (!customerMap[name]) customerMap[name] = { total: 0, count: 0 }
+        customerMap[name].total += s.sell_price || 0
+        customerMap[name].count += 1
+      })
+      const topCust = Object.entries(customerMap)
+        .map(([name, data]) => ({ name, ...data }))
+        .sort((a, b) => b.total - a.total)
+      setTopCustomers(topCust)
+      
+      // Recent transactions
+      const recent = [
+        ...services.map(s => ({
+          id: s.id,
+          type: 'servis' as const,
+          title: `Servis ${s.nota_number}`,
+          subtitle: `${s.customer_name} · ${s.device_type}`,
+          amount: s.total_fee || 0,
+          date: s.created_at,
+          status: s.status
+        })),
+        ...sales.map(s => ({
+          id: s.id,
+          type: 'sale' as const,
+          title: `Penjualan Unit`,
+          subtitle: s.buyer_name || 'Customer',
+          amount: s.sell_price || 0,
+          date: s.created_at,
+          status: s.status
+        }))
+      ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      setRecentTransactions(recent)
+      
+    } catch (e) { 
+      console.error(e) 
+    } finally { 
+      setLoading(false) 
+    }
   }
 
-  const today = new Date()
-  const dateStr = today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  const formatRupiah = (value: number) => {
+    return `Rp ${value.toLocaleString('id-ID')}`
+  }
+
+  const periodLabel = month === 'all' 
+    ? `Tahun ${year}` 
+    : `${MONTHS[Number(month)]} ${year}`
 
   return (
-    <div className="space-y-6">
-      {/* Hero greeting - Uber Design */}
-      <div className="relative overflow-hidden rounded-lg bg-surface-dark p-8 lg:p-10 shadow-card">
-        <div className="relative z-10">
-          <h1 className="text-3xl font-bold tracking-tight text-on-dark lg:text-4xl" style={{ fontWeight: 700 }}>
-            {profile?.name ? `Halo, ${profile.name.split(' ')[0]} 👋` : 'Dashboard'}
-          </h1>
-          <p className="mt-2 text-sm text-on-dark-mute">
-            {dateStr} · {isAdmin ? 'Admin' : 'Karyawan'}
-          </p>
-        </div>
+    <div>
+      <PageHeader
+        title="Dashboard POS"
+        subtitle={`Ringkasan bisnis toko laptop — ${periodLabel}`}
+      >
+        <MonthPicker month={month} year={year} />
+      </PageHeader>
+
+      {/* KPI Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+        <StatCard
+          title="Total Servis"
+          value={loading ? '...' : String(stats.totalServis)}
+          sub={`${stats.sparepartDigunakan} sparepart digunakan`}
+          icon={Wrench}
+          color="primary"
+        />
+        <StatCard
+          title="Total Omzet"
+          value={loading ? '...' : formatRupiah(stats.totalOmzet)}
+          sub={`${stats.unitTerjual} unit terjual`}
+          icon={DollarSign}
+          color="emerald"
+        />
+        <StatCard
+          title="Total Profit"
+          value={loading ? '...' : formatRupiah(stats.totalProfit)}
+          sub={stats.totalOmzet > 0 ? `${((stats.totalProfit / stats.totalOmzet) * 100).toFixed(1)}% margin` : 'Belum ada penjualan'}
+          icon={TrendingUp}
+          color={stats.totalProfit >= 0 ? 'emerald' : 'danger'}
+          valueClass={stats.totalProfit >= 0 ? 'text-badge-success' : 'text-danger'}
+        />
       </div>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <StatCard label="Total Servis" value={stats.totalServis} icon={Wrench} loading={loading} />
-        <StatCard label="Hari Ini" value={stats.servisHariIni} icon={TrendingUp} loading={loading} />
-        {isAdmin && <>
-          <StatCard label="Unit Ready" value={stats.unitReady} icon={Laptop} loading={loading} />
-          <StatCard label="Sparepart" value={stats.sparepartStok} icon={Package} loading={loading} />
-          <StatCard label="Omzet Hari Ini" value={formatRupiahFull(stats.omzetHariIni)} icon={DollarSign} loading={loading} isText />
-          <StatCard label="Margin Unit" value={formatRupiahFull(stats.marginUnit)} icon={ShoppingCart} loading={loading} isText />
-        </>}
+      {/* Monthly Chart */}
+      <div className="mb-4">
+        <RevenueChart
+          data={monthlyData}
+          title={`Tren Bulanan ${year}`}
+          subtitle="Omzet dan profit per bulan"
+        />
       </div>
 
-      {/* Charts */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <OmzetWeeklyChart data={omzetChart} />
-        <ServisWeeklyChart data={servisChart} />
+      {/* Category & Marketplace Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <CategoryChart
+          data={categoryData}
+          title="Profit per Kategori"
+          subtitle="Servis vs Unit Laptop"
+        />
+        <CategoryChart
+          data={marketplaceData}
+          title="Profit per Channel"
+          subtitle="Walk-in vs Online"
+        />
       </div>
 
-      {/* Breakdown + Stock */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <ServisStatusCard pending={servisBreakdown.pending} proses={servisBreakdown.proses} selesai={servisBreakdown.selesai} loading={loading} />
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Distribusi Stok</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {stockDist.map(d => (
-                <div key={d.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-2.5 w-2.5 rounded-full" style={{ background: d.color }} />
-                    <span className="text-sm text-muted-foreground">{d.name}</span>
-                  </div>
-                  <span className="font-mono text-sm font-semibold">{loading ? '—' : d.value}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      {/* Top Products & Customers */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <TopProducts items={topProducts} limit={5} />
+        <TopCustomers items={topCustomers} limit={5} />
       </div>
 
-      {/* Activity + Alerts */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <ActivityFeed activities={activities} loading={loading} />
-        <AttentionCard alerts={alerts} loading={loading} />
-      </div>
-
-      {/* Quick Actions */}
-      <div>
-        <p className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">Aksi Cepat</p>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <QuickAction href="/servis" icon={Wrench} title="Servis Baru" />
-          {isAdmin && <>
-            <QuickAction href="/unit-laptop/beli" icon={Laptop} title="Beli Unit" />
-            <QuickAction href="/laporan" icon={TrendingUp} title="Laporan" />
-            <QuickAction href="/stok" icon={Package} title="Kelola Stok" />
-          </>}
-        </div>
+      {/* Recent Transactions */}
+      <div className="mb-4">
+        <RecentTransactions items={recentTransactions} limit={8} />
       </div>
     </div>
-  )
-}
-
-function StatCard({ label, value, icon: Icon, loading, isText }: {
-  label: string; value: number | string; icon: React.ComponentType<{ size?: number; color?: string; className?: string }>; loading: boolean; isText?: boolean;
-}) {
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="mb-2 flex items-center justify-between">
-          <span className="text-xs font-medium text-muted-foreground">{label}</span>
-          <Icon size={15} color="var(--muted-foreground)" />
-        </div>
-        <div className={`font-serif font-bold tracking-tight text-foreground ${isText ? 'text-lg' : 'text-2xl'}`}>
-          {loading ? <div className="h-7 w-16 animate-pulse rounded bg-muted" /> : value}
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-function QuickAction({ href, icon: Icon, title }: {
-  href: string; icon: React.ComponentType<{ size?: number; color?: string; className?: string }>; title: string;
-}) {
-  return (
-    <Link href={href}>
-      <Card className="group transition-colors hover:border-primary/30 hover:bg-accent/50">
-        <CardContent className="flex items-center gap-3 p-3.5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-            <Icon size={17} className="text-primary" />
-          </div>
-          <span className="flex-1 text-sm font-semibold">{title}</span>
-          <ArrowUpRight size={15} className="text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-        </CardContent>
-      </Card>
-    </Link>
   )
 }
