@@ -64,12 +64,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Mobile overlay */}
       <div className={`sidebar-overlay ${open ? 'show' : ''}`} onClick={() => setOpen(false)} />
 
-      {/* Sidebar */}
+      {/* Sidebar — dark */}
       <aside className={`sidebar-panel ${open ? 'open' : ''}`}
         style={{
-          width: 248,
-          background: 'var(--color-paper-3)',
-          borderRight: '1px solid var(--color-rule)',
+          width: 256,
+          background: 'var(--color-sidebar)',
+          borderRight: '1px solid oklch(25% 0.02 275)',
           flexShrink: 0,
           display: 'flex',
           flexDirection: 'column',
@@ -78,15 +78,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Logo */}
         <div style={{
           height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0 var(--space-lg)', borderBottom: '1px solid var(--color-rule)', flexShrink: 0,
+          padding: '0 var(--space-lg)', borderBottom: '1px solid oklch(25% 0.02 275)', flexShrink: 0,
         }}>
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
             <div style={{
-              width: 28, height: 28, borderRadius: 'var(--radius-sm)',
+              width: 32, height: 32, borderRadius: 'var(--radius-md)',
               background: 'var(--color-accent)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 0 20px oklch(54% 0.24 275 / 0.3)',
             }}>
-              <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
                 <rect x="3" y="2" width="14" height="16" rx="2" stroke="var(--color-accent-ink)" strokeWidth="1.5"/>
                 <line x1="6.5" y1="6" x2="13.5" y2="6" stroke="var(--color-accent-ink)" strokeWidth="1.2" strokeLinecap="round"/>
                 <line x1="6.5" y1="9.5" x2="13.5" y2="9.5" stroke="var(--color-accent-ink)" strokeWidth="1.2" strokeLinecap="round"/>
@@ -94,8 +95,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </svg>
             </div>
             <span style={{
-              fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 600,
-              color: 'var(--color-ink)', letterSpacing: 'var(--tracking-tight)',
+              fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700,
+              color: '#fff', letterSpacing: 'var(--tracking-tight)',
             }}>
               Kasir POS
             </span>
@@ -103,7 +104,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <button onClick={() => setOpen(false)} aria-label="Tutup menu" className="mobile-only"
             style={{
               width: 28, height: 28, background: 'transparent', border: 'none',
-              cursor: 'pointer', color: 'var(--color-ink-3)', padding: 0,
+              cursor: 'pointer', color: 'var(--color-sidebar-text)', padding: 0,
             }}>
             <X size={18} />
           </button>
@@ -116,21 +117,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             return (
               <Link key={item.href} href={item.href} onClick={() => setOpen(false)}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: 'var(--space-2xs) var(--space-xs)', marginBottom: 2,
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '10px 14px', marginBottom: 2,
                   borderRadius: 'var(--radius-md)', textDecoration: 'none',
-                  background: isActive ? 'var(--color-accent-soft)' : 'transparent',
+                  background: isActive ? 'var(--color-sidebar-active)' : 'transparent',
                   transition: 'background var(--dur-short) var(--ease-out)',
                   outline: 'none',
                 }}
               >
-                <item.icon size={16} style={{
-                  color: isActive ? 'var(--color-accent)' : 'var(--color-ink-3)',
+                <item.icon size={18} style={{
+                  color: isActive ? '#fff' : 'var(--color-sidebar-text)',
                   flexShrink: 0, strokeWidth: isActive ? 2 : 1.5,
                 }} />
                 <span style={{
-                  fontSize: 'var(--text-body)', fontWeight: isActive ? 500 : 400,
-                  color: isActive ? 'var(--color-accent)' : 'var(--color-ink-2)',
+                  fontSize: 'var(--text-body)', fontWeight: isActive ? 600 : 400,
+                  color: isActive ? '#fff' : 'var(--color-sidebar-text)',
                 }}>
                   {item.label}
                 </span>
@@ -140,30 +141,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
 
         {/* User footer */}
-        <div style={{ padding: 'var(--space-xs)', borderTop: '1px solid var(--color-rule)', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, padding: '4px var(--space-2xs)' }}>
+        <div style={{ padding: 'var(--space-sm)', borderTop: '1px solid oklch(25% 0.02 275)', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, padding: '4px 8px' }}>
             <div style={{
-              width: 32, height: 32, borderRadius: 'var(--radius-md)',
-              background: 'var(--color-paper-2)',
+              width: 36, height: 36, borderRadius: 'var(--radius-md)',
+              background: 'var(--color-sidebar-2)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
             }}>
               <span style={{
-                fontFamily: 'var(--font-display)', fontSize: 'var(--text-sm)', fontWeight: 600,
-                color: 'var(--color-ink-3)',
+                fontFamily: 'var(--font-display)', fontSize: 'var(--text-sm)', fontWeight: 700,
+                color: 'var(--color-accent)',
               }}>
                 {profile.name.charAt(0).toUpperCase()}
               </span>
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
               <p style={{
-                fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-ink)',
+                fontSize: 'var(--text-sm)', fontWeight: 500, color: '#fff',
                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               }}>{profile.name}</p>
-              <p style={{ fontSize: 11, color: 'var(--color-ink-3)', textTransform: 'capitalize' }}>{profile.role}</p>
+              <p style={{ fontSize: 11, color: 'var(--color-sidebar-text)', textTransform: 'capitalize' }}>{profile.role}</p>
             </div>
           </div>
           <button onClick={() => { signOut(); router.push('/login') }} className="btn btn-ghost btn-sm"
-            style={{ width: '100%', justifyContent: 'flex-start' }}>
+            style={{
+              width: '100%', justifyContent: 'flex-start',
+              background: 'transparent', color: 'var(--color-sidebar-text)',
+              border: 'none',
+            }}>
             <LogOut size={14} />
             <span>Keluar</span>
           </button>
@@ -174,9 +179,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
         {/* Topbar */}
         <header style={{
-          height: 56, background: 'var(--color-paper-2)', borderBottom: '1px solid var(--color-rule)',
+          height: 60, background: 'var(--color-paper-2)', borderBottom: '1px solid var(--color-rule)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0 var(--space-lg)', flexShrink: 0,
+          padding: '0 var(--space-xl)', flexShrink: 0,
         }}>
           <button onClick={() => setOpen(true)} aria-label="Buka menu" className="mobile-only"
             style={{
@@ -186,29 +191,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Menu size={20} />
           </button>
 
-          <div className="desktop-only" style={{ alignItems: 'center', gap: 6 }}>
+          <div className="desktop-only" style={{ alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 'var(--text-body)', color: 'var(--color-ink-3)' }}>Kasir POS</span>
-            <span style={{ color: 'var(--color-rule-strong)' }}>/</span>
+            <span style={{ color: 'var(--color-rule-strong)', fontSize: 'var(--text-xs)' }}>/</span>
             <span style={{
               fontFamily: 'var(--font-display)', fontSize: 'var(--text-body)',
-              color: 'var(--color-ink)', fontWeight: 500,
+              color: 'var(--color-ink)', fontWeight: 600,
             }}>{currentPage?.label ?? 'Dashboard'}</span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ textAlign: 'right' }} className="sm-block">
               <p style={{
-                fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-ink)', lineHeight: 1.2,
+                fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-ink)', lineHeight: 1.2,
               }}>{profile.name}</p>
               <p style={{ fontSize: 11, color: 'var(--color-ink-3)', textTransform: 'capitalize' }}>{profile.role}</p>
             </div>
             <div style={{
-              width: 32, height: 32, borderRadius: 'var(--radius-md)',
+              width: 36, height: 36, borderRadius: 'var(--radius-md)',
               background: 'var(--color-accent-soft)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               <span style={{
-                fontFamily: 'var(--font-display)', fontSize: 'var(--text-sm)', fontWeight: 600,
+                fontFamily: 'var(--font-display)', fontSize: 'var(--text-sm)', fontWeight: 700,
                 color: 'var(--color-accent)',
               }}>
                 {profile.name.charAt(0).toUpperCase()}
@@ -220,10 +225,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Page content */}
         <main style={{
           flex: 1, overflowY: 'auto',
-          padding: 'var(--space-xl)',
+          padding: 'var(--space-xl) var(--space-2xl)',
           background: 'var(--color-paper)',
         }}>
-          <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ maxWidth: 1200, margin: '0 auto' }}>
             {children}
           </div>
         </main>

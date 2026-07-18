@@ -110,15 +110,18 @@ body {
   background: var(--color-paper-2);
   border: 1px solid var(--color-rule);
   border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
 }
 
 .card-hover {
   transition: border-color var(--dur-short) var(--ease-out),
-              box-shadow var(--dur-short) var(--ease-out);
+              box-shadow var(--dur-short) var(--ease-out),
+              transform var(--dur-short) var(--ease-out);
 }
 .card-hover:hover {
   border-color: var(--color-rule-strong);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 /* ============================================
