@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase, Profile } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
-import { Plus, UserCheck, UserX, Store, Save, Eye, EyeOff, CheckCircle, Wifi } from 'lucide-react'
+import { Plus, UserCheck, UserX, Store, Save, Eye, EyeOff, CheckCircle, Wifi, Lock } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -14,7 +14,7 @@ import PageHeader from '@/components/dashboard/PageHeader'
 
 const labelClass = 'mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground'
 
-type Tab = 'users' | 'settings'
+type Tab = 'users' | 'settings' | 'password'
 
 export default function PengaturanPage() {
   const { user } = useAuth()
@@ -28,7 +28,7 @@ export default function PengaturanPage() {
       <div className="flex gap-1 rounded-lg border border-border bg-secondary/50 p-1">
         <button
           onClick={() => setTab('users')}
-          className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+          className={`flex-1 rounded-md px-3 py-2 text-xs sm:text-sm font-medium transition-colors ${
             tab === 'users' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
@@ -36,16 +36,25 @@ export default function PengaturanPage() {
         </button>
         <button
           onClick={() => setTab('settings')}
-          className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+          className={`flex-1 rounded-md px-3 py-2 text-xs sm:text-sm font-medium transition-colors ${
             tab === 'settings' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           Toko & Integrasi
         </button>
+        <button
+          onClick={() => setTab('password')}
+          className={`flex-1 rounded-md px-3 py-2 text-xs sm:text-sm font-medium transition-colors ${
+            tab === 'password' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Ubah Password
+        </button>
       </div>
 
       {tab === 'users' && <UsersTab userId={user?.id} />}
       {tab === 'settings' && <SettingsTab />}
+      {tab === 'password' && <PasswordTab />}
     </div>
   )
 }
@@ -340,5 +349,149 @@ function SettingsTab() {
         {saved && <span className="text-xs text-badge-success">Pengaturan berhasil disimpan</span>}
       </div>
     </form>
+  )
+}
+
+/* ═══════════════════════════════════════════════
+   TAB: UBAH PASSWORD
+   ═══════════════════════════════════════════════ */
+function PasswordTab() {
+  const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
+  const [error, setError] = useState('')
+  const [showCurrent, setShowCurrent] = useState(false)
+  const [showNew, setShowNew] = useState(false)
+  const [form, setForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  })
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    setSuccess(false)
+
+    if (form.newPassword !== form.confirmPassword) {
+      setError('Password baru dan konfirmasi password tidak cocok')
+      return
+    }
+
+    if (form.newPassword.length < 6) {
+      setError('Password baru minimal 6 karakter')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: form.newPassword
+      })
+      if (error) throw error
+      setSuccess(true)
+      setForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+      setTimeout(() => setSuccess(false), 5000)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Gagal mengubah password')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Card className="shadow-card">
+      <CardContent className="p-4 sm:p-6">
+        <div className="mb-6 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+            <Lock size={20} className="text-primary" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-foreground">Ubah Password</h3>
+            <p className="text-xs text-muted-foreground">Perbarui password akun Anda</p>
+          </div>
+        </div>
+
+        {error && (
+          <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 p-3">
+            <p className="text-xs text-destructive">{error}</p>
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-4 rounded-lg border border-badge-success/30 bg-badge-success/10 p-3">
+            <p className="text-xs text-badge-success font-medium">Password berhasil diubah!</p>
+          </div>
+        )}
+
+        <form onSubmit={handleChangePassword} className="space-y-4">
+          <div>
+            <label className={labelClass}>Password Saat Ini</label>
+            <div className="relative">
+              <Input
+                type={showCurrent ? 'text' : 'password'}
+                required
+                value={form.currentPassword}
+                onChange={e => setForm({ ...form, currentPassword: e.target.value })}
+                placeholder="Masukkan password saat ini"
+                className="h-10 w-full pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrent(!showCurrent)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className={labelClass}>Password Baru</label>
+            <div className="relative">
+              <Input
+                type={showNew ? 'text' : 'password'}
+                required
+                minLength={6}
+                value={form.newPassword}
+                onChange={e => setForm({ ...form, newPassword: e.target.value })}
+                placeholder="Minimal 6 karakter"
+                className="h-10 w-full pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowNew(!showNew)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className={labelClass}>Konfirmasi Password Baru</label>
+            <Input
+              type="password"
+              required
+              minLength={6}
+              value={form.confirmPassword}
+              onChange={e => setForm({ ...form, confirmPassword: e.target.value })}
+              placeholder="Ulangi password baru"
+              className="h-10 w-full"
+            />
+          </div>
+
+          <div className="pt-2">
+            <Button type="submit" disabled={loading} className="h-11 gap-2 px-8">
+              {loading ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              ) : (
+                <Lock size={16} />
+              )}
+              {loading ? 'Mengubah...' : 'Ubah Password'}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   )
 }
