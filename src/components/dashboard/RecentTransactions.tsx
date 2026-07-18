@@ -102,9 +102,9 @@ export default function RecentTransactions({ items, limit = 5 }: RecentTransacti
                   </p>
                 </div>
               </div>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   )
