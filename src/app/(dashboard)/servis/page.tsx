@@ -104,9 +104,9 @@ export default function ServisPage() {
 
       {/* Filters */}
       <Card className="shadow-card">
-        <CardContent className="p-3">
-          <div className="flex gap-2 flex-wrap">
-            <div className="flex-1 min-w-[240px] relative">
+        <CardContent className="p-2.5 sm:p-3">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex-1 relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone" />
               <Input 
                 type="text" 
@@ -119,7 +119,7 @@ export default function ServisPage() {
             <select 
               value={filterStatus} 
               onChange={e => setFilterStatus(e.target.value)} 
-              className="h-9 rounded-lg border border-hairline-strong bg-surface px-3 text-sm w-[160px]"
+              className="h-9 rounded-lg border border-hairline-strong bg-surface px-3 text-sm sm:w-[160px]"
             >
               <option value="all">Semua Status</option>
               <option value="proses">Proses</option>
@@ -134,48 +134,52 @@ export default function ServisPage() {
       <div className="block lg:hidden space-y-2">
         {filtered.length === 0 ? (
           <Card className="shadow-card">
-            <CardContent className="p-8 text-center">
+            <CardContent className="p-6 text-center">
               <p className="text-sm text-muted-foreground">Belum ada data servis</p>
             </CardContent>
           </Card>
         ) : filtered.map(s => (
-          <Card key={s.id} className="shadow-card">
-            <CardContent className="p-3">
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <p className="text-xs font-mono font-semibold text-ink">{s.nota_number}</p>
-                  <p className="text-sm font-semibold text-ink mt-0.5">{s.customer_name}</p>
-                </div>
-                <Badge variant={statusVariant(s.status)} className="text-[10px] px-2 py-0.5 shrink-0">
+          <Card key={s.id} className="shadow-card overflow-hidden">
+            <CardContent className="p-0">
+              {/* Header with status */}
+              <div className="flex items-center justify-between px-3 py-2 bg-secondary/30 border-b border-hairline">
+                <p className="text-[11px] font-mono font-semibold text-ink">{s.nota_number}</p>
+                <Badge variant={statusVariant(s.status)} className="text-[10px] px-2 py-0.5">
                   {s.status}
                 </Badge>
               </div>
               
-              <div className="flex items-center gap-2 mb-2">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-muted-foreground truncate">{s.device_type} {s.device_brand} {s.device_model}</p>
+              {/* Main content */}
+              <div className="px-3 py-2.5 space-y-1.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-ink truncate">{s.customer_name}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {s.device_type} {s.device_brand && `· ${s.device_brand}`} {s.device_model && `· ${s.device_model}`}
+                    </p>
+                  </div>
+                  <p className="text-sm font-bold font-mono text-ink shrink-0">{formatRupiah(s.total_fee)}</p>
                 </div>
-                <p className="text-xs font-bold font-mono text-ink">{formatRupiah(s.total_fee)}</p>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <p className="text-[10px] text-stone">{new Date(s.date_in).toLocaleDateString('id-ID')}</p>
-                <div className="flex gap-1">
-                  <Link href={`/servis/${s.id}`}>
-                    <Button variant="ghost" size="sm" className="h-8 px-2.5 text-xs gap-1.5">
-                      <Eye size={14} /> Detail
-                    </Button>
-                  </Link>
-                  {isAdmin && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-8 px-2.5 text-xs gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => setDeleteConfirm(s)}
-                    >
-                      <Trash2 size={14} />
-                    </Button>
-                  )}
+                
+                <div className="flex items-center justify-between pt-1">
+                  <p className="text-[10px] text-stone">{new Date(s.date_in).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                  <div className="flex gap-1.5">
+                    <Link href={`/servis/${s.id}`}>
+                      <Button variant="outline" size="sm" className="h-7 px-2 text-[11px] gap-1">
+                        <Eye size={12} /> Detail
+                      </Button>
+                    </Link>
+                    {isAdmin && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-7 px-2 text-[11px] gap-1 text-destructive border-destructive/30 hover:bg-destructive/10"
+                        onClick={() => setDeleteConfirm(s)}
+                      >
+                        <Trash2 size={12} />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             </CardContent>

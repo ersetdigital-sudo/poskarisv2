@@ -6,17 +6,17 @@ interface PageHeaderProps {
 
 export default function PageHeader({ title, subtitle, children }: PageHeaderProps) {
   return (
-    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mb-4 sm:mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 className="text-3xl font-bold text-ink" style={{ fontWeight: 700 }}>
+        <h1 className="text-2xl sm:text-3xl font-bold text-ink" style={{ fontWeight: 700 }}>
           {title}
         </h1>
         {subtitle && (
-          <p className="mt-1 text-sm text-ash">{subtitle}</p>
+          <p className="mt-1 text-xs sm:text-sm text-ash">{subtitle}</p>
         )}
       </div>
       {children && (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           {children}
         </div>
       )}

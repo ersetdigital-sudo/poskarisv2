@@ -102,9 +102,9 @@ export default function StokPage() {
 
       {/* Filters */}
       <Card className="shadow-card">
-        <CardContent className="p-3">
-          <div className="flex gap-2 flex-wrap">
-            <div className="flex-1 min-w-[240px] relative">
+        <CardContent className="p-2.5 sm:p-3">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex-1 relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone" />
               <Input 
                 type="text" 
@@ -117,7 +117,7 @@ export default function StokPage() {
             <select 
               value={filterCategory} 
               onChange={e => setFilterCategory(e.target.value)} 
-              className="h-9 rounded-lg border border-hairline-strong bg-surface px-3 text-sm w-[180px]"
+              className="h-9 rounded-lg border border-hairline-strong bg-surface px-3 text-sm sm:w-[180px]"
             >
               <option value="all">Semua Kategori</option>
               <option value="Unit Laptop">Unit Laptop</option>
@@ -127,76 +127,137 @@ export default function StokPage() {
         </CardContent>
       </Card>
 
-      {/* Table */}
-      <Card className="shadow-card">
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-hairline bg-secondary/30">
-                  <th className="text-left p-4 text-xs font-medium text-ash uppercase tracking-wide">Barang</th>
-                  <th className="text-left p-4 text-xs font-medium text-ash uppercase tracking-wide">Kategori</th>
-                  <th className="text-center p-4 text-xs font-medium text-ash uppercase tracking-wide">Stok</th>
-                  <th className="text-right p-4 text-xs font-medium text-ash uppercase tracking-wide">Harga Beli</th>
-                  <th className="text-right p-4 text-xs font-medium text-ash uppercase tracking-wide">Harga Jual</th>
-                  <th className="text-left p-4 text-xs font-medium text-ash uppercase tracking-wide">Status</th>
-                  <th className="text-center p-4 text-xs font-medium text-ash uppercase tracking-wide">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="text-center p-12">
-                      <Package size={32} className="text-stone mx-auto mb-2" />
-                      <p className="text-xs text-stone">Belum ada data stok</p>
-                    </td>
-                  </tr>
-                ) : filtered.map(p => {
-                  const catName = (p as Product & { categories?: { name: string } }).categories?.name || '-'
-                  const isLow = p.quantity <= p.min_quantity && p.min_quantity > 0
-                  const statusVariant = p.status === 'ready' ? 'success' : p.status === 'sold' ? 'secondary' : 'default'
+      {/* Mobile Card View */}
+      <div className="block lg:hidden space-y-2">
+        {filtered.length === 0 ? (
+          <Card className="shadow-card">
+            <CardContent className="p-6 text-center">
+              <Package size={24} className="text-stone mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">Belum ada data stok</p>
+            </CardContent>
+          </Card>
+        ) : filtered.map(p => {
+          const catName = (p as Product & { categories?: { name: string } }).categories?.name || '-'
+          const isLow = p.quantity <= p.min_quantity && p.min_quantity > 0
+          const statusVariant = p.status === 'ready' ? 'success' : p.status === 'sold' ? 'secondary' : 'default'
+          
+          return (
+            <Card key={p.id} className={`shadow-card overflow-hidden ${isLow ? 'border-l-4 border-l-badge-warning' : ''}`}>
+              <CardContent className="p-0">
+                <div className="px-3 py-2.5">
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-ink truncate">{p.name}</p>
+                      <p className="text-[10px] text-stone font-mono">{p.sku || '-'}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant={statusVariant as any} className="text-[10px] px-1.5 py-0.5 capitalize">
+                        {p.status}
+                      </Badge>
+                      {isLow && <AlertTriangle size={14} className="text-badge-warning" />}
+                    </div>
+                  </div>
                   
-                  return (
-                    <tr 
-                      key={p.id} 
-                      className={`border-b border-hairline hover:bg-secondary/30 transition-colors ${isLow ? 'bg-badge-warning/5' : ''}`}
+                  <div className="flex items-center gap-3 text-xs mb-2">
+                    <span className="text-muted-foreground">{catName}</span>
+                    <span className="text-muted-foreground">·</span>
+                    <span className={`font-bold ${isLow ? 'text-badge-warning' : 'text-ink'}`}>
+                      Stok: {p.quantity}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-3 text-xs">
+                      <span className="text-muted-foreground">Beli: <span className="font-mono font-medium text-ink">{formatRupiah(p.buy_price)}</span></span>
+                      <span className="text-muted-foreground">Jual: <span className="font-mono font-medium text-ink">{formatRupiah(p.sell_price)}</span></span>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setAdjustProduct(p)}
+                      className="h-7 px-2 text-[11px] gap-1"
                     >
-                      <td className="p-4">
-                        <p className="text-sm font-semibold text-ink">{p.name}</p>
-                        <p className="text-[10px] text-stone font-mono mt-0.5">{p.sku || '-'}</p>
+                      <Plus size={12} /> Stok
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden lg:block">
+        <Card className="shadow-card">
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-hairline bg-secondary/30">
+                    <th className="text-left p-4 text-xs font-medium text-ash uppercase tracking-wide">Barang</th>
+                    <th className="text-left p-4 text-xs font-medium text-ash uppercase tracking-wide">Kategori</th>
+                    <th className="text-center p-4 text-xs font-medium text-ash uppercase tracking-wide">Stok</th>
+                    <th className="text-right p-4 text-xs font-medium text-ash uppercase tracking-wide">Harga Beli</th>
+                    <th className="text-right p-4 text-xs font-medium text-ash uppercase tracking-wide">Harga Jual</th>
+                    <th className="text-left p-4 text-xs font-medium text-ash uppercase tracking-wide">Status</th>
+                    <th className="text-center p-4 text-xs font-medium text-ash uppercase tracking-wide">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="text-center p-12">
+                        <Package size={32} className="text-stone mx-auto mb-2" />
+                        <p className="text-xs text-stone">Belum ada data stok</p>
                       </td>
-                      <td className="p-4">
-                        <p className="text-xs text-charcoal">{catName}</p>
-                      </td>
-                      <td className="p-4 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <span className={`text-sm font-bold ${isLow ? 'text-badge-warning' : 'text-ink'}`}>
-                            {p.quantity}
-                          </span>
-                          {isLow && <AlertTriangle size={12} className="text-badge-warning" />}
-                        </div>
-                      </td>
-                      <td className="p-4 text-right">
-                        <p className="text-xs font-semibold text-ink font-mono">{formatRupiah(p.buy_price)}</p>
-                      </td>
-                      <td className="p-4 text-right">
-                        <p className="text-xs font-bold text-ink font-mono">{formatRupiah(p.sell_price)}</p>
-                      </td>
-                      <td className="p-4">
-                        <Badge variant={statusVariant as any} className="text-[10px] px-2 py-0.5 capitalize">
-                          {p.status}
-                        </Badge>
-                      </td>
-                      <td className="p-4">
-                        <div className="flex items-center justify-center gap-2">
-                          <Button 
-                            variant="secondary" 
-                            size="sm" 
-                            onClick={() => setAdjustProduct(p)}
-                            className="h-7 px-2 gap-1"
-                          >
-                            <Plus size={12} />
-                            <span className="text-[11px]">Stok</span>
+                    </tr>
+                  ) : filtered.map(p => {
+                    const catName = (p as Product & { categories?: { name: string } }).categories?.name || '-'
+                    const isLow = p.quantity <= p.min_quantity && p.min_quantity > 0
+                    const statusVariant = p.status === 'ready' ? 'success' : p.status === 'sold' ? 'secondary' : 'default'
+                    
+                    return (
+                      <tr 
+                        key={p.id} 
+                        className={`border-b border-hairline hover:bg-secondary/30 transition-colors ${isLow ? 'bg-badge-warning/5' : ''}`}
+                      >
+                        <td className="p-4">
+                          <p className="text-sm font-semibold text-ink">{p.name}</p>
+                          <p className="text-[10px] text-stone font-mono mt-0.5">{p.sku || '-'}</p>
+                        </td>
+                        <td className="p-4">
+                          <p className="text-xs text-charcoal">{catName}</p>
+                        </td>
+                        <td className="p-4 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <span className={`text-sm font-bold ${isLow ? 'text-badge-warning' : 'text-ink'}`}>
+                              {p.quantity}
+                            </span>
+                            {isLow && <AlertTriangle size={12} className="text-badge-warning" />}
+                          </div>
+                        </td>
+                        <td className="p-4 text-right">
+                          <p className="text-xs font-semibold text-ink font-mono">{formatRupiah(p.buy_price)}</p>
+                        </td>
+                        <td className="p-4 text-right">
+                          <p className="text-xs font-bold text-ink font-mono">{formatRupiah(p.sell_price)}</p>
+                        </td>
+                        <td className="p-4">
+                          <Badge variant={statusVariant as any} className="text-[10px] px-2 py-0.5 capitalize">
+                            {p.status}
+                          </Badge>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center justify-center gap-2">
+                            <Button 
+                              variant="secondary" 
+                              size="sm" 
+                              onClick={() => setAdjustProduct(p)}
+                              className="h-7 px-2 gap-1"
+                            >
+                              <Plus size={12} />
+                              <span className="text-[11px]">Stok</span>
                           </Button>
                           <Button 
                             variant="ghost" 
@@ -211,11 +272,12 @@ export default function StokPage() {
                     </tr>
                   )
                 })}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Mutasi Modal */}
       {selectedProduct && (

@@ -108,6 +108,32 @@
   }
 }
 
+/* ── Mobile-first improvements ─────────────────────── */
+@media (max-width: 639px) {
+  /* Smaller padding on mobile */
+  main {
+    padding: 12px !important;
+  }
+  
+  /* Full-width buttons in headers */
+  .page-header-actions {
+    width: 100%;
+  }
+  .page-header-actions > * {
+    flex: 1;
+  }
+  
+  /* Better touch targets */
+  button, a, select, input {
+    min-height: 44px;
+  }
+  
+  /* Compact cards on mobile */
+  .shadow-card {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+}
+
 /* ── Sidebar styles ───────────────────────────────── */
 .sidebar-panel {
   position: fixed;
