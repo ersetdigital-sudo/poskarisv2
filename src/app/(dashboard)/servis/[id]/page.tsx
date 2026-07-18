@@ -77,20 +77,42 @@ export default function ServisDetailPage() {
     setWaResult(null)
     try {
       const doc = NotaServisPDF({ service, ...storeInfo })
-      const message = `Halo ${service.customer_name}, servis ${service.nota_number} sudah selesai.\nTotal biaya: ${formatRupiah(service.total_fee)}\n\nTerima kasih.`
+
+      // Pesan detail untuk customer
+      const lines = [
+        `*${storeInfo.storeName || 'Kasir POS'}*`,
+        `━━━━━━━━━━━━━━━━━━`,
+        ``,
+        `Halo *${service.customer_name}*,`,
+        `Servis perangkat Anda sudah *selesai*.`,
+        ``,
+        `📋 *Detail Servis*`,
+        `Nota: *${service.nota_number}*`,
+        `Perangkat: ${service.device_type} ${service.device_brand || ''} ${service.device_model || ''}`.trim(),
+        service.complaint ? `Keluhan: ${service.complaint}` : null,
+        ``,
+        `💰 *Rincian Biaya*`,
+        `Biaya Jasa: ${formatRupiah(service.service_fee)}`,
+        `Biaya Sparepart: ${formatRupiah(service.parts_fee)}`,
+        `*Total: ${formatRupiah(service.total_fee)}*`,
+        ``,
+        `Nota PDF terlampir di pesan ini.`,
+        ``,
+        `Terima kasih atas kepercayaan Anda! 🙏`,
+      ].filter(Boolean).join('\n')
 
       const result = await sendWhatsAppPDF({
         document: doc,
-        filename: `nota-${service.nota_number}.pdf`,
+        filename: `Nota-${service.nota_number}.pdf`,
         phone: service.customer_phone,
-        message,
+        message: lines,
       })
 
       if (result.success) {
         setWaResult({ ok: true, msg: 'Nota PDF berhasil dikirim ke WhatsApp!' })
       } else {
         // Fallback: buka wa.me link tanpa file
-        const waUrl = `https://wa.me/${service.customer_phone.replace(/^0/, '62')}?text=${encodeURIComponent(message)}`
+        const waUrl = `https://wa.me/${service.customer_phone.replace(/^0/, '62')}?text=${encodeURIComponent(lines)}`
         window.open(waUrl, '_blank')
         setWaResult({ ok: false, msg: `Gagal kirim via API (${result.error}). Membuka WhatsApp Web...` })
       }

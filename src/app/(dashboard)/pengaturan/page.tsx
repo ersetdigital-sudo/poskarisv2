@@ -3,12 +3,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase, Profile } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
-import { Plus, UserCheck, UserX, Store, Save, Eye, EyeOff, CheckCircle } from 'lucide-react'
+import { Plus, UserCheck, UserX, Store, Save, Eye, EyeOff, CheckCircle, Wifi } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
+import { TestWhatsApp } from './test-whatsapp'
 import PageHeader from '@/components/dashboard/PageHeader'
 
 const labelClass = 'mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground'
@@ -305,6 +306,22 @@ function SettingsTab() {
               <p className="mt-1.5 text-[10px] text-muted-foreground">Nomor ini untuk notifikasi ke admin (opsional)</p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Test WhatsApp Connection */}
+      <Card className="shadow-card">
+        <CardContent className="p-4 sm:p-6">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-badge-info/10">
+              <Wifi size={20} className="text-badge-info" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-foreground">Test Koneksi WhatsApp</h3>
+              <p className="text-xs text-muted-foreground">Kirim pesan test untuk cek Fonnte sudah konek atau belum</p>
+            </div>
+          </div>
+          <TestWhatsApp />
         </CardContent>
       </Card>
 

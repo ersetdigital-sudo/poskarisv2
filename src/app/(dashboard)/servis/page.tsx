@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { supabase, Service } from '@/lib/supabase'
+import { useEffect, useState, useCallback } from 'react'
+import { supabase, Service, Product } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
-import { Plus, Search, Eye, FileText, Send } from 'lucide-react'
+import { Plus, Search, Eye, FileText, Send, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -175,32 +175,114 @@ export default function ServisPage() {
   )
 }
 
+interface SparepartItem {
+  product_id: string
+  name: string
+  quantity: number
+  price: number
+  max_qty: number
+}
+
 function ServisForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [spareparts, setSpareparts] = useState<Product[]>([])
+  const [items, setItems] = useState<SparepartItem[]>([])
   const [form, setForm] = useState({
     customer_name: '', customer_phone: '', device_type: 'Laptop',
     device_brand: '', device_model: '', complaint: '',
-    service_fee: 0, parts_fee: 0, notes: '',
+    service_fee: 0, notes: '',
   })
 
-  const total = form.service_fee + form.parts_fee
+  // Hitung total biaya sparepart dari items
+  const parts_fee = items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+  const total = form.service_fee + parts_fee
   const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
+
+  // Fetch sparepart dari stok
+  const fetchSpareparts = useCallback(async () => {
+    try {
+      const { data: cat } = await supabase.from('categories').select('id').eq('name', 'Sparepart').maybeSingle()
+      if (!cat) return
+      const { data } = await supabase.from('products').select('*').eq('category_id', cat.id).gt('quantity', 0).order('name')
+      setSpareparts(data || [])
+    } catch (e) { console.error(e) }
+  }, [])
+
+  useEffect(() => { fetchSpareparts() }, [fetchSpareparts])
+
+  // Tambah sparepart ke list
+  function addSparepart() {
+    setItems([...items, { product_id: '', name: '', quantity: 1, price: 0, max_qty: 0 }])
+  }
+
+  // Update sparepart item
+  function updateItem(index: number, field: keyof SparepartItem, value: string | number) {
+    const updated = [...items]
+    if (field === 'product_id') {
+      const product = spareparts.find(p => p.id === value)
+      if (product) {
+        updated[index] = {
+          ...updated[index],
+          product_id: product.id,
+          name: product.name,
+          price: product.sell_price || product.buy_price,
+          max_qty: product.quantity,
+          quantity: 1,
+        }
+      }
+    } else {
+      updated[index] = { ...updated[index], [field]: value }
+    }
+    setItems(updated)
+  }
+
+  // Hapus sparepart dari list
+  function removeItem(index: number) {
+    setItems(items.filter((_, i) => i !== index))
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError('')
+
     try {
-      const { error } = await supabase.from('services').insert({
+      // 1. Insert servis
+      const { data: service, error: serviceError } = await supabase.from('services').insert({
         customer_name: form.customer_name, customer_phone: form.customer_phone,
         device_type: form.device_type, device_brand: form.device_brand || null,
         device_model: form.device_model || null, complaint: form.complaint || null,
-        service_fee: form.service_fee, parts_fee: form.parts_fee,
+        service_fee: form.service_fee, parts_fee: parts_fee,
         total_fee: total, status: 'proses', created_by: user?.id,
-      })
-      if (error) throw error
+      }).select('id').single()
+      if (serviceError) throw serviceError
+
+      // 2. Insert service_parts + stock_movements untuk setiap sparepart
+      for (const item of items) {
+        if (!item.product_id || item.quantity <= 0) continue
+
+        // Insert service_part
+        await supabase.from('service_parts').insert({
+          service_id: service.id,
+          product_id: item.product_id,
+          quantity: item.quantity,
+          price: item.price,
+        })
+
+        // Insert stock_movement (trigger otomatis kurangi stok)
+        await supabase.from('stock_movements').insert({
+          product_id: item.product_id,
+          type: 'keluar',
+          quantity: item.quantity,
+          reference_type: 'servis',
+          reference_id: service.id,
+          notes: `Sparepart dipakai untuk servis ${form.customer_name}`,
+          created_by: user?.id,
+        })
+      }
+
       onSaved(); onClose()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Gagal menyimpan data')
@@ -222,27 +304,13 @@ function ServisForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
             <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               Nama Customer <span className="text-destructive">*</span>
             </label>
-            <Input
-              type="text"
-              required
-              value={form.customer_name}
-              onChange={e => setForm({ ...form, customer_name: e.target.value })}
-              className="h-10 w-full"
-              placeholder="Masukkan nama customer"
-            />
+            <Input type="text" required value={form.customer_name} onChange={e => setForm({ ...form, customer_name: e.target.value })} className="h-10 w-full" placeholder="Masukkan nama customer" />
           </div>
           <div>
             <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               No. WhatsApp <span className="text-destructive">*</span>
             </label>
-            <Input
-              type="text"
-              required
-              value={form.customer_phone}
-              onChange={e => setForm({ ...form, customer_phone: e.target.value })}
-              placeholder="08xxxxxxxxxx"
-              className="h-10 w-full"
-            />
+            <Input type="text" required value={form.customer_phone} onChange={e => setForm({ ...form, customer_phone: e.target.value })} placeholder="08xxxxxxxxxx" className="h-10 w-full" />
           </div>
         </div>
 
@@ -252,110 +320,128 @@ function ServisForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
             <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               Jenis Perangkat <span className="text-destructive">*</span>
             </label>
-            <select
-              value={form.device_type}
-              onChange={e => setForm({ ...form, device_type: e.target.value })}
-              className="h-10 w-full rounded-lg border border-input bg-surface px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20"
-            >
-              <option>Laptop</option>
-              <option>PC</option>
-              <option>Printer</option>
-              <option>Lainnya</option>
+            <select value={form.device_type} onChange={e => setForm({ ...form, device_type: e.target.value })} className="h-10 w-full rounded-lg border border-input bg-surface px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20">
+              <option>Laptop</option><option>PC</option><option>Printer</option><option>Lainnya</option>
             </select>
           </div>
           <div>
-            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              Merk
-            </label>
-            <Input
-              type="text"
-              value={form.device_brand}
-              onChange={e => setForm({ ...form, device_brand: e.target.value })}
-              className="h-10 w-full"
-              placeholder="Contoh: Asus"
-            />
+            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Merk</label>
+            <Input type="text" value={form.device_brand} onChange={e => setForm({ ...form, device_brand: e.target.value })} className="h-10 w-full" placeholder="Contoh: Asus" />
           </div>
           <div>
-            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              Model/Tipe
-            </label>
-            <Input
-              type="text"
-              value={form.device_model}
-              onChange={e => setForm({ ...form, device_model: e.target.value })}
-              className="h-10 w-full"
-              placeholder="Contoh: ROG"
-            />
+            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Model/Tipe</label>
+            <Input type="text" value={form.device_model} onChange={e => setForm({ ...form, device_model: e.target.value })} className="h-10 w-full" placeholder="Contoh: ROG" />
           </div>
         </div>
 
         {/* Complaint */}
         <div>
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Keluhan/Kerusakan</label>
+          <textarea value={form.complaint} onChange={e => setForm({ ...form, complaint: e.target.value })} rows={3} className="w-full resize-none rounded-lg border border-input bg-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20" placeholder="Deskripsikan keluhan atau kerusakan perangkat..." />
+        </div>
+
+        {/* Sparepart yang Dipakai */}
+        <div className="rounded-lg border border-dashed border-border p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-bold text-foreground">Sparepart yang Dipakai</h4>
+              <p className="text-[10px] text-muted-foreground">Pilih sparepart dari stok, stok otomatis berkurang saat servis disimpan</p>
+            </div>
+            <Button type="button" variant="secondary" size="sm" onClick={addSparepart} className="h-8 gap-1.5 text-xs">
+              <Plus size={14} /> Tambah
+            </Button>
+          </div>
+
+          {items.length === 0 && (
+            <p className="py-4 text-center text-xs text-muted-foreground">Belum ada sparepart ditambahkan</p>
+          )}
+
+          <div className="space-y-2">
+            {items.map((item, i) => (
+              <div key={i} className="flex items-start gap-2 rounded-lg border border-border bg-card p-3">
+                <div className="min-w-0 flex-1 space-y-2 sm:flex sm:items-center sm:gap-2 sm:space-y-0">
+                  {/* Select sparepart */}
+                  <select
+                    value={item.product_id}
+                    onChange={e => updateItem(i, 'product_id', e.target.value)}
+                    className="h-9 w-full rounded-md border border-input bg-surface px-2 text-xs sm:min-w-[180px] sm:flex-1"
+                  >
+                    <option value="">Pilih sparepart...</option>
+                    {spareparts.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} (stok: {p.quantity}) — {formatRupiah(p.sell_price || p.buy_price)}
+                      </option>
+                    ))}
+                  </select>
+                  {/* Qty */}
+                  <div className="flex items-center gap-1">
+                    <label className="text-[10px] text-muted-foreground">Qty:</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={item.max_qty || 999}
+                      value={item.quantity}
+                      onChange={e => updateItem(i, 'quantity', Math.min(Number(e.target.value), item.max_qty || 999))}
+                      className="h-9 w-16 rounded-md border border-input bg-surface px-2 text-xs text-center"
+                    />
+                  </div>
+                  {/* Harga per item */}
+                  <div className="flex items-center gap-1">
+                    <label className="text-[10px] text-muted-foreground">Harga:</label>
+                    <RupiahInput
+                      value={item.price}
+                      onChange={v => updateItem(i, 'price', v)}
+                      className="h-9 w-28 text-xs"
+                    />
+                  </div>
+                  {/* Subtotal */}
+                  <div className="hidden text-xs font-mono font-medium text-foreground sm:block">
+                    = {formatRupiah(item.price * item.quantity)}
+                  </div>
+                </div>
+                <button type="button" onClick={() => removeItem(i)} className="mt-0.5 shrink-0 text-muted-foreground hover:text-destructive">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Biaya Jasa */}
+        <div>
           <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            Keluhan/Kerusakan
+            Biaya Jasa (Rp)
           </label>
-          <textarea
-            value={form.complaint}
-            onChange={e => setForm({ ...form, complaint: e.target.value })}
-            rows={3}
-            className="w-full resize-none rounded-lg border border-input bg-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20"
-            placeholder="Deskripsikan keluhan atau kerusakan perangkat..."
-          />
+          <RupiahInput value={form.service_fee} onChange={v => setForm({ ...form, service_fee: v })} className="h-10 w-full font-mono" />
         </div>
 
-        {/* Fees */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              Biaya Jasa (Rp)
-            </label>
-            <RupiahInput
-              value={form.service_fee}
-              onChange={v => setForm({ ...form, service_fee: v })}
-              className="h-10 w-full font-mono"
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              Biaya Sparepart (Rp)
-            </label>
-            <RupiahInput
-              value={form.parts_fee}
-              onChange={v => setForm({ ...form, parts_fee: v })}
-              className="h-10 w-full font-mono"
-            />
-          </div>
-        </div>
-
-        {/* Total */}
+        {/* Ringkasan Biaya */}
         <div className="rounded-lg border border-border bg-secondary/50 p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-muted-foreground">Total Biaya</span>
-            <span className="font-mono text-xl font-bold text-foreground">
-              {formatRupiah(total)}
-            </span>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between text-muted-foreground">
+              <span>Biaya Sparepart ({items.length} item)</span>
+              <span className="font-mono">{formatRupiah(parts_fee)}</span>
+            </div>
+            <div className="flex justify-between text-muted-foreground">
+              <span>Biaya Jasa</span>
+              <span className="font-mono">{formatRupiah(form.service_fee)}</span>
+            </div>
+            <div className="flex justify-between border-t border-border pt-2">
+              <span className="font-bold text-foreground">Total Biaya</span>
+              <span className="font-mono text-lg font-bold text-foreground">{formatRupiah(total)}</span>
+            </div>
           </div>
         </div>
 
         {/* Notes */}
         <div>
-          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            Catatan Tambahan
-          </label>
-          <textarea
-            value={form.notes}
-            onChange={e => setForm({ ...form, notes: e.target.value })}
-            rows={2}
-            className="w-full resize-none rounded-lg border border-input bg-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20"
-            placeholder="Catatan internal (opsional)..."
-          />
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Catatan Tambahan</label>
+          <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} className="w-full resize-none rounded-lg border border-input bg-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20" placeholder="Catatan internal (opsional)..." />
         </div>
 
-        {/* Actions — stack full-width di mobile, side-by-side di desktop */}
+        {/* Actions */}
         <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row">
-          <Button type="button" onClick={onClose} variant="secondary" className="h-11 w-full sm:flex-1">
-            Batal
-          </Button>
+          <Button type="button" onClick={onClose} variant="secondary" className="h-11 w-full sm:flex-1">Batal</Button>
           <Button type="submit" disabled={loading} className="h-11 w-full sm:flex-1">
             {loading ? (
               <span className="flex items-center justify-center gap-2">

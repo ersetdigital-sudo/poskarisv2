@@ -24,16 +24,19 @@ export async function openPDF(document: PDFDocument) {
   window.open(url, '_blank')
 }
 
-// Convert PDF document ke base64
+// Convert PDF document ke base64 (tanpa prefix data:...)
 async function documentToBase64(document: PDFDocument): Promise<string> {
   const blob = await pdf(document).toBlob()
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onloadend = () => {
-      const base64 = (reader.result as string).split(',')[1]
-      resolve(base64)
+      const dataUrl = reader.result as string
+      // Hapus prefix "data:application/pdf;base64,"
+      const base64 = dataUrl.split(',')[1]
+      if (!base64) reject(new Error('Gagal convert PDF ke base64'))
+      else resolve(base64)
     }
-    reader.onerror = reject
+    reader.onerror = () => reject(new Error('FileReader error'))
     reader.readAsDataURL(blob)
   })
 }
