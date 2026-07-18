@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { TrendingUp, TrendingDown, DollarSign, BarChart3 } from 'lucide-react'
+import { TrendingUp, TrendingDown, DollarSign, BarChart3, ShoppingCart } from 'lucide-react'
+import { Card } from '@/components/ui/card'
+import StatCard from '@/components/dashboard/StatCard'
+import PageHeader from '@/components/dashboard/PageHeader'
 
 interface LaporanData {
   omzetServis: number; omzetPenjualan: number; marginUnit: number;
@@ -37,79 +40,91 @@ export default function LaporanPage() {
   const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
   const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
 
-  if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-3xl)' }}><div className="spinner" /></div>
+  if (loading) return <div className="flex items-center justify-center p-12"><div className="spinner" /></div>
 
   return (
     <div>
-      <div style={{ marginBottom: 'var(--space-lg)' }}>
-        <h1 className="text-h1" style={{ marginBottom: 4 }}>Laporan</h1>
-        <p className="text-small" style={{ color: 'var(--color-ink-3)' }}>Laporan keuangan bulanan</p>
+      <PageHeader
+        title="Laporan Keuangan"
+        subtitle="Ringkasan laba rugi dan transaksi bulanan"
+      >
+        <div className="flex gap-2">
+          <select 
+            value={filterMonth.month} 
+            onChange={e => setFilterMonth({ ...filterMonth, month: Number(e.target.value) })} 
+            className="h-[44px] rounded-lg border border-hairline-strong bg-surface px-4 text-sm"
+          >
+            {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+          </select>
+          <select 
+            value={filterMonth.year} 
+            onChange={e => setFilterMonth({ ...filterMonth, year: Number(e.target.value) })} 
+            className="h-[44px] rounded-lg border border-hairline-strong bg-surface px-4 text-sm"
+          >
+            {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </div>
+      </PageHeader>
+
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        <StatCard 
+          title="Omzet Servis" 
+          value={formatRupiah(data.omzetServis)} 
+          sub={`${data.totalTransaksiServis} transaksi`} 
+          icon={TrendingUp}
+          color="emerald"
+        />
+        <StatCard 
+          title="Omzet Penjualan" 
+          value={formatRupiah(data.omzetPenjualan)} 
+          sub={`${data.totalTransaksiUnit} unit terjual`} 
+          icon={ShoppingCart}
+          color="primary"
+        />
+        <StatCard 
+          title="Biaya Operasional" 
+          value={formatRupiah(data.biayaOperasional)} 
+          icon={TrendingDown}
+          color="orange"
+        />
+        <StatCard 
+          title="Laba Bersih" 
+          value={formatRupiah(data.labaBersih)} 
+          icon={DollarSign}
+          color={data.labaBersih >= 0 ? 'emerald' : 'danger'}
+          valueClass={data.labaBersih >= 0 ? 'text-badge-success' : 'text-danger'}
+        />
       </div>
 
-      <div style={{ display: 'flex', gap: 'var(--space-2xs)', marginBottom: 'var(--space-lg)' }}>
-        <select value={filterMonth.month} onChange={e => setFilterMonth({ ...filterMonth, month: Number(e.target.value) })} className="select select-sm" style={{ width: 160 }}>
-          {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
-        </select>
-        <select value={filterMonth.year} onChange={e => setFilterMonth({ ...filterMonth, year: Number(e.target.value) })} className="select select-sm" style={{ width: 120 }}>
-          {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
-        </select>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-sm)', marginBottom: 'var(--space-lg)' }}>
-        <StatCard label="Omzet Servis" value={formatRupiah(data.omzetServis)} sub={`${data.totalTransaksiServis} transaksi`} icon={TrendingUp} />
-        <StatCard label="Omzet Penjualan" value={formatRupiah(data.omzetPenjualan)} sub={`${data.totalTransaksiUnit} unit terjual`} icon={BarChart3} />
-        <StatCard label="Biaya Operasional" value={formatRupiah(data.biayaOperasional)} icon={TrendingDown} />
-        <StatCard label="Laba Bersih" value={formatRupiah(data.labaBersih)} icon={DollarSign} color={data.labaBersih >= 0 ? 'var(--color-success)' : 'var(--color-danger)'} />
-      </div>
-
-      <div className="card" style={{ padding: 'var(--space-lg)' }}>
-        <h2 className="text-h3" style={{ marginBottom: 'var(--space-lg)' }}>Rincian Laba Rugi — {months[filterMonth.month - 1]} {filterMonth.year}</h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-          <DetailRow label="(+) Omzet Servis" value={formatRupiah(data.omzetServis)} color="var(--color-accent)" />
-          <DetailRow label="(+) Margin Penjualan Unit" value={formatRupiah(data.marginUnit)} color="var(--color-success)" />
-          <DetailRow label="(-) Biaya Operasional" value={`-${formatRupiah(data.biayaOperasional)}`} color="var(--color-danger)" />
-          <div style={{ borderTop: '1px solid var(--color-rule)', paddingTop: 'var(--space-xs)', marginTop: 'var(--space-xs)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{
-              fontFamily: 'var(--font-display)', fontSize: 'var(--text-h3)', fontWeight: 600, color: 'var(--color-ink)',
-            }}>= Laba Bersih</span>
-            <span style={{
-              fontFamily: 'var(--font-display)', fontSize: 'var(--text-h2)', fontWeight: 600,
-              color: data.labaBersih >= 0 ? 'var(--color-success)' : 'var(--color-danger)',
-            }}>{formatRupiah(data.labaBersih)}</span>
+      {/* Rincian Laba Rugi */}
+      <Card className="p-5 sm:p-6">
+        <h2 className="text-lg font-bold mb-5 text-ink" style={{ fontWeight: 700 }}>
+          Rincian Laba Rugi — {months[filterMonth.month - 1]} {filterMonth.year}
+        </h2>
+        <div className="space-y-0">
+          <DetailRow label="(+) Omzet Servis" value={formatRupiah(data.omzetServis)} color="text-badge-success" />
+          <DetailRow label="(+) Margin Penjualan Unit" value={formatRupiah(data.marginUnit)} color="text-badge-success" />
+          <DetailRow label="(-) Biaya Operasional" value={`-${formatRupiah(data.biayaOperasional)}`} color="text-danger" />
+          <div className="border-t border-hairline pt-3 mt-3 flex justify-between items-center">
+            <span className="text-base font-bold text-ink" style={{ fontWeight: 700 }}>
+              = Laba Bersih
+            </span>
+            <span className={`text-2xl font-bold ${data.labaBersih >= 0 ? 'text-badge-success' : 'text-danger'}`} style={{ fontWeight: 700 }}>
+              {formatRupiah(data.labaBersih)}
+            </span>
           </div>
         </div>
-      </div>
-    </div>
-  )
-}
-
-function StatCard({ label, value, sub, icon: Icon, color }: {
-  label: string; value: string; sub?: string;
-  icon: React.ComponentType<{ size?: number; color?: string }>; color?: string;
-}) {
-  return (
-    <div className="card" style={{ padding: 'var(--space-lg)' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--space-xs)' }}>
-        <span className="text-caption">{label}</span>
-        <Icon size={16} color="var(--color-ink-3)" />
-      </div>
-      <div style={{
-        fontFamily: 'var(--font-display)', fontSize: 'var(--text-h2)', fontWeight: 600,
-        color: color || 'var(--color-ink)', letterSpacing: 'var(--tracking-tight)', marginBottom: 4,
-      }}>{value}</div>
-      {sub && <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-ink-3)' }}>{sub}</p>}
+      </Card>
     </div>
   )
 }
 
 function DetailRow({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div style={{
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      padding: 'var(--space-xs) 0', borderBottom: '1px solid var(--color-rule)',
-    }}>
-      <span style={{ fontSize: 'var(--text-body)', color: 'var(--color-ink-2)' }}>{label}</span>
-      <span style={{ fontSize: 'var(--text-body)', fontWeight: 500, color }}>{value}</span>
+    <div className="flex justify-between items-center py-2.5 border-b border-hairline">
+      <span className="text-sm text-charcoal">{label}</span>
+      <span className={`text-sm font-medium ${color}`}>{value}</span>
     </div>
   )
 }
