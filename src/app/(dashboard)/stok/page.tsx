@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, Product, StockMovement } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
-import { Search, ArrowDown, ArrowUp, AlertTriangle, Plus, Package, X } from 'lucide-react'
+import { Search, ArrowDown, ArrowUp, AlertTriangle, Plus, Package, X, Cpu, Wrench } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -12,18 +12,21 @@ import { Modal } from '@/components/ui/modal'
 import { RupiahInput } from '@/components/ui/rupiah-input'
 import PageHeader from '@/components/dashboard/PageHeader'
 
+type TabType = 'sparepart' | 'unit'
+
 export default function StokPage() {
   const { user } = useAuth()
   const [products, setProducts] = useState<Product[]>([])
   const [movements, setMovements] = useState<StockMovement[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [filterCategory, setFilterCategory] = useState<string>('all')
+  const [activeTab, setActiveTab] = useState<TabType>('sparepart')
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [adjustProduct, setAdjustProduct] = useState<Product | null>(null)
   const [showAddCategoryForm, setShowAddCategoryForm] = useState(false)
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
+  const [showMutasiLog, setShowMutasiLog] = useState(false)
 
   useEffect(() => { fetchData(); fetchCategories() }, [])
 
@@ -31,7 +34,7 @@ export default function StokPage() {
     try {
       const [prodRes, movRes] = await Promise.all([
         supabase.from('products').select('*, categories(name)').order('created_at', { ascending: false }),
-        supabase.from('stock_movements').select('*').order('created_at', { ascending: false }).limit(100),
+        supabase.from('stock_movements').select('*, products(name, categories(name))').order('created_at', { ascending: false }).limit(200),
       ])
       setProducts(prodRes.data || [])
       setMovements(movRes.data || [])
@@ -45,14 +48,27 @@ export default function StokPage() {
     } catch (e) { console.error(e) }
   }
 
-  const filtered = products.filter(p => {
+  // Filter products by tab
+  const filteredByTab = products.filter(p => {
     const catName = (p as Product & { categories?: { name: string } }).categories?.name || ''
-    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) || (p.sku || '').toLowerCase().includes(search.toLowerCase())
-    const matchCategory = filterCategory === 'all' || catName === filterCategory
-    return matchSearch && matchCategory
+    if (activeTab === 'sparepart') return catName === 'Sparepart'
+    return catName === 'Unit Laptop'
   })
 
-  const lowStock = products.filter(p => p.quantity <= p.min_quantity && p.min_quantity > 0)
+  const filtered = filteredByTab.filter(p => {
+    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) || (p.sku || '').toLowerCase().includes(search.toLowerCase())
+    return matchSearch
+  })
+
+  // Filter movements by tab category
+  const filteredMovements = movements.filter(m => {
+    const prod = m as StockMovement & { products?: { name: string; categories?: { name: string } } }
+    const catName = prod.products?.categories?.name || ''
+    if (activeTab === 'sparepart') return catName === 'Sparepart'
+    return catName === 'Unit Laptop'
+  })
+
+  const lowStock = filteredByTab.filter(p => p.quantity <= p.min_quantity && p.min_quantity > 0)
   const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
 
   if (loading) {
@@ -63,7 +79,7 @@ export default function StokPage() {
     <div className="space-y-3">
       <PageHeader
         title="Stok Barang"
-        subtitle="Kelola stok unit laptop dan sparepart"
+        subtitle={activeTab === 'sparepart' ? 'Kelola stok sparepart untuk servis' : 'Kelola stok unit laptop untuk dijual'}
       >
         <div className="flex gap-2">
           <Button variant="secondary" onClick={() => setShowAddCategoryForm(true)} className="gap-2">
@@ -76,6 +92,41 @@ export default function StokPage() {
           </Button>
         </div>
       </PageHeader>
+
+      {/* Tabs */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => { setActiveTab('sparepart'); setSearch('') }}
+          className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+            activeTab === 'sparepart'
+              ? 'bg-primary text-primary-foreground shadow-sm'
+              : 'bg-card text-muted-foreground hover:bg-secondary/50 border border-border'
+          }`}
+        >
+          <Wrench size={16} />
+          Sparepart
+        </button>
+        <button
+          onClick={() => { setActiveTab('unit'); setSearch('') }}
+          className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+            activeTab === 'unit'
+              ? 'bg-primary text-primary-foreground shadow-sm'
+              : 'bg-card text-muted-foreground hover:bg-secondary/50 border border-border'
+          }`}
+        >
+          <Cpu size={16} />
+          Unit Laptop
+        </button>
+        <div className="flex-1" />
+        <Button 
+          variant="outline" 
+          onClick={() => setShowMutasiLog(true)}
+          className="gap-2"
+        >
+          <ArrowDown size={14} />
+          Catatan Stok
+        </Button>
+      </div>
 
       {/* Low Stock Alert */}
       {lowStock.length > 0 && (
@@ -100,29 +151,18 @@ export default function StokPage() {
         </Card>
       )}
 
-      {/* Filters */}
+      {/* Search Filter */}
       <Card className="shadow-card">
         <CardContent className="p-2.5 sm:p-3">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <div className="flex-1 relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone" />
-              <Input 
-                type="text" 
-                placeholder="Cari nama atau SKU..." 
-                value={search} 
-                onChange={e => setSearch(e.target.value)} 
-                className="pl-9 h-9 text-sm"
-              />
-            </div>
-            <select 
-              value={filterCategory} 
-              onChange={e => setFilterCategory(e.target.value)} 
-              className="h-9 rounded-lg border border-hairline-strong bg-surface px-3 text-sm sm:w-[180px]"
-            >
-              <option value="all">Semua Kategori</option>
-              <option value="Unit Laptop">Unit Laptop</option>
-              <option value="Sparepart">Sparepart</option>
-            </select>
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone" />
+            <Input 
+              type="text" 
+              placeholder={`Cari ${activeTab === 'sparepart' ? 'sparepart' : 'unit laptop'}...`} 
+              value={search} 
+              onChange={e => setSearch(e.target.value)} 
+              className="pl-9 h-9 text-sm"
+            />
           </div>
         </CardContent>
       </Card>
@@ -321,7 +361,63 @@ export default function StokPage() {
         </Modal>
       )}
 
-      {showAddForm && <AddStokForm onClose={() => setShowAddForm(false)} onSaved={fetchData} userId={user?.id} onCategoryAdded={fetchCategories} />}
+      {/* Catatan Stok Modal (Mutasi Log) */}
+      {showMutasiLog && (
+        <Modal 
+          title={`Catatan Stok ${activeTab === 'sparepart' ? 'Sparepart' : 'Unit Laptop'}`} 
+          onClose={() => setShowMutasiLog(false)} 
+          maxWidth="2xl"
+        >
+          <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+            {filteredMovements.length === 0 ? (
+              <div className="py-8 text-center">
+                <Package size={24} className="text-stone mx-auto mb-2" />
+                <p className="text-xs text-muted-foreground">Belum ada catatan stok</p>
+              </div>
+            ) : filteredMovements.map(m => {
+              const prod = m as StockMovement & { products?: { name: string } }
+              return (
+                <div
+                  key={m.id}
+                  className="flex items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-secondary/30"
+                >
+                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                    m.type === 'masuk' ? 'bg-badge-success/10' : 'bg-destructive/10'
+                  }`}>
+                    {m.type === 'masuk' ? (
+                      <ArrowDown size={16} className="text-badge-success" />
+                    ) : (
+                      <ArrowUp size={16} className="text-destructive" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-foreground">
+                        {m.type === 'masuk' ? '+' : '-'}{m.quantity}
+                      </p>
+                      <span className="text-xs text-muted-foreground">•</span>
+                      <p className="text-xs font-medium text-foreground truncate">{prod.products?.name || '-'}</p>
+                    </div>
+                    <p className="truncate text-[10px] text-muted-foreground mt-0.5">
+                      {m.notes || m.reference_type}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[10px] text-muted-foreground">
+                      {new Date(m.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {new Date(m.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </Modal>
+      )}
+
+      {showAddForm && <AddStokForm onClose={() => setShowAddForm(false)} onSaved={fetchData} userId={user?.id} onCategoryAdded={fetchCategories} defaultCategory={activeTab === 'sparepart' ? 'Sparepart' : 'Unit Laptop'} />}
       {adjustProduct && <AdjustStokForm product={adjustProduct} onClose={() => setAdjustProduct(null)} onSaved={fetchData} userId={user?.id} />}
       {showAddCategoryForm && (
         <AddCategoryForm
@@ -339,7 +435,10 @@ const selectClass = 'h-10 w-full rounded-lg border border-input bg-surface px-3 
 const textareaClass = 'w-full resize-none rounded-lg border border-input bg-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20'
 
 /* ── Add Product Form ─────────────────────────── */
-function AddStokForm({ onClose, onSaved, userId, onCategoryAdded }: { onClose: () => void; onSaved: () => void; userId?: string; onCategoryAdded?: () => void }) {
+function AddStokForm({ onClose, onSaved, userId, onCategoryAdded, defaultCategory }: { 
+  onClose: () => void; onSaved: () => void; userId?: string; onCategoryAdded?: () => void;
+  defaultCategory?: string;
+}) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
@@ -353,6 +452,11 @@ function AddStokForm({ onClose, onSaved, userId, onCategoryAdded }: { onClose: (
   async function loadCategories() {
     const { data } = await supabase.from('categories').select('id, name').order('name')
     setCategories(data || [])
+    // Auto-select category based on active tab
+    if (defaultCategory && data) {
+      const cat = data.find(c => c.name === defaultCategory)
+      if (cat) setForm(f => ({ ...f, category_id: cat.id }))
+    }
   }
 
   useEffect(() => { loadCategories() }, [])
