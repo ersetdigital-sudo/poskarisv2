@@ -22,29 +22,29 @@ export default function RevenueChart({ data, title, subtitle }: RevenueChartProp
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg font-bold" style={{ fontWeight: 700 }}>
+    <Card className="shadow-card hover:shadow-card-hover">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base font-bold" style={{ fontWeight: 700 }}>
           {title}
         </CardTitle>
         {subtitle && (
-          <CardDescription className="text-sm text-ash">
+          <CardDescription className="text-xs text-ash">
             {subtitle}
           </CardDescription>
         )}
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
+      <CardContent className="pt-0">
+        <ResponsiveContainer width="100%" height={280}>
           <BarChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#efefef" vertical={false} />
             <XAxis 
               dataKey="name" 
-              tick={{ fill: '#4b4b4b', fontSize: 12 }}
+              tick={{ fill: '#4b4b4b', fontSize: 11 }}
               axisLine={{ stroke: '#efefef' }}
             />
             <YAxis 
               tickFormatter={formatRupiah}
-              tick={{ fill: '#4b4b4b', fontSize: 12 }}
+              tick={{ fill: '#4b4b4b', fontSize: 11 }}
               axisLine={{ stroke: '#efefef' }}
             />
             <Tooltip 
@@ -53,12 +53,13 @@ export default function RevenueChart({ data, title, subtitle }: RevenueChartProp
                 backgroundColor: '#ffffff',
                 border: 'none',
                 borderRadius: '8px',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)'
+                boxShadow: '0 4px 12px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)',
+                fontSize: '11px'
               }}
               labelStyle={{ color: '#000000', fontWeight: 700 }}
             />
             <Legend 
-              wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }}
+              wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }}
               iconType="circle"
             />
             <Bar 

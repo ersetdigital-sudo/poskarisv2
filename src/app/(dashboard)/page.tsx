@@ -190,7 +190,7 @@ export default function DashboardPage() {
     : `${MONTHS[Number(month)]} ${year}`
 
   return (
-    <div>
+    <div className="space-y-3">
       <PageHeader
         title="Dashboard POS"
         subtitle={`Ringkasan bisnis toko laptop — ${periodLabel}`}
@@ -199,7 +199,7 @@ export default function DashboardPage() {
       </PageHeader>
 
       {/* KPI Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
         <StatCard
           title="Total Servis"
           value={loading ? '...' : String(stats.totalServis)}
@@ -225,7 +225,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Monthly Chart */}
-      <div className="mb-4">
+      <div>
         <RevenueChart
           data={monthlyData}
           title={`Tren Bulanan ${year}`}
@@ -234,7 +234,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Category & Marketplace Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <CategoryChart
           data={categoryData}
           title="Profit per Kategori"
@@ -248,13 +248,13 @@ export default function DashboardPage() {
       </div>
 
       {/* Top Products & Customers */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <TopProducts items={topProducts} limit={5} />
         <TopCustomers items={topCustomers} limit={5} />
       </div>
 
       {/* Recent Transactions */}
-      <div className="mb-4">
+      <div>
         <RecentTransactions items={recentTransactions} limit={8} />
       </div>
     </div>

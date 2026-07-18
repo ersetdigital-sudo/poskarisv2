@@ -54,48 +54,50 @@ export default function RecentTransactions({ items, limit = 5 }: RecentTransacti
   }
 
   return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between">
+    <Card className="shadow-card hover:shadow-card-hover">
+      <CardHeader className="flex-row items-center justify-between pb-3">
         <div>
-          <CardTitle className="text-lg font-bold" style={{ fontWeight: 700 }}>
+          <CardTitle className="text-base font-bold" style={{ fontWeight: 700 }}>
             Transaksi Terbaru
           </CardTitle>
-          <p className="text-sm text-ash mt-1">
+          <p className="text-xs text-ash mt-0.5">
             {limit} transaksi terakhir di periode ini
           </p>
         </div>
-        <Link href="/laporan" className="text-sm text-ink hover:underline flex items-center gap-1">
+        <Link href="/laporan" className="text-xs text-ink hover:underline flex items-center gap-1 flex-shrink-0">
           Lihat semua
-          <ArrowRight size={14} />
+          <ArrowRight size={12} />
         </Link>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {displayItems.length === 0 ? (
-            <p className="text-sm text-stone text-center py-8">Belum ada transaksi</p>
-          ) : (
-            displayItems.map((item) => (
+      <CardContent className="pt-0">
+        {displayItems.length === 0 ? (
+          <div className="py-6 text-center">
+            <p className="text-xs text-stone">Belum ada transaksi</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {displayItems.map((item) => (
               <div 
                 key={item.id} 
-                className="flex items-center justify-between gap-3 p-3 rounded-lg border border-hairline hover:border-primary/20 hover:bg-secondary/30 transition-all"
+                className="flex items-center justify-between gap-3 p-2.5 rounded-lg border border-hairline hover:border-primary/20 hover:bg-secondary/30 transition-all"
               >
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Badge variant={getTypeBadge(item.type)} className="text-[10px] px-1.5 py-0">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <Badge variant={getTypeBadge(item.type)} className="text-[9px] px-1.5 py-0 h-4">
                       {getTypeLabel(item.type)}
                     </Badge>
                     {item.status && (
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                      <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4">
                         {item.status}
                       </Badge>
                     )}
                   </div>
-                  <p className="text-sm font-semibold text-ink truncate">{item.title}</p>
-                  <p className="text-xs text-stone mt-0.5">{item.subtitle}</p>
-                  <p className="text-[10px] text-stone mt-1">{formatDate(item.date)}</p>
+                  <p className="text-xs font-semibold text-ink truncate leading-tight">{item.title}</p>
+                  <p className="text-[10px] text-stone mt-0.5 leading-tight">{item.subtitle}</p>
+                  <p className="text-[9px] text-stone mt-0.5">{formatDate(item.date)}</p>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-sm font-bold text-ink font-mono">
+                  <p className="text-xs font-bold text-ink font-mono">
                     {formatRupiah(item.amount)}
                   </p>
                 </div>

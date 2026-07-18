@@ -99,7 +99,9 @@
     scroll-behavior: smooth;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    /* Off-white background untuk kontras dengan card putih */
+    background-color: #FAFAFA;
     font-feature-settings: 'cv02', 'cv03', 'cv11', 'ss01';
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -157,13 +159,13 @@ table {
 
 /* ── Uber Design Utilities ───────────────────────── */
 @layer utilities {
-  /* Shadows */
+  /* Shadows - More prominent for better card elevation */
   .shadow-card {
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06), 0 4px 8px rgba(0, 0, 0, 0.04);
   }
   
   .shadow-card-hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.10), 0 2px 6px rgba(0, 0, 0, 0.06);
   }
   
   .shadow-elevated {
