@@ -130,15 +130,13 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Hero greeting */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-[oklch(0.42_0.2_295)] p-8 lg:p-10">
-        <div className="absolute -right-8 -top-8 h-48 w-48 rounded-full bg-white/8" />
-        <div className="absolute -bottom-12 right-16 h-32 w-32 rounded-full bg-white/5" />
+      {/* Hero greeting - Uber Design */}
+      <div className="relative overflow-hidden rounded-lg bg-surface-dark p-8 lg:p-10 shadow-card">
         <div className="relative z-10">
-          <h1 className="font-serif text-3xl font-bold tracking-tight text-white lg:text-4xl">
+          <h1 className="text-3xl font-bold tracking-tight text-on-dark lg:text-4xl" style={{ fontWeight: 700 }}>
             {profile?.name ? `Halo, ${profile.name.split(' ')[0]} 👋` : 'Dashboard'}
           </h1>
-          <p className="mt-1.5 text-sm text-white/70">
+          <p className="mt-2 text-sm text-on-dark-mute">
             {dateStr} · {isAdmin ? 'Admin' : 'Karyawan'}
           </p>
         </div>
