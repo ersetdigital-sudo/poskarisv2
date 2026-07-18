@@ -3,13 +3,13 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase, Service } from '@/lib/supabase'
-import { ArrowLeft, FileText, Send, CheckCircle, Download } from 'lucide-react'
+import { ArrowLeft, Send, CheckCircle, Download } from 'lucide-react'
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { NotaServisPDF } from '@/components/pdf/nota-servis'
-import { downloadPDF } from '@/components/pdf/utils'
+import { downloadPDF, sendWhatsAppPDF } from '@/components/pdf/utils'
 
 export default function ServisDetailPage() {
   const params = useParams()
@@ -18,6 +18,8 @@ export default function ServisDetailPage() {
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
   const [pdfLoading, setPdfLoading] = useState(false)
+  const [waLoading, setWaLoading] = useState(false)
+  const [waResult, setWaResult] = useState<{ ok: boolean; msg: string } | null>(null)
 
   useEffect(() => { if (params.id) fetchService(params.id as string) }, [params.id])
 
@@ -49,6 +51,37 @@ export default function ServisDetailPage() {
       console.error('Gagal generate PDF:', e)
     } finally {
       setPdfLoading(false)
+    }
+  }
+
+  async function handleKirimWhatsApp() {
+    if (!service) return
+    setWaLoading(true)
+    setWaResult(null)
+    try {
+      const doc = NotaServisPDF({ service })
+      const message = `Halo ${service.customer_name}, servis ${service.nota_number} sudah selesai.\nTotal biaya: ${formatRupiah(service.total_fee)}\n\nTerima kasih.`
+
+      const result = await sendWhatsAppPDF({
+        document: doc,
+        filename: `nota-${service.nota_number}.pdf`,
+        phone: service.customer_phone,
+        message,
+      })
+
+      if (result.success) {
+        setWaResult({ ok: true, msg: 'Nota PDF berhasil dikirim ke WhatsApp!' })
+      } else {
+        // Fallback: buka wa.me link tanpa file
+        const waUrl = `https://wa.me/${service.customer_phone.replace(/^0/, '62')}?text=${encodeURIComponent(message)}`
+        window.open(waUrl, '_blank')
+        setWaResult({ ok: false, msg: `Gagal kirim via API (${result.error}). Membuka WhatsApp Web...` })
+      }
+    } catch (e) {
+      console.error('WhatsApp error:', e)
+      setWaResult({ ok: false, msg: 'Terjadi kesalahan' })
+    } finally {
+      setWaLoading(false)
     }
   }
 
@@ -206,15 +239,23 @@ export default function ServisDetailPage() {
                   )}
                   {pdfLoading ? 'Generating...' : 'Cetak Nota PDF'}
                 </Button>
-                <a
-                  href={`https://wa.me/${service.customer_phone.replace(/^0/, '62')}?text=Halo%20${encodeURIComponent(service.customer_name)}%2C%20servis%20${service.nota_number}%20sudah%20selesai.%20Total%20biaya%3A%20${encodeURIComponent(formatRupiah(service.total_fee))}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-badge-success/90 px-4 text-sm font-medium text-white no-underline hover:bg-badge-success"
+                <Button
+                  onClick={handleKirimWhatsApp}
+                  disabled={waLoading}
+                  className="h-11 w-full gap-2 bg-badge-success/90 hover:bg-badge-success text-white"
                 >
-                  <Send size={16} />
-                  Kirim WhatsApp
-                </a>
+                  {waLoading ? (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  ) : (
+                    <Send size={16} />
+                  )}
+                  {waLoading ? 'Mengirim...' : 'Kirim Nota ke WhatsApp'}
+                </Button>
+                {waResult && (
+                  <div className={`rounded-lg border p-3 text-xs ${waResult.ok ? 'border-badge-success/30 bg-badge-success/10 text-badge-success' : 'border-destructive/30 bg-destructive/10 text-destructive'}`}>
+                    {waResult.msg}
+                  </div>
+                )}
               </>
             )}
           </div>

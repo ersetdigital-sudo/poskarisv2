@@ -23,3 +23,50 @@ export async function openPDF(document: PDFDocument) {
   const url = URL.createObjectURL(blob)
   window.open(url, '_blank')
 }
+
+// Convert PDF document ke base64
+async function documentToBase64(document: PDFDocument): Promise<string> {
+  const blob = await pdf(document).toBlob()
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const base64 = (reader.result as string).split(',')[1]
+      resolve(base64)
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
+}
+
+// Kirim PDF + pesan via WhatsApp (Fonnte API)
+export async function sendWhatsAppPDF({
+  document,
+  filename,
+  phone,
+  message,
+}: {
+  document: PDFDocument
+  filename: string
+  phone: string
+  message: string
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    const fileBase64 = await documentToBase64(document)
+
+    const res = await fetch('/api/send-whatsapp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, message, filename, fileBase64 }),
+    })
+
+    const result = await res.json()
+
+    if (!res.ok) {
+      return { success: false, error: result.error || 'Gagal mengirim pesan' }
+    }
+
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: String(error) }
+  }
+}
