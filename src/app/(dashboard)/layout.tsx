@@ -10,7 +10,6 @@ import {
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 
 const getNavItems = (role: string) => {
   const base = [
@@ -73,36 +72,39 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Sidebar */}
       <aside
-        className={`sidebar-panel ${open ? 'open' : ''} flex w-64 flex-col border-r`}
+        className={`sidebar-panel ${open ? 'open' : ''} flex w-64 flex-col`}
         style={{
           background: 'var(--sidebar)',
-          borderColor: 'var(--sidebar-border)',
         }}
       >
         {/* Logo */}
-        <div
-          className="flex h-16 items-center justify-between px-5 shrink-0"
-          style={{ borderBottom: '1px solid var(--sidebar-border)' }}
-        >
-          <Link href="/" className="flex items-center gap-2.5 no-underline min-w-0">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary shadow-lg shadow-primary/25">
-              <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-                <rect x="3" y="2" width="14" height="16" rx="2" stroke="var(--primary-foreground)" strokeWidth="1.5"/>
-                <line x1="6.5" y1="6" x2="13.5" y2="6" stroke="var(--primary-foreground)" strokeWidth="1.2" strokeLinecap="round"/>
-                <line x1="6.5" y1="9.5" x2="13.5" y2="9.5" stroke="var(--primary-foreground)" strokeWidth="1.2" strokeLinecap="round"/>
-                <line x1="6.5" y1="13" x2="10" y2="13" stroke="var(--primary-foreground)" strokeWidth="1.2" strokeLinecap="round"/>
+        <div className="flex h-16 items-center px-4 shrink-0">
+          <Link href="/" className="flex items-center gap-2.5 no-underline w-full" onClick={() => setOpen(false)}>
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                <rect x="3" y="2" width="14" height="16" rx="2" stroke="white" strokeWidth="1.5"/>
+                <line x1="6.5" y1="6" x2="13.5" y2="6" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
+                <line x1="6.5" y1="9.5" x2="13.5" y2="9.5" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
+                <line x1="6.5" y1="13" x2="10" y2="13" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
               </svg>
             </div>
-            <span className="font-serif text-sm sm:text-base font-bold tracking-tight text-white break-all leading-tight">
-              {storeName}
-            </span>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-[15px] font-bold text-white leading-tight tracking-tight" style={{ wordBreak: 'break-word' }}>
+                {storeName}
+              </h1>
+            </div>
           </Link>
-          <button onClick={() => setOpen(false)} aria-label="Tutup menu"
-            className="mobile-only h-7 w-7 border-none bg-transparent p-0 cursor-pointer"
-            style={{ color: 'var(--sidebar-foreground)' }}>
-            <X size={18} />
+          <button 
+            onClick={() => setOpen(false)} 
+            aria-label="Tutup menu"
+            className="mobile-only ml-2 h-8 w-8 flex items-center justify-center rounded-lg border-none bg-white/10 cursor-pointer text-white/70 hover:text-white"
+          >
+            <X size={16} />
           </button>
         </div>
+
+        {/* Divider */}
+        <div className="mx-4 h-px bg-white/10" />
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto p-3">
@@ -113,14 +115,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className={`mb-1 flex items-center gap-3 rounded-lg px-3 py-3 text-sm no-underline transition-colors min-h-[48px] ${
+                className={`group mb-0.5 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm no-underline transition-all min-h-[44px] ${
                   isActive
-                    ? 'bg-white/10 font-semibold text-white'
-                    : 'font-medium hover:bg-white/5 active:bg-white/10'
+                    ? 'bg-white/15 font-semibold text-white shadow-sm'
+                    : 'font-medium text-white/60 hover:bg-white/10 hover:text-white/90'
                 }`}
-                style={{ color: isActive ? '#fff' : 'var(--sidebar-foreground)' }}
               >
-                <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                <item.icon size={18} strokeWidth={isActive ? 2.5 : 1.5} className="shrink-0" />
                 <span>{item.label}</span>
               </Link>
             )
@@ -128,59 +129,48 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
 
         {/* User footer */}
-        <div className="shrink-0 p-3" style={{ borderTop: '1px solid var(--sidebar-border)' }}>
+        <div className="shrink-0 p-3">
+          <div className="mx-1 mb-2 h-px bg-white/10" />
           <div className="mb-2 flex items-center gap-3 px-2">
-            <div
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
-              style={{ background: 'var(--sidebar-accent)' }}
-            >
-              <span className="font-serif text-sm font-bold text-primary">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15">
+              <span className="text-sm font-bold text-white">
                 {profile.name.charAt(0).toUpperCase()}
               </span>
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-white">{profile.name}</p>
-              <p className="text-xs capitalize" style={{ color: 'var(--sidebar-foreground)' }}>{profile.role}</p>
+              <p className="text-[11px] text-white/50 capitalize">{profile.role}</p>
             </div>
           </div>
           <Button
             variant="ghost"
             size="sm"
-            className="w-full justify-start border-none"
-            style={{ color: 'var(--sidebar-foreground)', background: 'transparent' }}
+            className="w-full justify-start gap-2.5 rounded-xl border-none text-white/60 hover:text-white hover:bg-white/10 h-10"
             onClick={() => { signOut(); router.push('/login') }}
           >
-            <LogOut size={14} />
-            <span>Keluar</span>
+            <LogOut size={16} />
+            <span className="text-sm">Keluar</span>
           </Button>
         </div>
       </aside>
 
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        {/* Topbar */}
-        <header className="flex h-14 shrink-0 items-center justify-between border-b bg-card px-4">
+        {/* Topbar - Clean minimal */}
+        <header className="flex h-14 shrink-0 items-center justify-between bg-background px-4 sm:px-6">
           <div className="flex items-center gap-3">
-            <button onClick={() => setOpen(true)} aria-label="Buka menu" className="lg:hidden flex items-center justify-center h-10 w-10 -ml-1 border-none bg-transparent cursor-pointer text-muted-foreground rounded-lg hover:bg-muted active:bg-muted transition-colors">
+            <button 
+              onClick={() => setOpen(true)} 
+              aria-label="Buka menu" 
+              className="lg:hidden flex items-center justify-center h-10 w-10 -ml-2 border-none bg-transparent cursor-pointer text-foreground rounded-xl hover:bg-muted active:bg-muted transition-colors"
+            >
               <Menu size={22} />
             </button>
 
-            <div className="hidden lg:flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Kasir POS</span>
-              <span className="text-xs text-muted-foreground/50">/</span>
-              <span className="font-serif text-sm font-semibold text-foreground">{currentPage?.label ?? 'Dashboard'}</span>
-            </div>
-
-            <div className="lg:hidden">
-              <span className="font-serif text-sm font-bold text-foreground">{currentPage?.label ?? 'Dashboard'}</span>
-            </div>
-          </div>
-
-          <div className="flex items-center">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-white">
-              <span className="text-sm font-bold">
-                {profile.name.charAt(0).toUpperCase()}
-              </span>
+            <div>
+              <h2 className="text-base font-bold text-foreground leading-tight">
+                {currentPage?.label ?? 'Dashboard'}
+              </h2>
             </div>
           </div>
         </header>
