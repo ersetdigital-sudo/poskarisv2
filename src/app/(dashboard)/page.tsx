@@ -12,48 +12,51 @@ interface DashboardStats {
 
 export default function DashboardPage() {
   const { profile, isAdmin } = useAuth()
-  const [stats, setStats] = useState<DashboardStats>({ totalServis:0, servisHariIni:0, unitReady:0, sparepartStok:0 })
+  const [stats, setStats] = useState<DashboardStats>({ totalServis: 0, servisHariIni: 0, unitReady: 0, sparepartStok: 0 })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => { fetchStats() }, [])
 
   async function fetchStats() {
     try {
-      const today = new Date(); today.setHours(0,0,0,0)
+      const today = new Date(); today.setHours(0, 0, 0, 0)
       const todayStr = today.toISOString()
       if (isAdmin) {
         const [s1, s2, s3, s4] = await Promise.all([
-          supabase.from('services').select('id', { count:'exact' }),
-          supabase.from('services').select('id', { count:'exact' }).gte('created_at', todayStr),
-          supabase.from('products').select('id', { count:'exact' }).eq('status','ready'),
-          supabase.from('products').select('quantity').eq('category_id', (await supabase.from('categories').select('id').eq('name','Sparepart').single()).data?.id || ''),
+          supabase.from('services').select('id', { count: 'exact' }),
+          supabase.from('services').select('id', { count: 'exact' }).gte('created_at', todayStr),
+          supabase.from('products').select('id', { count: 'exact' }).eq('status', 'ready'),
+          supabase.from('products').select('quantity').eq('category_id', (await supabase.from('categories').select('id').eq('name', 'Sparepart').single()).data?.id || ''),
         ])
-        setStats({ totalServis: s1.count||0, servisHariIni: s2.count||0, unitReady: s3.count||0, sparepartStok: s4.data?.reduce((s,p)=>s+p.quantity,0)||0 })
+        setStats({ totalServis: s1.count || 0, servisHariIni: s2.count || 0, unitReady: s3.count || 0, sparepartStok: s4.data?.reduce((s, p) => s + p.quantity, 0) || 0 })
       } else {
         const [s1, s2] = await Promise.all([
-          supabase.from('services').select('id', { count:'exact' }),
-          supabase.from('services').select('id', { count:'exact' }).gte('created_at', todayStr),
+          supabase.from('services').select('id', { count: 'exact' }),
+          supabase.from('services').select('id', { count: 'exact' }).gte('created_at', todayStr),
         ])
-        setStats({ totalServis: s1.count||0, servisHariIni: s2.count||0, unitReady: 0, sparepartStok: 0 })
+        setStats({ totalServis: s1.count || 0, servisHariIni: s2.count || 0, unitReady: 0, sparepartStok: 0 })
       }
-    } catch(e) { console.error(e) } finally { setLoading(false) }
+    } catch (e) { console.error(e) } finally { setLoading(false) }
   }
 
   const today = new Date()
-  const dateStr = today.toLocaleDateString('id-ID', { weekday:'long', day:'numeric', month:'long', year:'numeric' })
+  const dateStr = today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
   return (
     <div>
       {/* Header */}
-      <div style={{ marginBottom:32 }}>
-        <h1 className="text-h1" style={{ marginBottom:4 }}>
+      <div style={{ marginBottom: 'var(--space-xl)' }}>
+        <h1 className="text-h1" style={{ marginBottom: 4 }}>
           {profile?.name ? `Halo, ${profile.name.split(' ')[0]}` : 'Dashboard'}
         </h1>
-        <p className="text-small" style={{ color:'var(--mute)' }}>{dateStr} · {isAdmin ? 'Admin' : 'Karyawan'}</p>
+        <p className="text-small" style={{ color: 'var(--color-ink-3)' }}>{dateStr} · {isAdmin ? 'Admin' : 'Karyawan'}</p>
       </div>
 
       {/* Stat Cards */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:16, marginBottom:32 }}>
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: 'var(--space-sm)', marginBottom: 'var(--space-xl)',
+      }}>
         <StatCard label="Total Servis" value={stats.totalServis} icon={Wrench} loading={loading} />
         {isAdmin && <>
           <StatCard label="Unit Ready" value={stats.unitReady} icon={Laptop} loading={loading} />
@@ -66,9 +69,12 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick Actions */}
-      <div style={{ marginBottom:32 }}>
-        <h2 className="text-h3" style={{ marginBottom:16 }}>Aksi Cepat</h2>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))', gap:12 }}>
+      <div style={{ marginBottom: 'var(--space-xl)' }}>
+        <h2 className="text-h3" style={{ marginBottom: 'var(--space-sm)' }}>Aksi Cepat</h2>
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+          gap: 'var(--space-xs)',
+        }}>
           <QuickAction href="/servis" icon={Wrench} title="Input Servis Baru" description="Catat servis masuk" />
           {isAdmin && <>
             <QuickAction href="/unit-laptop/beli" icon={Laptop} title="Beli Unit Laptop" description="Tambah unit ke stok" />
@@ -79,12 +85,12 @@ export default function DashboardPage() {
       </div>
 
       {/* System Status */}
-      <div className="card" style={{ padding:20 }}>
-        <h3 className="text-h3" style={{ marginBottom:16 }}>Status Sistem</h3>
-        <div style={{ display:'flex', gap:32, flexWrap:'wrap' }}>
+      <div className="card" style={{ padding: 'var(--space-lg)' }}>
+        <h3 className="text-h3" style={{ marginBottom: 'var(--space-sm)' }}>Status Sistem</h3>
+        <div style={{ display: 'flex', gap: 'var(--space-xl)', flexWrap: 'wrap' }}>
           <StatusItem label="Versi" value="v2.0" />
           <StatusItem label="Mode" value={profile?.role === 'admin' ? 'Admin' : 'Karyawan'} />
-          <StatusItem label="Status" value="● Online" color="var(--success)" />
+          <StatusItem label="Status" value="Online" color="var(--color-success)" />
         </div>
       </div>
     </div>
@@ -95,13 +101,13 @@ function StatCard({ label, value, icon: Icon, loading }: {
   label: string; value: number; icon: React.ComponentType<{ size?: number; color?: string }>; loading: boolean;
 }) {
   return (
-    <div className="card card-hover" style={{ padding:20 }}>
-      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:12 }}>
+    <div className="card card-hover" style={{ padding: 'var(--space-lg)' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--space-xs)' }}>
         <span className="text-caption">{label}</span>
-        <Icon size={16} color="var(--subtle)" />
+        <Icon size={16} color="var(--color-ink-3)" />
       </div>
-      <div className="text-h1" style={{ fontSize:28, fontWeight:600 }}>
-        {loading ? <div className="skeleton" style={{ width:60, height:28 }} /> : value}
+      <div className="text-h1" style={{ fontSize: 28, fontFamily: 'var(--font-display)' }}>
+        {loading ? <div className="skeleton" style={{ width: 60, height: 28 }} /> : value}
       </div>
     </div>
   )
@@ -111,18 +117,25 @@ function QuickAction({ href, icon: Icon, title, description }: {
   href: string; icon: React.ComponentType<{ size?: number; color?: string }>; title: string; description: string;
 }) {
   return (
-    <Link href={href} className="card card-hover" style={{ display:'flex', alignItems:'center', gap:12, padding:14, textDecoration:'none' }}>
+    <Link href={href} className="card card-hover" style={{
+      display: 'flex', alignItems: 'center', gap: 'var(--space-xs)',
+      padding: 'var(--space-sm)', textDecoration: 'none', outline: 'none',
+    }}>
       <div style={{
-        width:36, height:36, borderRadius:8, background:'var(--surface-muted)',
-        display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0,
+        width: 36, height: 36, borderRadius: 'var(--radius-md)',
+        background: 'var(--color-paper-3)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
       }}>
-        <Icon size={18} color="var(--mute)" />
+        <Icon size={18} color="var(--color-ink-3)" />
       </div>
-      <div style={{ flex:1, minWidth:0 }}>
-        <p style={{ fontSize:14, fontWeight:500, color:'var(--ink)', marginBottom:2 }}>{title}</p>
-        <p style={{ fontSize:12, color:'var(--mute)' }}>{description}</p>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{
+          fontFamily: 'var(--font-display)', fontSize: 'var(--text-body)', fontWeight: 500,
+          color: 'var(--color-ink)', marginBottom: 2,
+        }}>{title}</p>
+        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-ink-3)' }}>{description}</p>
       </div>
-      <ArrowRight size={14} color="var(--subtle)" />
+      <ArrowRight size={14} color="var(--color-ink-3)" />
     </Link>
   )
 }
@@ -130,8 +143,11 @@ function QuickAction({ href, icon: Icon, title, description }: {
 function StatusItem({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div>
-      <p className="text-caption" style={{ marginBottom:2 }}>{label}</p>
-      <p style={{ fontSize:14, fontWeight:500, color: color || 'var(--ink)' }}>{value}</p>
+      <p className="text-caption" style={{ marginBottom: 2 }}>{label}</p>
+      <p style={{
+        fontFamily: 'var(--font-display)', fontSize: 'var(--text-body)', fontWeight: 500,
+        color: color || 'var(--color-ink)',
+      }}>{value}</p>
     </div>
   )
 }

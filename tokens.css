@@ -1,0 +1,103 @@
+/* Hallmark · tokens.css — Kasir POS Design System
+ * Genre: modern-minimal · Theme: custom (brand purple)
+ * Generated: 2026-07-18
+ */
+
+:root {
+  /* ── Colors ──────────────────────────────────────── */
+
+  /* Paper (surfaces) */
+  --color-paper:      oklch(98.5% 0.003 260);
+  --color-paper-2:    oklch(99.5% 0.001 260);
+  --color-paper-3:    oklch(96% 0.005 260);
+
+  /* Ink (text) */
+  --color-ink:        oklch(13% 0.01 260);
+  --color-ink-2:      oklch(40% 0.02 260);
+  --color-ink-3:      oklch(62% 0.015 260);
+
+  /* Rules (borders, dividers) */
+  --color-rule:       oklch(92% 0.006 260);
+  --color-rule-strong: oklch(88% 0.008 260);
+
+  /* Accent */
+  --color-accent:     oklch(52% 0.22 275);
+  --color-accent-hover: oklch(47% 0.22 275);
+  --color-accent-ink: oklch(99% 0.005 275);
+  --color-accent-soft: oklch(95% 0.04 275);
+
+  /* Focus */
+  --color-focus:      oklch(52% 0.22 275 / 0.25);
+
+  /* Semantic */
+  --color-success:    oklch(62% 0.18 155);
+  --color-success-bg: oklch(95% 0.05 155);
+  --color-warning:    oklch(72% 0.16 75);
+  --color-warning-bg: oklch(96% 0.05 75);
+  --color-danger:     oklch(58% 0.22 25);
+  --color-danger-bg:  oklch(95% 0.05 25);
+  --color-info:       oklch(52% 0.22 275);
+  --color-info-bg:    oklch(95% 0.04 275);
+
+  /* ── Typography ──────────────────────────────────── */
+  --font-display:     'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-body:        'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono:        'Geist Mono', 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+
+  --text-display:     clamp(1.5rem, 2vw + 0.75rem, 2rem);
+  --text-h1:          1.5rem;
+  --text-h2:          1.125rem;
+  --text-h3:          0.9375rem;
+  --text-body:        0.875rem;
+  --text-sm:          0.8125rem;
+  --text-xs:          0.75rem;
+
+  --tracking-display: -0.025em;
+  --tracking-tight:   -0.015em;
+  --tracking-normal:  0;
+  --tracking-wide:    0.025em;
+
+  /* ── Spacing (4pt scale) ─────────────────────────── */
+  --space-3xs:        0.25rem;
+  --space-2xs:        0.5rem;
+  --space-xs:         0.75rem;
+  --space-sm:         1rem;
+  --space-md:         1.5rem;
+  --space-lg:         2rem;
+  --space-xl:         3rem;
+  --space-2xl:        4.5rem;
+  --space-3xl:        7rem;
+
+  /* ── Radius ──────────────────────────────────────── */
+  --radius-sm:        6px;
+  --radius-md:        8px;
+  --radius-lg:        12px;
+  --radius-xl:        16px;
+
+  /* ── Motion ──────────────────────────────────────── */
+  --ease-out:         cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in:          cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out:      cubic-bezier(0.65, 0, 0.35, 1);
+
+  --dur-instant:      0ms;
+  --dur-short:        150ms;
+  --dur-medium:       220ms;
+  --dur-long:         350ms;
+
+  /* ── Shadows ─────────────────────────────────────── */
+  --shadow-xs:        0 1px 2px 0 oklch(0% 0 0 / 0.03);
+  --shadow-sm:        0 1px 3px 0 oklch(0% 0 0 / 0.04),
+                      0 1px 2px -1px oklch(0% 0 0 / 0.04);
+  --shadow-md:        0 4px 6px -1px oklch(0% 0 0 / 0.04),
+                      0 2px 4px -2px oklch(0% 0 0 / 0.04);
+  --shadow-lg:        0 10px 15px -3px oklch(0% 0 0 / 0.05),
+                      0 4px 6px -4px oklch(0% 0 0 / 0.04);
+
+  /* ── Z-index scale ───────────────────────────────── */
+  --z-base:           0;
+  --z-sidebar:        40;
+  --z-overlay:        50;
+  --z-drawer:         60;
+  --z-modal:          100;
+  --z-popover:        200;
+}
