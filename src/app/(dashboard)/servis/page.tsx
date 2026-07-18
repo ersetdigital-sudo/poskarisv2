@@ -206,54 +206,65 @@ function ServisForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
-      <Card className="w-full max-w-xl shadow-elevated" onClick={e => e.stopPropagation()}>
-        <CardHeader className="flex-row items-center justify-between pb-3">
-          <CardTitle className="text-lg font-bold" style={{ fontWeight: 700 }}>Servis Baru</CardTitle>
-          <Button onClick={onClose} variant="ghost" size="sm" className="h-8 w-8 p-0">
-            <X size={16} />
-          </Button>
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
+      <Card className="w-full max-w-2xl shadow-elevated my-8" onClick={e => e.stopPropagation()}>
+        <CardHeader className="border-b border-hairline">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-bold" style={{ fontWeight: 700 }}>Servis Baru</CardTitle>
+            <Button onClick={onClose} variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-secondary">
+              <X size={16} />
+            </Button>
+          </div>
         </CardHeader>
 
-        <CardContent className="pt-0">
+        <CardContent className="pt-4">
           {error && (
-            <div className="mb-3 p-3 bg-danger/10 border border-danger/20 rounded-lg text-xs text-danger">
-              {error}
+            <div className="mb-4 p-3 bg-danger/10 border border-danger/20 rounded-lg">
+              <p className="text-xs text-danger">{error}</p>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <div className="grid grid-cols-2 gap-2">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Customer Info */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-ink mb-1">Nama Customer *</label>
+                <label className="block text-[11px] font-medium text-ash uppercase tracking-wide mb-1.5">
+                  Nama Customer <span className="text-danger">*</span>
+                </label>
                 <Input 
                   type="text" 
                   required 
                   value={form.customer_name} 
                   onChange={e => setForm({ ...form, customer_name: e.target.value })} 
-                  className="h-9 text-sm"
+                  className="h-10"
+                  placeholder="Masukkan nama customer"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-ink mb-1">No. WhatsApp *</label>
+                <label className="block text-[11px] font-medium text-ash uppercase tracking-wide mb-1.5">
+                  No. WhatsApp <span className="text-danger">*</span>
+                </label>
                 <Input 
                   type="text" 
                   required 
                   value={form.customer_phone} 
                   onChange={e => setForm({ ...form, customer_phone: e.target.value })} 
                   placeholder="08xxxxxxxxxx" 
-                  className="h-9 text-sm"
+                  className="h-10"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
+            {/* Device Info */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-medium text-ink mb-1">Jenis *</label>
+                <label className="block text-[11px] font-medium text-ash uppercase tracking-wide mb-1.5">
+                  Jenis Perangkat <span className="text-danger">*</span>
+                </label>
                 <select 
                   value={form.device_type} 
                   onChange={e => setForm({ ...form, device_type: e.target.value })} 
-                  className="h-9 w-full rounded-lg border border-hairline-strong bg-surface px-3 text-sm"
+                  className="h-10 w-full rounded-lg border border-hairline-strong bg-surface px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
                   <option>Laptop</option>
                   <option>PC</option>
@@ -262,79 +273,111 @@ function ServisForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-ink mb-1">Merk</label>
+                <label className="block text-[11px] font-medium text-ash uppercase tracking-wide mb-1.5">
+                  Merk
+                </label>
                 <Input 
                   type="text" 
                   value={form.device_brand} 
                   onChange={e => setForm({ ...form, device_brand: e.target.value })} 
-                  className="h-9 text-sm"
+                  className="h-10"
+                  placeholder="Contoh: Asus"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-ink mb-1">Model</label>
+                <label className="block text-[11px] font-medium text-ash uppercase tracking-wide mb-1.5">
+                  Model/Tipe
+                </label>
                 <Input 
                   type="text" 
                   value={form.device_model} 
                   onChange={e => setForm({ ...form, device_model: e.target.value })} 
-                  className="h-9 text-sm"
+                  className="h-10"
+                  placeholder="Contoh: ROG"
                 />
               </div>
             </div>
 
+            {/* Complaint */}
             <div>
-              <label className="block text-xs font-medium text-ink mb-1">Keluhan</label>
+              <label className="block text-[11px] font-medium text-ash uppercase tracking-wide mb-1.5">
+                Keluhan/Kerusakan
+              </label>
               <textarea 
                 value={form.complaint} 
                 onChange={e => setForm({ ...form, complaint: e.target.value })} 
-                rows={2} 
-                className="w-full rounded-lg border border-hairline-strong bg-surface px-3 py-2 text-sm resize-none"
+                rows={3} 
+                className="w-full rounded-lg border border-hairline-strong bg-surface px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"
+                placeholder="Deskripsikan keluhan atau kerusakan perangkat..."
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            {/* Fees */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-ink mb-1">Biaya Jasa (Rp)</label>
+                <label className="block text-[11px] font-medium text-ash uppercase tracking-wide mb-1.5">
+                  Biaya Jasa (Rp)
+                </label>
                 <Input 
                   type="number" 
                   value={form.service_fee || ''} 
                   onChange={e => setForm({ ...form, service_fee: Number(e.target.value) })} 
-                  className="h-9 text-sm"
+                  className="h-10 font-mono"
+                  placeholder="0"
+                  min="0"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-ink mb-1">Biaya Sparepart (Rp)</label>
+                <label className="block text-[11px] font-medium text-ash uppercase tracking-wide mb-1.5">
+                  Biaya Sparepart (Rp)
+                </label>
                 <Input 
                   type="number" 
                   value={form.parts_fee || ''} 
                   onChange={e => setForm({ ...form, parts_fee: Number(e.target.value) })} 
-                  className="h-9 text-sm"
+                  className="h-10 font-mono"
+                  placeholder="0"
+                  min="0"
                 />
               </div>
             </div>
 
-            <div className="p-3 bg-secondary rounded-lg flex justify-between items-center">
-              <span className="text-xs text-stone">Total</span>
-              <span className="text-lg font-bold text-ink font-mono" style={{ fontWeight: 700 }}>
-                {formatRupiah(total)}
-              </span>
+            {/* Total */}
+            <div className="p-4 bg-secondary/50 rounded-lg border border-hairline">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-ash">Total Biaya</span>
+                <span className="text-xl font-bold text-ink font-mono" style={{ fontWeight: 700 }}>
+                  {formatRupiah(total)}
+                </span>
+              </div>
             </div>
 
+            {/* Notes */}
             <div>
-              <label className="block text-xs font-medium text-ink mb-1">Catatan</label>
+              <label className="block text-[11px] font-medium text-ash uppercase tracking-wide mb-1.5">
+                Catatan Tambahan
+              </label>
               <textarea 
                 value={form.notes} 
                 onChange={e => setForm({ ...form, notes: e.target.value })} 
                 rows={2} 
-                className="w-full rounded-lg border border-hairline-strong bg-surface px-3 py-2 text-sm resize-none"
+                className="w-full rounded-lg border border-hairline-strong bg-surface px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"
+                placeholder="Catatan internal (opsional)..."
               />
             </div>
 
-            <div className="flex gap-2 pt-2">
-              <Button type="button" onClick={onClose} variant="secondary" className="flex-1">
+            {/* Actions */}
+            <div className="flex flex-col-reverse sm:flex-row gap-2 pt-2 border-t border-hairline">
+              <Button type="button" onClick={onClose} variant="secondary" className="flex-1 h-11">
                 Batal
               </Button>
-              <Button type="submit" disabled={loading} className="flex-1">
-                {loading ? 'Menyimpan...' : 'Simpan'}
+              <Button type="submit" disabled={loading} className="flex-1 h-11">
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Menyimpan...
+                  </span>
+                ) : 'Simpan Servis'}
               </Button>
             </div>
           </form>
