@@ -32,8 +32,13 @@ export default function BeliUnitPage() {
     setLoading(true)
     setError('')
     try {
-      const { data: cat } = await supabase.from('categories').select('id').eq('name', 'Unit Laptop').single()
-      if (!cat) throw new Error('Kategori tidak ditemukan')
+      // Pastikan kategori "Unit Laptop" ada
+      let { data: cat } = await supabase.from('categories').select('id').eq('name', 'Unit Laptop').maybeSingle()
+      if (!cat) {
+        const { data: newCat, error: catErr } = await supabase.from('categories').insert({ name: 'Unit Laptop', description: 'Laptop bekas/baru untuk dijual kembali' }).select('id').single()
+        if (catErr) throw new Error('Gagal membuat kategori Unit Laptop')
+        cat = newCat
+      }
       const { data: product, error: productError } = await supabase.from('products').insert({
         category_id: cat.id, name: `${form.brand} ${form.model}`, brand: form.brand, model: form.model,
         specs: form.specs || null, condition: form.condition, imei_serial: form.imei_serial || null,

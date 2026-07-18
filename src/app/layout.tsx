@@ -1,20 +1,7 @@
 import type { Metadata } from 'next'
-import { DM_Sans } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/lib/auth-context'
 import './globals.css'
-
-const dmSans = DM_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '700'],
-  variable: '--font-dm-sans',
-})
-
-const dmSansMono = DM_Sans({
-  subsets: ['latin'],
-  weight: ['400'],
-  variable: '--font-dm-mono',
-})
 
 export const metadata: Metadata = {
   title: 'Kasir POS Laptop - Sistem Manajemen Toko',
@@ -33,7 +20,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id" suppressHydrationWarning>
-      <body className={`${dmSans.variable} ${dmSansMono.variable} antialiased font-sans`}>
+      <body className="antialiased font-sans">
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

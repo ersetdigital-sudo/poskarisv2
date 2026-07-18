@@ -20,9 +20,10 @@ export default function UnitLaptopPage() {
 
   async function fetchProducts() {
     try {
-      const { data: cat } = await supabase.from('categories').select('id').eq('name', 'Unit Laptop').single()
-      if (!cat) return
-      const { data, error } = await supabase.from('products').select('*').eq('category_id', cat.id).order('created_at', { ascending: false })
+      const { data: cat } = await supabase.from('categories').select('id').eq('name', 'Unit Laptop').maybeSingle()
+      let query = supabase.from('products').select('*').order('created_at', { ascending: false })
+      if (cat) query = query.eq('category_id', cat.id)
+      const { data, error } = await query
       if (error) throw error
       setProducts(data || [])
     } catch (e) { console.error(e) } finally { setLoading(false) }

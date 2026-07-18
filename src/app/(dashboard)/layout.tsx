@@ -3,6 +3,7 @@
 import { useAuth } from '@/lib/auth-context'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
 import {
   LayoutDashboard, Wrench, Laptop, Package, Receipt,
   BarChart3, Users, LogOut, Menu, X,
@@ -31,10 +32,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter()
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
+  const [storeName, setStoreName] = useState('Kasir POS')
 
   useEffect(() => {
     if (!loading && !user) router.push('/login')
   }, [user, loading, router])
+
+  useEffect(() => {
+    supabase.from('settings').select('value').eq('key', 'store_name').maybeSingle()
+      .then(({ data }) => { if (data?.value) setStoreName(data.value) })
+  }, [])
 
   if (loading) {
     return (
@@ -87,7 +94,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </svg>
             </div>
             <span className="font-serif text-lg font-bold tracking-tight text-white">
-              Kasir POS
+              {storeName}
             </span>
           </Link>
           <button onClick={() => setOpen(false)} aria-label="Tutup menu"

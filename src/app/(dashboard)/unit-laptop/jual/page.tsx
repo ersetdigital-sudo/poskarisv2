@@ -27,9 +27,18 @@ export default function JualUnitPage() {
 
   async function fetchUnits() {
     try {
-      const { data: cat } = await supabase.from('categories').select('id').eq('name', 'Unit Laptop').single()
-      if (!cat) return
-      const { data } = await supabase.from('products').select('*').eq('category_id', cat.id).eq('status', 'ready').order('created_at', { ascending: false })
+      // Coba ambil kategori "Unit Laptop" dulu
+      const { data: cat, error: catError } = await supabase.from('categories').select('id').eq('name', 'Unit Laptop').maybeSingle()
+      
+      let query = supabase.from('products').select('*').gt('quantity', 0).neq('status', 'sold').order('created_at', { ascending: false })
+      
+      // Kalau kategori ada, filter by category
+      if (cat && !catError) {
+        query = query.eq('category_id', cat.id)
+      }
+      
+      const { data, error } = await query
+      if (error) throw error
       setUnits(data || [])
     } catch (e) { console.error(e) }
   }

@@ -20,8 +20,25 @@ export default function ServisDetailPage() {
   const [pdfLoading, setPdfLoading] = useState(false)
   const [waLoading, setWaLoading] = useState(false)
   const [waResult, setWaResult] = useState<{ ok: boolean; msg: string } | null>(null)
+  const [storeInfo, setStoreInfo] = useState({ storeName: 'Kasir POS', storeAddress: '', storePhone: '' })
 
-  useEffect(() => { if (params.id) fetchService(params.id as string) }, [params.id])
+  useEffect(() => {
+    if (params.id) fetchService(params.id as string)
+    fetchStoreSettings()
+  }, [params.id])
+
+  async function fetchStoreSettings() {
+    try {
+      const { data } = await supabase.from('settings').select('key, value').in('key', ['store_name', 'store_address', 'store_phone'])
+      const map: Record<string, string> = {}
+      data?.forEach(row => { map[row.key] = row.value })
+      setStoreInfo({
+        storeName: map.store_name || 'Kasir POS',
+        storeAddress: map.store_address || '',
+        storePhone: map.store_phone || '',
+      })
+    } catch (e) { console.error(e) }
+  }
 
   async function fetchService(id: string) {
     try {
@@ -45,7 +62,7 @@ export default function ServisDetailPage() {
     if (!service) return
     setPdfLoading(true)
     try {
-      const doc = NotaServisPDF({ service })
+      const doc = NotaServisPDF({ service, ...storeInfo })
       await downloadPDF(doc, `nota-${service.nota_number}.pdf`)
     } catch (e) {
       console.error('Gagal generate PDF:', e)
@@ -59,7 +76,7 @@ export default function ServisDetailPage() {
     setWaLoading(true)
     setWaResult(null)
     try {
-      const doc = NotaServisPDF({ service })
+      const doc = NotaServisPDF({ service, ...storeInfo })
       const message = `Halo ${service.customer_name}, servis ${service.nota_number} sudah selesai.\nTotal biaya: ${formatRupiah(service.total_fee)}\n\nTerima kasih.`
 
       const result = await sendWhatsAppPDF({
