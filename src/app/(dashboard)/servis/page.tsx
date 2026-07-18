@@ -5,10 +5,11 @@ import { supabase, Service } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
 import { Plus, Search, Eye, FileText, Send, X } from 'lucide-react'
 import Link from 'next/link'
-
-const labelStyle: React.CSSProperties = {
-  display: 'block', fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-ink)', marginBottom: 6,
-}
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import PageHeader from '@/components/dashboard/PageHeader'
 
 export default function ServisPage() {
   const { isAdmin } = useAuth()
@@ -29,94 +30,143 @@ export default function ServisPage() {
   }
 
   const filtered = services.filter(s => {
-    const matchSearch = s.customer_name.toLowerCase().includes(search.toLowerCase()) || s.nota_number.toLowerCase().includes(search.toLowerCase()) || s.device_type.toLowerCase().includes(search.toLowerCase())
+    const matchSearch = s.customer_name.toLowerCase().includes(search.toLowerCase()) || 
+                        s.nota_number.toLowerCase().includes(search.toLowerCase()) || 
+                        s.device_type.toLowerCase().includes(search.toLowerCase())
     const matchStatus = filterStatus === 'all' || s.status === filterStatus
     return matchSearch && matchStatus
   })
 
-  const statusBadge = (status: string) => {
-    const map: Record<string, string> = {
-      proses: 'badge-warning', selesai: 'badge-success', dibatalkan: 'badge-danger',
+  const statusVariant = (status: string): 'default' | 'secondary' | 'success' | 'warning' | 'destructive' => {
+    const map: Record<string, 'default' | 'secondary' | 'success' | 'warning' | 'destructive'> = {
+      proses: 'warning',
+      selesai: 'success',
+      dibatalkan: 'destructive',
     }
-    return map[status] || 'badge-neutral'
+    return map[status] || 'secondary'
   }
 
   const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
 
   if (loading) {
-    return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-3xl)' }}><div className="spinner" /></div>
+    return <div className="flex items-center justify-center p-12"><div className="spinner" /></div>
   }
 
   return (
-    <div>
-      {/* Header */}
-      <div style={{ marginBottom: 'var(--space-lg)', display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)', alignItems: 'flex-start' }}>
-        <div style={{ flex: 1 }}>
-          <h1 className="text-h1" style={{ marginBottom: 4 }}>Servis</h1>
-          <p className="text-small" style={{ color: 'var(--color-ink-3)' }}>Kelola data servis pelanggan</p>
-        </div>
-        <button onClick={() => setShowForm(true)} className="btn btn-primary">
-          <Plus size={16} /> Servis Baru
-        </button>
-      </div>
+    <div className="space-y-3">
+      <PageHeader
+        title="Servis"
+        subtitle="Kelola data servis pelanggan"
+      >
+        <Button onClick={() => setShowForm(true)} className="gap-2">
+          <Plus size={16} strokeWidth={2} />
+          Servis Baru
+        </Button>
+      </PageHeader>
 
       {/* Filters */}
-      <div style={{ display: 'flex', gap: 'var(--space-2xs)', marginBottom: 'var(--space-sm)', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, minWidth: 240, position: 'relative' }}>
-          <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-ink-3)' }} />
-          <input type="text" placeholder="Cari nama, nota, atau perangkat..." value={search} onChange={e => setSearch(e.target.value)} className="input input-sm" style={{ paddingLeft: 36 }} />
-        </div>
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="select select-sm" style={{ width: 160 }}>
-          <option value="all">Semua Status</option>
-          <option value="proses">Proses</option>
-          <option value="selesai">Selesai</option>
-          <option value="dibatalkan">Dibatalkan</option>
-        </select>
-      </div>
+      <Card className="shadow-card">
+        <CardContent className="p-3">
+          <div className="flex gap-2 flex-wrap">
+            <div className="flex-1 min-w-[240px] relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone" />
+              <Input 
+                type="text" 
+                placeholder="Cari nama, nota, atau perangkat..." 
+                value={search} 
+                onChange={e => setSearch(e.target.value)} 
+                className="pl-9 h-9 text-sm"
+              />
+            </div>
+            <select 
+              value={filterStatus} 
+              onChange={e => setFilterStatus(e.target.value)} 
+              className="h-9 rounded-lg border border-hairline-strong bg-surface px-3 text-sm w-[160px]"
+            >
+              <option value="all">Semua Status</option>
+              <option value="proses">Proses</option>
+              <option value="selesai">Selesai</option>
+              <option value="dibatalkan">Dibatalkan</option>
+            </select>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Table */}
-      <div className="table-wrapper">
-        <div style={{ overflowX: 'auto' }}>
-          <table className="table">
-            <thead><tr>
-              <th>Nota</th><th>Customer</th><th>Perangkat</th><th>Total</th><th>Status</th><th>Tanggal</th><th>Aksi</th>
-            </tr></thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr><td colSpan={7} style={{ textAlign: 'center', padding: 'var(--space-xl)', color: 'var(--color-ink-3)' }}>Belum ada data servis</td></tr>
-              ) : filtered.map(s => (
-                <tr key={s.id}>
-                  <td style={{ fontWeight: 500, color: 'var(--color-ink)', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)' }}>{s.nota_number}</td>
-                  <td>
-                    <p style={{ color: 'var(--color-ink)' }}>{s.customer_name}</p>
-                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-ink-3)' }}>{s.customer_phone}</p>
-                  </td>
-                  <td>
-                    <p style={{ color: 'var(--color-ink)' }}>{s.device_type}</p>
-                    {s.device_brand && <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-ink-3)' }}>{s.device_brand} {s.device_model}</p>}
-                  </td>
-                  <td style={{ fontWeight: 500, color: 'var(--color-ink)' }}>{formatRupiah(s.total_fee)}</td>
-                  <td><span className={`badge ${statusBadge(s.status)}`}>{s.status}</span></td>
-                  <td style={{ color: 'var(--color-ink-3)' }}>{new Date(s.date_in).toLocaleDateString('id-ID')}</td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 4 }}>
-                      <Link href={`/servis/${s.id}`} className="btn btn-ghost btn-xs" style={{ width: 28, height: 28, padding: 0 }}>
-                        <Eye size={14} />
-                      </Link>
-                      {s.status === 'selesai' && (
-                        <>
-                          <button className="btn btn-ghost btn-xs" style={{ width: 28, height: 28, padding: 0 }}><FileText size={14} /></button>
-                          <button className="btn btn-ghost btn-xs" style={{ width: 28, height: 28, padding: 0 }}><Send size={14} /></button>
-                        </>
-                      )}
-                    </div>
-                  </td>
+      <Card className="shadow-card">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-hairline">
+                  <th className="text-left p-3 text-xs font-medium text-ash uppercase tracking-wide">Nota</th>
+                  <th className="text-left p-3 text-xs font-medium text-ash uppercase tracking-wide">Customer</th>
+                  <th className="text-left p-3 text-xs font-medium text-ash uppercase tracking-wide">Perangkat</th>
+                  <th className="text-right p-3 text-xs font-medium text-ash uppercase tracking-wide">Total</th>
+                  <th className="text-left p-3 text-xs font-medium text-ash uppercase tracking-wide">Status</th>
+                  <th className="text-left p-3 text-xs font-medium text-ash uppercase tracking-wide">Tanggal</th>
+                  <th className="text-center p-3 text-xs font-medium text-ash uppercase tracking-wide">Aksi</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+              </thead>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="text-center p-8 text-xs text-stone">
+                      Belum ada data servis
+                    </td>
+                  </tr>
+                ) : filtered.map(s => (
+                  <tr key={s.id} className="border-b border-hairline hover:bg-secondary/30 transition-colors">
+                    <td className="p-3">
+                      <p className="text-xs font-mono font-semibold text-ink">{s.nota_number}</p>
+                    </td>
+                    <td className="p-3">
+                      <p className="text-xs font-semibold text-ink">{s.customer_name}</p>
+                      <p className="text-[10px] text-stone mt-0.5">{s.customer_phone}</p>
+                    </td>
+                    <td className="p-3">
+                      <p className="text-xs font-semibold text-ink">{s.device_type}</p>
+                      {s.device_brand && (
+                        <p className="text-[10px] text-stone mt-0.5">{s.device_brand} {s.device_model}</p>
+                      )}
+                    </td>
+                    <td className="p-3 text-right">
+                      <p className="text-xs font-bold text-ink font-mono">{formatRupiah(s.total_fee)}</p>
+                    </td>
+                    <td className="p-3">
+                      <Badge variant={statusVariant(s.status)} className="text-[10px] px-2 py-0.5">
+                        {s.status}
+                      </Badge>
+                    </td>
+                    <td className="p-3">
+                      <p className="text-[10px] text-stone">{new Date(s.date_in).toLocaleDateString('id-ID')}</p>
+                    </td>
+                    <td className="p-3">
+                      <div className="flex gap-1 justify-center">
+                        <Link href={`/servis/${s.id}`}>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                            <Eye size={13} />
+                          </Button>
+                        </Link>
+                        {s.status === 'selesai' && (
+                          <>
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                              <FileText size={13} />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                              <Send size={13} />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
 
       {showForm && <ServisForm onClose={() => setShowForm(false)} onSaved={fetchServices} />}
     </div>
@@ -156,84 +206,140 @@ function ServisForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: 520, padding: 'var(--space-lg)' }} onClick={e => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-lg)' }}>
-          <h2 className="text-h2">Servis Baru</h2>
-          <button onClick={onClose} className="btn btn-ghost btn-sm" style={{ width: 32, height: 32, padding: 0 }}><X size={16} /></button>
-        </div>
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
+      <Card className="w-full max-w-xl shadow-elevated" onClick={e => e.stopPropagation()}>
+        <CardHeader className="flex-row items-center justify-between pb-3">
+          <CardTitle className="text-lg font-bold" style={{ fontWeight: 700 }}>Servis Baru</CardTitle>
+          <Button onClick={onClose} variant="ghost" size="sm" className="h-8 w-8 p-0">
+            <X size={16} />
+          </Button>
+        </CardHeader>
 
-        {error && <div className="alert alert-danger" style={{ marginBottom: 'var(--space-sm)' }}>{error}</div>}
-
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-xs)' }}>
-            <div>
-              <label style={labelStyle}>Nama Customer *</label>
-              <input type="text" required value={form.customer_name} onChange={e => setForm({ ...form, customer_name: e.target.value })} className="input input-sm" />
+        <CardContent className="pt-0">
+          {error && (
+            <div className="mb-3 p-3 bg-danger/10 border border-danger/20 rounded-lg text-xs text-danger">
+              {error}
             </div>
-            <div>
-              <label style={labelStyle}>No. WhatsApp *</label>
-              <input type="text" required value={form.customer_phone} onChange={e => setForm({ ...form, customer_phone: e.target.value })} placeholder="08xxxxxxxxxx" className="input input-sm" />
-            </div>
-          </div>
+          )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-xs)' }}>
-            <div>
-              <label style={labelStyle}>Jenis *</label>
-              <select value={form.device_type} onChange={e => setForm({ ...form, device_type: e.target.value })} className="select select-sm">
-                <option>Laptop</option><option>PC</option><option>Printer</option><option>Lainnya</option>
-              </select>
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs font-medium text-ink mb-1">Nama Customer *</label>
+                <Input 
+                  type="text" 
+                  required 
+                  value={form.customer_name} 
+                  onChange={e => setForm({ ...form, customer_name: e.target.value })} 
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-ink mb-1">No. WhatsApp *</label>
+                <Input 
+                  type="text" 
+                  required 
+                  value={form.customer_phone} 
+                  onChange={e => setForm({ ...form, customer_phone: e.target.value })} 
+                  placeholder="08xxxxxxxxxx" 
+                  className="h-9 text-sm"
+                />
+              </div>
             </div>
-            <div>
-              <label style={labelStyle}>Merk</label>
-              <input type="text" value={form.device_brand} onChange={e => setForm({ ...form, device_brand: e.target.value })} className="input input-sm" />
+
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="block text-xs font-medium text-ink mb-1">Jenis *</label>
+                <select 
+                  value={form.device_type} 
+                  onChange={e => setForm({ ...form, device_type: e.target.value })} 
+                  className="h-9 w-full rounded-lg border border-hairline-strong bg-surface px-3 text-sm"
+                >
+                  <option>Laptop</option>
+                  <option>PC</option>
+                  <option>Printer</option>
+                  <option>Lainnya</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-ink mb-1">Merk</label>
+                <Input 
+                  type="text" 
+                  value={form.device_brand} 
+                  onChange={e => setForm({ ...form, device_brand: e.target.value })} 
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-ink mb-1">Model</label>
+                <Input 
+                  type="text" 
+                  value={form.device_model} 
+                  onChange={e => setForm({ ...form, device_model: e.target.value })} 
+                  className="h-9 text-sm"
+                />
+              </div>
             </div>
+
             <div>
-              <label style={labelStyle}>Model</label>
-              <input type="text" value={form.device_model} onChange={e => setForm({ ...form, device_model: e.target.value })} className="input input-sm" />
+              <label className="block text-xs font-medium text-ink mb-1">Keluhan</label>
+              <textarea 
+                value={form.complaint} 
+                onChange={e => setForm({ ...form, complaint: e.target.value })} 
+                rows={2} 
+                className="w-full rounded-lg border border-hairline-strong bg-surface px-3 py-2 text-sm resize-none"
+              />
             </div>
-          </div>
 
-          <div>
-            <label style={labelStyle}>Keluhan</label>
-            <textarea value={form.complaint} onChange={e => setForm({ ...form, complaint: e.target.value })} rows={2} className="textarea" style={{ minHeight: 60 }} />
-          </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs font-medium text-ink mb-1">Biaya Jasa (Rp)</label>
+                <Input 
+                  type="number" 
+                  value={form.service_fee || ''} 
+                  onChange={e => setForm({ ...form, service_fee: Number(e.target.value) })} 
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-ink mb-1">Biaya Sparepart (Rp)</label>
+                <Input 
+                  type="number" 
+                  value={form.parts_fee || ''} 
+                  onChange={e => setForm({ ...form, parts_fee: Number(e.target.value) })} 
+                  className="h-9 text-sm"
+                />
+              </div>
+            </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-xs)' }}>
+            <div className="p-3 bg-secondary rounded-lg flex justify-between items-center">
+              <span className="text-xs text-stone">Total</span>
+              <span className="text-lg font-bold text-ink font-mono" style={{ fontWeight: 700 }}>
+                {formatRupiah(total)}
+              </span>
+            </div>
+
             <div>
-              <label style={labelStyle}>Biaya Jasa (Rp)</label>
-              <input type="number" value={form.service_fee || ''} onChange={e => setForm({ ...form, service_fee: Number(e.target.value) })} className="input input-sm" />
+              <label className="block text-xs font-medium text-ink mb-1">Catatan</label>
+              <textarea 
+                value={form.notes} 
+                onChange={e => setForm({ ...form, notes: e.target.value })} 
+                rows={2} 
+                className="w-full rounded-lg border border-hairline-strong bg-surface px-3 py-2 text-sm resize-none"
+              />
             </div>
-            <div>
-              <label style={labelStyle}>Biaya Sparepart (Rp)</label>
-              <input type="number" value={form.parts_fee || ''} onChange={e => setForm({ ...form, parts_fee: Number(e.target.value) })} className="input input-sm" />
+
+            <div className="flex gap-2 pt-2">
+              <Button type="button" onClick={onClose} variant="secondary" className="flex-1">
+                Batal
+              </Button>
+              <Button type="submit" disabled={loading} className="flex-1">
+                {loading ? 'Menyimpan...' : 'Simpan'}
+              </Button>
             </div>
-          </div>
-
-          <div style={{
-            padding: 'var(--space-xs) var(--space-sm)', background: 'var(--color-paper-3)',
-            borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          }}>
-            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-ink-3)' }}>Total</span>
-            <span style={{
-              fontFamily: 'var(--font-display)', fontSize: 'var(--text-h3)', fontWeight: 600,
-              color: 'var(--color-accent)',
-            }}>{formatRupiah(total)}</span>
-          </div>
-
-          <div>
-            <label style={labelStyle}>Catatan</label>
-            <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} className="textarea" style={{ minHeight: 60 }} />
-          </div>
-
-          <div style={{ display: 'flex', gap: 'var(--space-2xs)', paddingTop: 'var(--space-2xs)' }}>
-            <button type="button" onClick={onClose} className="btn btn-secondary" style={{ flex: 1 }}>Batal</button>
-            <button type="submit" disabled={loading} className="btn btn-primary" style={{ flex: 1 }}>
-              {loading ? 'Menyimpan...' : 'Simpan'}
-            </button>
-          </div>
-        </form>
-      </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }
