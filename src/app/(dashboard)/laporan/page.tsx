@@ -141,18 +141,18 @@ export default function LaporanPage() {
         title="Laporan Keuangan"
         subtitle="Rincian lengkap laba rugi dan transaksi"
       >
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           <select 
             value={filterMonth.month} 
             onChange={e => setFilterMonth({ ...filterMonth, month: Number(e.target.value) })} 
-            className="h-10 rounded-lg border border-hairline-strong bg-surface px-3 text-sm"
+            className="flex-1 sm:flex-none h-10 rounded-lg border border-hairline-strong bg-surface px-3 text-sm"
           >
             {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
           </select>
           <select 
             value={filterMonth.year} 
             onChange={e => setFilterMonth({ ...filterMonth, year: Number(e.target.value) })} 
-            className="h-10 rounded-lg border border-hairline-strong bg-surface px-3 text-sm"
+            className="flex-1 sm:flex-none h-10 rounded-lg border border-hairline-strong bg-surface px-3 text-sm"
           >
             {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
           </select>
@@ -160,7 +160,7 @@ export default function LaporanPage() {
       </PageHeader>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         <StatCard 
           title="Omzet Servis" 
           value={formatRupiah(data.omzetServis)} 
@@ -211,17 +211,17 @@ export default function LaporanPage() {
       </Card>
 
       {/* Tabs Detail Transaksi */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        <button onClick={() => setActiveTab('servis')} className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${activeTab === 'servis' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-secondary/50 border border-border'}`}>
+      <div className="grid grid-cols-2 sm:flex gap-2">
+        <button onClick={() => setActiveTab('servis')} className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs sm:text-sm font-medium transition-colors ${activeTab === 'servis' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-secondary/50 border border-border'}`}>
           <Wrench size={14} /> Servis ({services.length})
         </button>
-        <button onClick={() => setActiveTab('unit')} className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${activeTab === 'unit' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-secondary/50 border border-border'}`}>
+        <button onClick={() => setActiveTab('unit')} className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs sm:text-sm font-medium transition-colors ${activeTab === 'unit' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-secondary/50 border border-border'}`}>
           <ShoppingCart size={14} /> Unit ({sales.length})
         </button>
-        <button onClick={() => setActiveTab('harian')} className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${activeTab === 'harian' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-secondary/50 border border-border'}`}>
+        <button onClick={() => setActiveTab('harian')} className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs sm:text-sm font-medium transition-colors ${activeTab === 'harian' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-secondary/50 border border-border'}`}>
           <Calendar size={14} /> Harian
         </button>
-        <button onClick={() => setActiveTab('customer')} className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${activeTab === 'customer' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-secondary/50 border border-border'}`}>
+        <button onClick={() => setActiveTab('customer')} className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs sm:text-sm font-medium transition-colors ${activeTab === 'customer' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-secondary/50 border border-border'}`}>
           <Users size={14} /> Customer
         </button>
       </div>

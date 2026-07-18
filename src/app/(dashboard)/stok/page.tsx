@@ -94,34 +94,35 @@ export default function StokPage() {
       </PageHeader>
 
       {/* Tabs */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => { setActiveTab('sparepart'); setSearch('') }}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
-            activeTab === 'sparepart'
-              ? 'bg-primary text-primary-foreground shadow-sm'
-              : 'bg-card text-muted-foreground hover:bg-secondary/50 border border-border'
-          }`}
-        >
-          <Wrench size={16} />
-          Sparepart
-        </button>
-        <button
-          onClick={() => { setActiveTab('unit'); setSearch('') }}
-          className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
-            activeTab === 'unit'
-              ? 'bg-primary text-primary-foreground shadow-sm'
-              : 'bg-card text-muted-foreground hover:bg-secondary/50 border border-border'
-          }`}
-        >
-          <Cpu size={16} />
-          Unit Laptop
-        </button>
-        <div className="flex-1" />
+      <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex gap-2 flex-1">
+          <button
+            onClick={() => { setActiveTab('sparepart'); setSearch('') }}
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+              activeTab === 'sparepart'
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'bg-card text-muted-foreground hover:bg-secondary/50 border border-border'
+            }`}
+          >
+            <Wrench size={16} />
+            Sparepart
+          </button>
+          <button
+            onClick={() => { setActiveTab('unit'); setSearch('') }}
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+              activeTab === 'unit'
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'bg-card text-muted-foreground hover:bg-secondary/50 border border-border'
+            }`}
+          >
+            <Cpu size={16} />
+            Unit Laptop
+          </button>
+        </div>
         <Button 
           variant="outline" 
           onClick={() => setShowMutasiLog(true)}
-          className="gap-2"
+          className="gap-2 w-full sm:w-auto"
         >
           <ArrowDown size={14} />
           Catatan Stok

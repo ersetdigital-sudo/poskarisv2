@@ -63,7 +63,7 @@ export default function PengaturanPage() {
    TAB: USERS
    ═══════════════════════════════════════════════ */
 function UsersTab({ userId }: { userId?: string }) {
-  const [profiles, setProfiles] = useState<Profile[]>([])
+  const [profiles, setProfiles] = useState<(Profile & { email?: string })[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [error, setError] = useState('')
@@ -74,7 +74,20 @@ function UsersTab({ userId }: { userId?: string }) {
     try {
       const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false })
       if (error) throw error
-      setProfiles(data || [])
+      
+      // Fetch emails from auth for each profile
+      const profilesWithEmail = await Promise.all(
+        (data || []).map(async (p) => {
+          try {
+            const { data: authUser } = await supabase.auth.admin.getUserById(p.id)
+            return { ...p, email: authUser?.user?.email || '' }
+          } catch {
+            return { ...p, email: '' }
+          }
+        })
+      )
+      
+      setProfiles(profilesWithEmail)
     } catch (e) { console.error(e) } finally { setLoading(false) }
   }
 
@@ -113,49 +126,93 @@ function UsersTab({ userId }: { userId?: string }) {
         </Button>
       </div>
 
-      <Card className="shadow-card">
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="p-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">User</th>
-                  <th className="p-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Role</th>
-                  <th className="p-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">No. HP</th>
-                  <th className="p-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Status</th>
-                  <th className="p-3 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {profiles.map(p => (
-                  <tr key={p.id} className="border-b border-border transition-colors hover:bg-secondary/30">
-                    <td className="p-3">
-                      <p className="text-sm font-semibold text-foreground">{p.name}</p>
-                      {p.id === userId && <p className="text-[10px] text-primary">(Anda)</p>}
-                    </td>
-                    <td className="p-3">
-                      <Badge variant={p.role === 'admin' ? 'default' : 'secondary'} className="text-[10px] capitalize">{p.role}</Badge>
-                    </td>
-                    <td className="p-3 text-xs text-muted-foreground">{p.phone || '-'}</td>
-                    <td className="p-3">
-                      <Badge variant={p.is_active ? 'success' : 'destructive'} className="text-[10px]">{p.is_active ? 'Aktif' : 'Nonaktif'}</Badge>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex justify-center">
-                        {p.id !== userId && (
-                          <Button variant="ghost" size="sm" onClick={() => toggleActive(p.id, p.is_active)} className="h-7 w-7 p-0" title={p.is_active ? 'Nonaktifkan' : 'Aktifkan'}>
-                            {p.is_active ? <UserX size={13} /> : <UserCheck size={13} />}
-                          </Button>
-                        )}
-                      </div>
-                    </td>
+      {/* Mobile Card View */}
+      <div className="block lg:hidden space-y-2">
+        {profiles.map(p => (
+          <Card key={p.id} className="shadow-card">
+            <CardContent className="p-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-foreground">{p.name}</p>
+                  {p.email && <p className="text-xs text-muted-foreground truncate">{p.email}</p>}
+                  {p.id === userId && <span className="text-[10px] text-primary">(Anda)</span>}
+                </div>
+                <Badge variant={p.is_active ? 'success' : 'destructive'} className="text-[10px] shrink-0">
+                  {p.is_active ? 'Aktif' : 'Nonaktif'}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between mt-2 pt-2 border-t border-hairline">
+                <div className="flex items-center gap-2">
+                  <Badge variant={p.role === 'admin' ? 'default' : 'secondary'} className="text-[10px] capitalize">{p.role}</Badge>
+                  {p.phone && <span className="text-[10px] text-muted-foreground">{p.phone}</span>}
+                </div>
+                {p.id !== userId && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => toggleActive(p.id, p.is_active)} 
+                    className="h-8 px-2 text-[11px] gap-1"
+                  >
+                    {p.is_active ? <UserX size={14} /> : <UserCheck size={14} />}
+                    {p.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden lg:block">
+        <Card className="shadow-card">
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="p-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">User</th>
+                    <th className="p-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Email</th>
+                    <th className="p-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Role</th>
+                    <th className="p-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">No. HP</th>
+                    <th className="p-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Status</th>
+                    <th className="p-3 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">Aksi</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+                </thead>
+                <tbody>
+                  {profiles.map(p => (
+                    <tr key={p.id} className="border-b border-border transition-colors hover:bg-secondary/30">
+                      <td className="p-3">
+                        <p className="text-sm font-semibold text-foreground">{p.name}</p>
+                        {p.id === userId && <p className="text-[10px] text-primary">(Anda)</p>}
+                      </td>
+                      <td className="p-3">
+                        <p className="text-xs text-muted-foreground">{p.email || '-'}</p>
+                      </td>
+                      <td className="p-3">
+                        <Badge variant={p.role === 'admin' ? 'default' : 'secondary'} className="text-[10px] capitalize">{p.role}</Badge>
+                      </td>
+                      <td className="p-3 text-xs text-muted-foreground">{p.phone || '-'}</td>
+                      <td className="p-3">
+                        <Badge variant={p.is_active ? 'success' : 'destructive'} className="text-[10px]">{p.is_active ? 'Aktif' : 'Nonaktif'}</Badge>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex justify-center">
+                          {p.id !== userId && (
+                            <Button variant="ghost" size="sm" onClick={() => toggleActive(p.id, p.is_active)} className="h-7 w-7 p-0" title={p.is_active ? 'Nonaktifkan' : 'Aktifkan'}>
+                              {p.is_active ? <UserX size={13} /> : <UserCheck size={13} />}
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {showForm && (
         <Modal title="Tambah User Baru" onClose={() => { setShowForm(false); setError('') }} maxWidth="sm">
