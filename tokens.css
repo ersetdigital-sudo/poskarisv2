@@ -1,109 +1,151 @@
-/* Hallmark · tokens.css — Kasir POS Design System
- * Genre: modern-minimal · Theme: custom (brand purple, dark sidebar)
- * Generated: 2026-07-18
- */
+/* Uber Design System — Tokens */
 
 :root {
-  /* ── Colors ──────────────────────────────────────── */
+  /* Colors - Uber Black/White Palette */
+  --color-primary: #000000;
+  --color-primary-deep: #1a1a1a;
+  --color-secondary: #efefef;
+  --color-background: #ffffff;
+  --color-background-canvas: #fafafa;
+  --color-background-bone: #f0f0f0;
+  --color-surface: #ffffff;
+  --color-surface-card: #ffffff;
+  --color-surface-dark: #000000;
+  --color-surface-deep: #1a1a1a;
+  --color-ink: #000000;
+  --color-body: #000000;
+  --color-charcoal: #222222;
+  --color-ash: #4b4b4b;
+  --color-stone: #afafaf;
+  --color-on-primary: #ffffff;
+  --color-on-dark: #fcfcfc;
+  --color-on-dark-mute: rgba(252, 252, 252, 0.72);
+  --color-hairline: #efefef;
+  --color-hairline-strong: #000000;
+  --color-divider: #e0e0e0;
+  --color-badge-success: #34d399;
+  --color-badge-warning: #f59e0b;
+  --color-badge-info: #3b82f6;
+  --color-danger: #dc2626;
+  --color-focus: rgba(0, 0, 0, 0.5);
 
-  /* Paper (surfaces) */
-  --color-paper:      oklch(97% 0.004 260);
-  --color-paper-2:    oklch(100% 0 0);
-  --color-paper-3:    oklch(94.5% 0.006 260);
+  /* Typography - DM Sans */
+  --font-display: 'DM Sans', system-ui, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-body: 'DM Sans', system-ui, -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', 'JetBrains Mono', Consolas, monospace;
 
-  /* Sidebar (dark) */
-  --color-sidebar:    oklch(18% 0.02 275);
-  --color-sidebar-2:  oklch(22% 0.025 275);
-  --color-sidebar-text: oklch(85% 0.01 275);
-  --color-sidebar-active: oklch(35% 0.12 275);
+  /* Spacing - 8px grid */
+  --space-xxs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-xxl: 48px;
+  --space-xxxl: 64px;
 
-  /* Ink (text) */
-  --color-ink:        oklch(12% 0.015 260);
-  --color-ink-2:      oklch(38% 0.02 260);
-  --color-ink-3:      oklch(58% 0.015 260);
+  /* Border Radius */
+  --radius-none: 0px;
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
 
-  /* Rules (borders, dividers) */
-  --color-rule:       oklch(90% 0.008 260);
-  --color-rule-strong: oklch(85% 0.01 260);
+  /* Shadows - Whisper-soft */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08);
+  --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.16), 0 4px 12px rgba(0, 0, 0, 0.08);
 
-  /* Accent */
-  --color-accent:     oklch(54% 0.24 275);
-  --color-accent-hover: oklch(48% 0.24 275);
-  --color-accent-ink: oklch(99% 0.005 275);
-  --color-accent-soft: oklch(94% 0.05 275);
+  /* Animation */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
 
-  /* Focus */
-  --color-focus:      oklch(54% 0.24 275 / 0.3);
+/* Typography Scales */
+.text-display-xxl {
+  font-family: var(--font-display);
+  font-size: 4rem;
+  font-weight: 700;
+  line-height: 1.0;
+  letter-spacing: -0.02em;
+}
 
-  /* Semantic */
-  --color-success:    oklch(62% 0.18 155);
-  --color-success-bg: oklch(94% 0.06 155);
-  --color-warning:    oklch(72% 0.16 75);
-  --color-warning-bg: oklch(95% 0.06 75);
-  --color-danger:     oklch(58% 0.22 25);
-  --color-danger-bg:  oklch(94% 0.06 25);
-  --color-info:       oklch(54% 0.24 275);
-  --color-info-bg:    oklch(94% 0.05 275);
+.text-display-xl {
+  font-family: var(--font-display);
+  font-size: 3.25rem;
+  font-weight: 700;
+  line-height: 1.22;
+  letter-spacing: -0.02em;
+}
 
-  /* ── Typography ──────────────────────────────────── */
-  --font-display:     'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-body:        'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono:        'Geist Mono', 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+.text-display-lg {
+  font-family: var(--font-display);
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1.22;
+  letter-spacing: -0.02em;
+}
 
-  --text-display:     clamp(1.75rem, 2.5vw + 0.75rem, 2.25rem);
-  --text-h1:          1.625rem;
-  --text-h2:          1.25rem;
-  --text-h3:          1rem;
-  --text-body:        0.875rem;
-  --text-sm:          0.8125rem;
-  --text-xs:          0.75rem;
+.text-heading-lg {
+  font-family: var(--font-display);
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1.22;
+}
 
-  --tracking-display: -0.03em;
-  --tracking-tight:   -0.02em;
-  --tracking-normal:  0;
-  --tracking-wide:    0.03em;
+.text-heading-md {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.22;
+}
 
-  /* ── Spacing (4pt scale) ─────────────────────────── */
-  --space-3xs:        0.25rem;
-  --space-2xs:        0.5rem;
-  --space-xs:         0.75rem;
-  --space-sm:         1rem;
-  --space-md:         1.5rem;
-  --space-lg:         2rem;
-  --space-xl:         3rem;
-  --space-2xl:        4.5rem;
-  --space-3xl:        7rem;
+.text-heading-sm {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.22;
+}
 
-  /* ── Radius ──────────────────────────────────────── */
-  --radius-sm:        6px;
-  --radius-md:        10px;
-  --radius-lg:        14px;
-  --radius-xl:        20px;
+.text-body-lg {
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
 
-  /* ── Motion ──────────────────────────────────────── */
-  --ease-out:         cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in:          cubic-bezier(0.7, 0, 0.84, 0);
-  --ease-in-out:      cubic-bezier(0.65, 0, 0.35, 1);
+.text-body-md {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
 
-  --dur-instant:      0ms;
-  --dur-short:        150ms;
-  --dur-medium:       220ms;
-  --dur-long:         350ms;
+.text-body-sm {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
 
-  /* ── Shadows ─────────────────────────────────────── */
-  --shadow-xs:        0 1px 2px 0 oklch(0% 0 0 / 0.04);
-  --shadow-sm:        0 1px 3px 0 oklch(0% 0 0 / 0.06),
-                      0 1px 2px -1px oklch(0% 0 0 / 0.04);
-  --shadow-md:        0 4px 8px -2px oklch(0% 0 0 / 0.06),
-                      0 2px 4px -2px oklch(0% 0 0 / 0.04);
-  --shadow-lg:        0 12px 24px -4px oklch(0% 0 0 / 0.08),
-                      0 4px 8px -4px oklch(0% 0 0 / 0.04);
+.text-button-md {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.0;
+}
 
-  /* ── Z-index scale ───────────────────────────────── */
-  --z-base:           0;
-  --z-sidebar:        40;
-  --z-overlay:        50;
-  --z-drawer:         60;
-  --z-modal:          100;
-  --z-popover:        200;
+.text-button-sm {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.0;
+}
+
+.text-caption {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
 }
