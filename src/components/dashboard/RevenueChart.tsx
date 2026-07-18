@@ -48,7 +48,7 @@ export default function RevenueChart({ data, title, subtitle }: RevenueChartProp
               axisLine={{ stroke: '#efefef' }}
             />
             <Tooltip 
-              formatter={(value: number) => `Rp ${value.toLocaleString('id-ID')}`}
+              formatter={(value) => `Rp ${Number(value).toLocaleString('id-ID')}`}
               contentStyle={{
                 backgroundColor: '#ffffff',
                 border: 'none',

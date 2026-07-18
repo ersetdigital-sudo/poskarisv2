@@ -51,7 +51,7 @@ export default function CategoryChart({ data, title, subtitle }: CategoryChartPr
                 ))}
               </Pie>
               <Tooltip 
-                formatter={(value: number) => formatRupiah(value)}
+                formatter={(value) => formatRupiah(Number(value))}
                 contentStyle={{
                   backgroundColor: '#ffffff',
                   border: 'none',
