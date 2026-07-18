@@ -3,39 +3,173 @@
 import { useAuth } from '@/lib/auth-context'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Wrench, Laptop, Package, TrendingUp, ArrowRight, ArrowUpRight } from 'lucide-react'
+import { Wrench, Laptop, Package, TrendingUp, ArrowUpRight, DollarSign, ShoppingCart } from 'lucide-react'
 import Link from 'next/link'
+import { ServisWeeklyChart, StokDonutChart, OmzetWeeklyChart } from '@/components/charts'
+import { ActivityFeed, type Activity } from '@/components/activity-feed'
+import { AttentionCard, type AlertItem } from '@/components/attention-card'
+import { ServisStatusCard } from '@/components/servis-status-card'
+import { formatRupiahFull, getLast7Days } from '@/lib/format'
 
 interface DashboardStats {
-  totalServis: number; servisHariIni: number; unitReady: number; sparepartStok: number;
+  totalServis: number
+  servisHariIni: number
+  unitReady: number
+  sparepartStok: number
+  omzetHariIni: number
+  marginUnit: number
 }
+
+interface WeeklyServis { day: string; masuk: number; selesai: number }
+interface WeeklyOmzet { day: string; omzet: number }
+interface StockDist { name: string; value: number; color: string }
 
 export default function DashboardPage() {
   const { profile, isAdmin } = useAuth()
-  const [stats, setStats] = useState<DashboardStats>({ totalServis: 0, servisHariIni: 0, unitReady: 0, sparepartStok: 0 })
+  const [stats, setStats] = useState<DashboardStats>({ totalServis: 0, servisHariIni: 0, unitReady: 0, sparepartStok: 0, omzetHariIni: 0, marginUnit: 0 })
   const [loading, setLoading] = useState(true)
+  const [servisChart, setServisChart] = useState<WeeklyServis[]>([])
+  const [omzetChart, setOmzetChart] = useState<WeeklyOmzet[]>([])
+  const [stockDist, setStockDist] = useState<StockDist[]>([])
+  const [activities, setActivities] = useState<Activity[]>([])
+  const [alerts, setAlerts] = useState<AlertItem[]>([])
+  const [servisBreakdown, setServisBreakdown] = useState({ pending: 0, proses: 0, selesai: 0 })
 
-  useEffect(() => { fetchStats() }, [])
+  useEffect(() => { fetchAll() }, [])
 
-  async function fetchStats() {
+  async function fetchAll() {
     try {
       const today = new Date(); today.setHours(0, 0, 0, 0)
       const todayStr = today.toISOString()
+      const days = getLast7Days()
+
+      // Fetch all data in parallel
+      const promises: Promise<unknown>[] = [
+        // 0: total servis
+        supabase.from('services').select('id', { count: 'exact' }),
+        // 1: servis hari ini
+        supabase.from('services').select('id', { count: 'exact' }).gte('created_at', todayStr),
+        // 2: servis 7 hari
+        supabase.from('services').select('created_at, status').gte('created_at', days[0].date.toISOString()),
+        // 3: unit ready
+        supabase.from('products').select('id', { count: 'exact' }).eq('status', 'ready'),
+        // 4: all products (for stock dist & low stock)
+        supabase.from('products').select('*, categories(name)').order('created_at', { ascending: false }),
+        // 5: recent services
+        supabase.from('services').select('*').order('created_at', { ascending: false }).limit(5),
+        // 6: recent sales
+        supabase.from('sales').select('*').order('created_at', { ascending: false }).limit(5),
+        // 7: recent stock movements
+        supabase.from('stock_movements').select('*, products(name)').order('created_at', { ascending: false }).limit(5),
+        // 8: servis breakdown today
+        supabase.from('services').select('status').gte('created_at', todayStr),
+        // 9: omzet 7 hari (services)
+        supabase.from('services').select('total_fee, created_at, status').eq('status', 'selesai').gte('created_at', days[0].date.toISOString()),
+        // 10: omzet 7 hari (sales)
+        supabase.from('sales').select('sell_price, margin, date').eq('status', 'completed').gte('date', days[0].date.toISOString()),
+      ]
+
       if (isAdmin) {
-        const [s1, s2, s3, s4] = await Promise.all([
-          supabase.from('services').select('id', { count: 'exact' }),
-          supabase.from('services').select('id', { count: 'exact' }).gte('created_at', todayStr),
-          supabase.from('products').select('id', { count: 'exact' }).eq('status', 'ready'),
-          supabase.from('products').select('quantity').eq('category_id', (await supabase.from('categories').select('id').eq('name', 'Sparepart').single()).data?.id || ''),
-        ])
-        setStats({ totalServis: s1.count || 0, servisHariIni: s2.count || 0, unitReady: s3.count || 0, sparepartStok: s4.data?.reduce((s, p) => s + p.quantity, 0) || 0 })
-      } else {
-        const [s1, s2] = await Promise.all([
-          supabase.from('services').select('id', { count: 'exact' }),
-          supabase.from('services').select('id', { count: 'exact' }).gte('created_at', todayStr),
-        ])
-        setStats({ totalServis: s1.count || 0, servisHariIni: s2.count || 0, unitReady: 0, sparepartStok: 0 })
+        // Also fetch sparepart stock for admin
+        const catRes = await supabase.from('categories').select('id').eq('name', 'Sparepart').single()
+        if (catRes.data) {
+          promises.push(
+            supabase.from('products').select('quantity').eq('category_id', catRes.data.id)
+          )
+        }
       }
+
+      const results = await Promise.all(promises)
+
+      // Stats
+      const totalServis = (results[0] as { count: number | null }).count || 0
+      const servisHariIni = (results[1] as { count: number | null }).count || 0
+      const unitReady = (results[3] as { count: number | null }).count || 0
+      const products = (results[4] as { data: Array<{ quantity: number; min_quantity: number; categories?: { name: string }; name: string; id: string }> }).data || []
+      const sparepartStok = products
+        .filter(p => p.categories?.name === 'Sparepart')
+        .reduce((s, p) => s + p.quantity, 0)
+
+      // Servis chart (7 hari)
+      const servisData = (results[2] as { data: Array<{ created_at: string; status: string }> }).data || []
+      const chartData = days.map(d => {
+        const dayServis = servisData.filter(s => s.created_at.slice(0, 10) === d.key)
+        return {
+          day: d.label,
+          masuk: dayServis.length,
+          selesai: dayServis.filter(s => s.status === 'selesai').length,
+        }
+      })
+      setServisChart(chartData)
+
+      // Omzet chart (7 hari)
+      const servisOmzet = (results[9] as { data: Array<{ total_fee: number; created_at: string }> }).data || []
+      const salesOmzet = (results[10] as { data: Array<{ sell_price: number; margin: number; date: string }> }).data || []
+      const omzetData = days.map(d => {
+        const dayServis = servisOmzet.filter(s => s.created_at.slice(0, 10) === d.key).reduce((s, r) => s + r.total_fee, 0)
+        const daySales = salesOmzet.filter(s => s.date.slice(0, 10) === d.key).reduce((s, r) => s + (r.margin || r.sell_price), 0)
+        return { day: d.label, omzet: dayServis + daySales }
+      })
+      setOmzetChart(omzetData)
+
+      // Omzet hari ini
+      const omzetHariIni = servisOmzet.filter(s => s.created_at.slice(0, 10) === today.toISOString().slice(0, 10)).reduce((s, r) => s + r.total_fee, 0)
+      const marginUnit = salesOmzet.filter(s => s.date.slice(0, 10) === today.toISOString().slice(0, 10)).reduce((s, r) => s + (r.margin || r.sell_price), 0)
+
+      // Stock distribution
+      const readyCount = products.filter(p => p.status === 'ready' && p.categories?.name === 'Unit Laptop').length
+      const soldCount = products.filter(p => p.status === 'sold').length
+      const sparepartCount = products.filter(p => p.categories?.name === 'Sparepart').reduce((s, p) => s + p.quantity, 0)
+      setStockDist([
+        { name: 'Unit Ready', value: readyCount, color: 'var(--color-accent)' },
+        { name: 'Terjual', value: soldCount, color: 'var(--color-ink-3)' },
+        { name: 'Sparepart', value: sparepartCount, color: 'var(--color-success)' },
+      ])
+
+      // Servis breakdown
+      const todayServis = (results[8] as { data: Array<{ status: string }> }).data || []
+      setServisBreakdown({
+        pending: todayServis.filter(s => s.status === 'proses').length,
+        proses: todayServis.filter(s => s.status === 'proses').length,
+        selesai: todayServis.filter(s => s.status === 'selesai').length,
+      })
+
+      // Activities — merge recent services, sales, stock movements
+      const recentServices = ((results[5] as { data: Array<{ id: string; nota_number: string; customer_name: string; device_type: string; total_fee: number; status: string; created_at: string }> }).data || []).map(s => ({
+        id: s.id, type: 'servis' as const,
+        title: `Servis ${s.nota_number} — ${s.customer_name}`,
+        description: `${s.device_type} · ${formatRupiahFull(s.total_fee)}`,
+        timestamp: s.created_at,
+      }))
+      const recentSales = ((results[6] as { data: Array<{ id: string; buyer_name: string; sell_price: number; created_at: string }> }).data || []).map(s => ({
+        id: s.id, type: 'sale' as const,
+        title: `Penjualan unit ke ${s.buyer_name}`,
+        description: `${formatRupiahFull(s.sell_price)}`,
+        timestamp: s.created_at,
+      }))
+      const recentStock = ((results[7] as { data: Array<{ id: string; type: string; quantity: number; notes: string | null; created_at: string; products?: { name: string } }> }).data || []).map(m => ({
+        id: m.id, type: m.type === 'masuk' ? 'stock_in' as const : 'stock_out' as const,
+        title: `Stok ${m.type === 'masuk' ? 'masuk' : 'keluar'}: ${m.products?.name || ''}`,
+        description: `${m.type === 'masuk' ? '+' : '-'}${m.quantity} · ${m.notes || ''}`,
+        timestamp: m.created_at,
+      }))
+
+      const allActivities = [...recentServices, ...recentSales, ...recentStock]
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .slice(0, 8)
+      setActivities(allActivities)
+
+      // Alerts — low stock
+      const lowStockItems = products.filter(p => p.quantity <= p.min_quantity && p.min_quantity > 0)
+      const alertItems: AlertItem[] = lowStockItems.map(p => ({
+        id: p.id,
+        type: 'low_stock' as const,
+        title: `${p.name} stok menipis`,
+        description: `Sisa ${p.quantity} unit (min: ${p.min_quantity})`,
+      }))
+      setAlerts(alertItems)
+
+      setStats({ totalServis, servisHariIni, unitReady, sparepartStok, omzetHariIni, marginUnit })
     } catch (e) { console.error(e) } finally { setLoading(false) }
   }
 
@@ -46,20 +180,18 @@ export default function DashboardPage() {
     <div>
       {/* Hero greeting bar */}
       <div style={{
-        background: 'linear-gradient(135deg, var(--color-accent), oklch(45% 0.2 290))',
+        background: 'linear-gradient(135deg, var(--color-accent), oklch(42% 0.2 295))',
         borderRadius: 'var(--radius-xl)',
         padding: 'var(--space-xl) var(--space-2xl)',
         marginBottom: 'var(--space-xl)',
-        position: 'relative',
-        overflow: 'hidden',
+        position: 'relative', overflow: 'hidden',
       }}>
-        {/* Decorative circle */}
         <div style={{
-          position: 'absolute', right: -30, top: -30, width: 180, height: 180,
+          position: 'absolute', right: -30, top: -30, width: 200, height: 200,
           borderRadius: '50%', background: 'oklch(100% 0 0 / 0.08)',
         }} />
         <div style={{
-          position: 'absolute', right: 60, bottom: -40, width: 120, height: 120,
+          position: 'absolute', right: 80, bottom: -50, width: 140, height: 140,
           borderRadius: '50%', background: 'oklch(100% 0 0 / 0.05)',
         }} />
         <div style={{ position: 'relative', zIndex: 1 }}>
@@ -69,51 +201,75 @@ export default function DashboardPage() {
           }}>
             {profile?.name ? `Halo, ${profile.name.split(' ')[0]} 👋` : 'Dashboard'}
           </h1>
-          <p style={{ fontSize: 'var(--text-body)', color: 'oklch(90% 0.02 275)', fontWeight: 400 }}>
+          <p style={{ fontSize: 'var(--text-body)', color: 'oklch(90% 0.02 275)' }}>
             {dateStr} · {isAdmin ? 'Admin' : 'Karyawan'}
           </p>
         </div>
       </div>
 
-      {/* Stat Cards */}
+      {/* Stat Cards Row 1 — Key metrics */}
       <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-        gap: 'var(--space-sm)', marginBottom: 'var(--space-xl)',
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: 'var(--space-sm)', marginBottom: 'var(--space-lg)',
       }}>
-        <StatCard label="Total Servis" value={stats.totalServis} icon={Wrench} loading={loading} accent="primary" />
+        <StatCard label="Total Servis" value={stats.totalServis.toString()} icon={Wrench} loading={loading} accent="primary" />
+        <StatCard label="Servis Hari Ini" value={stats.servisHariIni.toString()} icon={TrendingUp} loading={loading} accent="info" />
         {isAdmin && <>
-          <StatCard label="Unit Ready" value={stats.unitReady} icon={Laptop} loading={loading} accent="success" />
-          <StatCard label="Sparepart Stok" value={stats.sparepartStok} icon={Package} loading={loading} accent="warning" />
-          <StatCard label="Servis Hari Ini" value={stats.servisHariIni} icon={TrendingUp} loading={loading} accent="info" />
+          <StatCard label="Unit Ready" value={stats.unitReady.toString()} icon={Laptop} loading={loading} accent="success" />
+          <StatCard label="Sparepart Stok" value={stats.sparepartStok.toString()} icon={Package} loading={loading} accent="warning" />
+          <StatCard label="Omzet Hari Ini" value={formatRupiahFull(stats.omzetHariIni)} icon={DollarSign} loading={loading} accent="success" />
+          <StatCard label="Margin Unit" value={formatRupiahFull(stats.marginUnit)} icon={ShoppingCart} loading={loading} accent="primary" />
         </>}
-        {!isAdmin && (
-          <StatCard label="Servis Hari Ini" value={stats.servisHariIni} icon={TrendingUp} loading={loading} accent="info" />
-        )}
       </div>
 
-      {/* Quick Actions */}
-      <div style={{ marginBottom: 'var(--space-xl)' }}>
-        <h2 className="text-h3" style={{ marginBottom: 'var(--space-sm)', color: 'var(--color-ink-3)', fontWeight: 500, fontSize: 'var(--text-xs)', textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)' }}>Aksi Cepat</h2>
+      {/* Charts Row — 2 columns */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))',
+        gap: 'var(--space-sm)', marginBottom: 'var(--space-lg)',
+      }}>
+        <OmzetWeeklyChart data={omzetChart} />
+        <ServisWeeklyChart data={servisChart} />
+      </div>
+
+      {/* Second Row — Servis Breakdown + Stock Distribution */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+        gap: 'var(--space-sm)', marginBottom: 'var(--space-lg)',
+      }}>
+        <ServisStatusCard
+          pending={servisBreakdown.pending}
+          proses={servisBreakdown.proses}
+          selesai={servisBreakdown.selesai}
+          loading={loading}
+        />
+        <StokDonutChart data={stockDist} />
+      </div>
+
+      {/* Third Row — Activity Feed + Alerts */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+        gap: 'var(--space-sm)', marginBottom: 'var(--space-lg)',
+      }}>
+        <ActivityFeed activities={activities} loading={loading} />
+        <AttentionCard alerts={alerts} loading={loading} />
+      </div>
+
+      {/* Quick Actions — compact row */}
+      <div style={{ marginBottom: 'var(--space-lg)' }}>
+        <p style={{
+          fontSize: 'var(--text-xs)', color: 'var(--color-ink-3)', fontWeight: 500,
+          textTransform: 'uppercase', letterSpacing: 'var(--tracking-wide)', marginBottom: 'var(--space-xs)',
+        }}>Aksi Cepat</p>
         <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
           gap: 'var(--space-xs)',
         }}>
-          <QuickAction href="/servis" icon={Wrench} title="Input Servis Baru" description="Catat servis masuk" />
+          <QuickAction href="/servis" icon={Wrench} title="Servis Baru" />
           {isAdmin && <>
-            <QuickAction href="/unit-laptop/beli" icon={Laptop} title="Beli Unit Laptop" description="Tambah unit ke stok" />
-            <QuickAction href="/laporan" icon={TrendingUp} title="Lihat Laporan" description="Cek keuangan bulanan" />
+            <QuickAction href="/unit-laptop/beli" icon={Laptop} title="Beli Unit" />
+            <QuickAction href="/laporan" icon={TrendingUp} title="Laporan" />
+            <QuickAction href="/stok" icon={Package} title="Kelola Stok" />
           </>}
-          {!isAdmin && <QuickAction href="/servis" icon={Wrench} title="Daftar Servis" description="Lihat order berjalan" />}
-        </div>
-      </div>
-
-      {/* System Status */}
-      <div className="card" style={{ padding: 'var(--space-lg)' }}>
-        <h3 className="text-h3" style={{ marginBottom: 'var(--space-sm)' }}>Status Sistem</h3>
-        <div style={{ display: 'flex', gap: 'var(--space-xl)', flexWrap: 'wrap' }}>
-          <StatusItem label="Versi" value="v2.0" />
-          <StatusItem label="Mode" value={profile?.role === 'admin' ? 'Admin' : 'Karyawan'} />
-          <StatusItem label="Status" value="Online" color="var(--color-success)" />
         </div>
       </div>
     </div>
@@ -121,22 +277,22 @@ export default function DashboardPage() {
 }
 
 const accentColors: Record<string, { bg: string; icon: string; border: string }> = {
-  primary: { bg: 'var(--color-accent-soft)', icon: 'var(--color-accent)', border: 'oklch(54% 0.24 275 / 0.2)' },
-  success: { bg: 'var(--color-success-bg)', icon: 'var(--color-success)', border: 'oklch(62% 0.18 155 / 0.2)' },
-  warning: { bg: 'var(--color-warning-bg)', icon: 'var(--color-warning)', border: 'oklch(72% 0.16 75 / 0.2)' },
-  info:    { bg: 'var(--color-info-bg)', icon: 'var(--color-accent)', border: 'oklch(54% 0.24 275 / 0.2)' },
+  primary: { bg: 'var(--color-accent-soft)', icon: 'var(--color-accent)', border: 'oklch(54% 0.24 275 / 0.25)' },
+  success: { bg: 'var(--color-success-bg)', icon: 'var(--color-success)', border: 'oklch(62% 0.18 155 / 0.25)' },
+  warning: { bg: 'var(--color-warning-bg)', icon: 'var(--color-warning)', border: 'oklch(72% 0.16 75 / 0.25)' },
+  info:    { bg: 'var(--color-info-bg)', icon: 'var(--color-accent)', border: 'oklch(54% 0.24 275 / 0.25)' },
 }
 
 function StatCard({ label, value, icon: Icon, loading, accent = 'primary' }: {
-  label: string; value: number; icon: React.ComponentType<{ size?: number; color?: string }>; loading: boolean; accent?: string;
+  label: string; value: string; icon: React.ComponentType<{ size?: number; color?: string }>; loading: boolean; accent?: string;
 }) {
   const colors = accentColors[accent] || accentColors.primary
   return (
     <div className="card" style={{
-      padding: 'var(--space-lg)',
+      padding: 'var(--space-md) var(--space-lg)',
       borderLeft: `3px solid ${colors.border}`,
     }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 'var(--space-xs)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-xs)' }}>
         <span className="text-caption">{label}</span>
         <div style={{
           width: 32, height: 32, borderRadius: 'var(--radius-md)',
@@ -146,50 +302,35 @@ function StatCard({ label, value, icon: Icon, loading, accent = 'primary' }: {
         </div>
       </div>
       <div style={{
-        fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700,
-        color: 'var(--color-ink)', letterSpacing: 'var(--tracking-display)', lineHeight: 1,
+        fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700,
+        color: 'var(--color-ink)', letterSpacing: 'var(--tracking-display)', lineHeight: 1.1,
       }}>
-        {loading ? <div className="skeleton" style={{ width: 60, height: 32 }} /> : value}
+        {loading ? <div className="skeleton" style={{ width: 80, height: 28 }} /> : value}
       </div>
     </div>
   )
 }
 
-function QuickAction({ href, icon: Icon, title, description }: {
-  href: string; icon: React.ComponentType<{ size?: number; color?: string }>; title: string; description: string;
+function QuickAction({ href, icon: Icon, title }: {
+  href: string; icon: React.ComponentType<{ size?: number; color?: string }>; title: string;
 }) {
   return (
     <Link href={href} className="card card-hover" style={{
-      display: 'flex', alignItems: 'center', gap: 'var(--space-sm)',
-      padding: 'var(--space-sm) var(--space-md)', textDecoration: 'none', outline: 'none',
+      display: 'flex', alignItems: 'center', gap: 'var(--space-xs)',
+      padding: 'var(--space-xs) var(--space-sm)', textDecoration: 'none', outline: 'none',
     }}>
       <div style={{
-        width: 40, height: 40, borderRadius: 'var(--radius-md)',
+        width: 32, height: 32, borderRadius: 'var(--radius-sm)',
         background: 'var(--color-accent-soft)',
         display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
       }}>
-        <Icon size={20} color="var(--color-accent)" />
+        <Icon size={16} color="var(--color-accent)" />
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{
-          fontFamily: 'var(--font-display)', fontSize: 'var(--text-body)', fontWeight: 600,
-          color: 'var(--color-ink)', marginBottom: 2,
-        }}>{title}</p>
-        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-ink-3)' }}>{description}</p>
-      </div>
-      <ArrowUpRight size={16} color="var(--color-ink-3)" />
+      <span style={{
+        fontFamily: 'var(--font-display)', fontSize: 'var(--text-sm)', fontWeight: 600,
+        color: 'var(--color-ink)', flex: 1,
+      }}>{title}</span>
+      <ArrowUpRight size={14} color="var(--color-ink-3)" />
     </Link>
-  )
-}
-
-function StatusItem({ label, value, color }: { label: string; value: string; color?: string }) {
-  return (
-    <div>
-      <p className="text-caption" style={{ marginBottom: 2 }}>{label}</p>
-      <p style={{
-        fontFamily: 'var(--font-display)', fontSize: 'var(--text-body)', fontWeight: 600,
-        color: color || 'var(--color-ink)',
-      }}>{value}</p>
-    </div>
   )
 }
