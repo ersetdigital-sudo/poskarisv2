@@ -11,19 +11,19 @@ CREATE TABLE IF NOT EXISTS public.settings (
 
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 
--- Admin bisa baca semua settings
-CREATE POLICY "Admin can view settings" ON public.settings
-  FOR SELECT USING (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
-  );
+-- Semua user yang login bisa baca settings (sidebar butuh baca nama toko)
+DROP POLICY IF EXISTS "Authenticated users can view settings" ON public.settings;
+CREATE POLICY "Authenticated users can view settings" ON public.settings
+  FOR SELECT USING (auth.role() = 'authenticated');
 
--- Admin bisa manage settings
+-- Hanya admin yang bisa ubah settings
+DROP POLICY IF EXISTS "Admin can manage settings" ON public.settings;
 CREATE POLICY "Admin can manage settings" ON public.settings
   FOR ALL USING (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+    public.get_my_role() = 'admin'
   );
 
--- Default values
+-- Default values (jalankan sekali saja)
 INSERT INTO public.settings (key, value, description) VALUES
   ('store_name', 'Kasir POS', 'Nama toko yang tampil di nota dan sidebar'),
   ('store_address', 'Jl. Contoh No. 123, Kota', 'Alamat toko'),
