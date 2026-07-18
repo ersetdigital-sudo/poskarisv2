@@ -12,6 +12,8 @@ import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { RupiahInput } from '@/components/ui/rupiah-input'
 import PageHeader from '@/components/dashboard/PageHeader'
+import { NotaServisPDF } from '@/components/pdf/nota-servis'
+import { sendWhatsAppPDF } from '@/components/pdf/utils'
 
 export default function ServisPage() {
   const { isAdmin } = useAuth()
@@ -22,8 +24,27 @@ export default function ServisPage() {
   const [showForm, setShowForm] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<Service | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [sendingWA, setSendingWA] = useState<string | null>(null)
+  const [waResult, setWaResult] = useState<{ id: string; ok: boolean; msg: string } | null>(null)
+  const [storeInfo, setStoreInfo] = useState({ storeName: 'Kasir POS', storeAddress: '', storePhone: '' })
 
-  useEffect(() => { fetchServices() }, [])
+  useEffect(() => { 
+    fetchServices()
+    fetchStoreSettings()
+  }, [])
+
+  async function fetchStoreSettings() {
+    try {
+      const { data } = await supabase.from('settings').select('key, value').in('key', ['store_name', 'store_address', 'store_phone'])
+      const map: Record<string, string> = {}
+      data?.forEach(row => { map[row.key] = row.value })
+      setStoreInfo({
+        storeName: map.store_name || 'Kasir POS',
+        storeAddress: map.store_address || '',
+        storePhone: map.store_phone || '',
+      })
+    } catch (e) { console.error(e) }
+  }
 
   async function fetchServices() {
     try {
@@ -36,34 +57,87 @@ export default function ServisPage() {
   async function handleDelete(service: Service) {
     setDeleting(true)
     try {
-      // Ambil service_parts untuk restore stok
-      const { data: parts } = await supabase.from('service_parts').select('product_id, quantity').eq('service_id', service.id)
+      // Hapus service_parts terkait dulu
+      const { error: partsError } = await supabase.from('service_parts').delete().eq('service_id', service.id)
+      if (partsError) console.error('Error deleting parts:', partsError)
       
-      // Restore stok sparepart (tambahkan kembali)
-      if (parts && parts.length > 0) {
-        for (const part of parts) {
-          // Dapatkan stok saat ini
-          const { data: product } = await supabase.from('products').select('quantity').eq('id', part.product_id).single()
-          if (product) {
-            await supabase.from('products').update({ quantity: product.quantity + part.quantity }).eq('id', part.product_id)
-          }
-        }
-      }
-      
-      // Hapus service_parts terkait
-      await supabase.from('service_parts').delete().eq('service_id', service.id)
       // Hapus stock_movements terkait
-      await supabase.from('stock_movements').delete().eq('reference_id', service.id).eq('reference_type', 'servis')
+      const { error: movError } = await supabase.from('stock_movements').delete().eq('reference_id', service.id).eq('reference_type', 'servis')
+      if (movError) console.error('Error deleting movements:', movError)
+      
       // Hapus service
       const { error } = await supabase.from('services').delete().eq('id', service.id)
       if (error) throw error
+      
       setDeleteConfirm(null)
       fetchServices()
     } catch (e) {
       console.error(e)
-      alert('Gagal menghapus data servis')
+      alert('Gagal menghapus data servis: ' + (e instanceof Error ? e.message : 'Unknown error'))
     } finally {
       setDeleting(false)
+    }
+  }
+
+  async function handleKirimWhatsApp(service: Service) {
+    setSendingWA(service.id)
+    setWaResult(null)
+    try {
+      const doc = NotaServisPDF({ service, ...storeInfo })
+
+      const tglMasuk = new Date(service.date_in).toLocaleDateString('id-ID', {
+        day: 'numeric', month: 'long', year: 'numeric',
+      })
+
+      const sisa = service.total_fee - (service.dp_amount || 0)
+
+      const lines = [
+        `📢 *Halo ${service.customer_name},*`,
+        ``,
+        `Kabar baik! Perangkat Anda telah selesai diservis dan siap diambil. 🎉`,
+        ``,
+        `━━━━━━━━━━━━━━`,
+        `📋 *DETAIL SERVIS*`,
+        `• *No. Nota:* ${service.nota_number}`,
+        `• *Perangkat:* ${service.device_type} ${service.device_brand || ''} ${service.device_model || ''}`.trim(),
+        service.complaint ? `• *Keluhan:* ${service.complaint}` : null,
+        `• *Tanggal Masuk:* ${tglMasuk}`,
+        `━━━━━━━━━━━━━━`,
+        ``,
+        `💰 *RINCIAN BIAYA*`,
+        `• Biaya Jasa: *${formatRupiah(service.service_fee)}*`,
+        `• Biaya Sparepart: *${formatRupiah(service.parts_fee)}*`,
+        `────────────────`,
+        `*Total Pembayaran: ${formatRupiah(service.total_fee)}*`,
+        service.dp_amount > 0 ? `*DP/Uang Muka: ${formatRupiah(service.dp_amount)}*` : null,
+        service.dp_amount > 0 ? `*Sisa Pembayaran: ${formatRupiah(sisa)}*` : null,
+        ``,
+        `📄 Nota servis dalam format PDF telah kami lampirkan pada pesan ini.`,
+        ``,
+        `Terima kasih telah mempercayakan servis perangkat Anda kepada kami. 🙏`,
+        ``,
+        `Jika ada pertanyaan, silakan balas pesan ini. Kami siap membantu.`,
+      ].filter(Boolean).join('\n')
+
+      const result = await sendWhatsAppPDF({
+        document: doc,
+        filename: `Nota-${service.nota_number}.pdf`,
+        phone: service.customer_phone,
+        message: lines,
+      })
+
+      if (result.success) {
+        setWaResult({ id: service.id, ok: true, msg: 'Nota berhasil dikirim ke WhatsApp!' })
+      } else {
+        const waUrl = `https://wa.me/${service.customer_phone.replace(/^0/, '62')}?text=${encodeURIComponent(lines)}`
+        window.open(waUrl, '_blank')
+        setWaResult({ id: service.id, ok: false, msg: `Gagal via API. Membuka WhatsApp Web...` })
+      }
+    } catch (e) {
+      console.error('WhatsApp error:', e)
+      setWaResult({ id: service.id, ok: false, msg: 'Terjadi kesalahan' })
+    } finally {
+      setSendingWA(null)
     }
   }
 
@@ -169,6 +243,21 @@ export default function ServisPage() {
                         <Eye size={12} /> Detail
                       </Button>
                     </Link>
+                    {s.status === 'selesai' && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-7 px-2 text-[11px] gap-1 text-badge-success border-badge-success/30 hover:bg-badge-success/10"
+                        onClick={() => handleKirimWhatsApp(s)}
+                        disabled={sendingWA === s.id}
+                      >
+                        {sendingWA === s.id ? (
+                          <span className="h-3 w-3 animate-spin rounded-full border-2 border-badge-success/30 border-t-badge-success" />
+                        ) : (
+                          <Send size={12} />
+                        )}
+                      </Button>
+                    )}
                     {isAdmin && (
                       <Button 
                         variant="outline" 
@@ -246,11 +335,18 @@ export default function ServisPage() {
                           </Link>
                           {s.status === 'selesai' && (
                             <>
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                                <FileText size={13} />
-                              </Button>
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                                <Send size={13} />
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-7 w-7 p-0"
+                                onClick={() => handleKirimWhatsApp(s)}
+                                disabled={sendingWA === s.id}
+                              >
+                                {sendingWA === s.id ? (
+                                  <span className="h-3 w-3 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-foreground" />
+                                ) : (
+                                  <Send size={13} />
+                                )}
                               </Button>
                             </>
                           )}
@@ -284,7 +380,7 @@ export default function ServisPage() {
             </p>
             <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3">
               <p className="text-xs text-destructive">
-                Data yang dihapus tidak dapat dikembalikan. Stok sparepart yang terkait akan dikembalikan.
+                Data yang dihapus tidak dapat dikembalikan.
               </p>
             </div>
             <div className="flex gap-2">
@@ -306,6 +402,44 @@ export default function ServisPage() {
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* WhatsApp Result Toast */}
+      {waResult && (
+        <div className={`fixed bottom-4 right-4 z-50 max-w-sm rounded-lg border p-4 shadow-elevated ${
+          waResult.ok 
+            ? 'border-badge-success/30 bg-badge-success/10' 
+            : 'border-destructive/30 bg-destructive/10'
+        }`}>
+          <div className="flex items-center gap-3">
+            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+              waResult.ok ? 'bg-badge-success/20' : 'bg-destructive/20'
+            }`}>
+              {waResult.ok ? (
+                <svg className="h-4 w-4 text-badge-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="h-4 w-4 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              )}
+            </div>
+            <div className="flex-1">
+              <p className={`text-sm font-medium ${waResult.ok ? 'text-badge-success' : 'text-destructive'}`}>
+                {waResult.msg}
+              </p>
+            </div>
+            <button 
+              onClick={() => setWaResult(null)}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
       )}
 
       {showForm && <ServisForm onClose={() => setShowForm(false)} onSaved={fetchServices} />}
