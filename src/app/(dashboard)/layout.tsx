@@ -84,7 +84,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           className="flex h-16 items-center justify-between px-5 shrink-0"
           style={{ borderBottom: '1px solid var(--sidebar-border)' }}
         >
-          <Link href="/" className="flex items-center gap-3 no-underline min-w-0">
+          <Link href="/" className="flex items-center gap-2.5 no-underline min-w-0">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary shadow-lg shadow-primary/25">
               <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
                 <rect x="3" y="2" width="14" height="16" rx="2" stroke="var(--primary-foreground)" strokeWidth="1.5"/>
@@ -93,7 +93,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <line x1="6.5" y1="13" x2="10" y2="13" stroke="var(--primary-foreground)" strokeWidth="1.2" strokeLinecap="round"/>
               </svg>
             </div>
-            <span className="font-serif text-base sm:text-lg font-bold tracking-tight text-white truncate">
+            <span className="font-serif text-sm sm:text-base font-bold tracking-tight text-white break-all leading-tight">
               {storeName}
             </span>
           </Link>
@@ -176,10 +176,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="hidden sm:block text-right">
-              <p className="text-sm font-semibold text-foreground leading-tight">{profile.name}</p>
-            </div>
+          <div className="flex items-center">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-white">
               <span className="text-sm font-bold">
                 {profile.name.charAt(0).toUpperCase()}
