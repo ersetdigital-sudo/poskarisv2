@@ -27,23 +27,23 @@ export default function StatCard({
 
   return (
     <Card className="transition-shadow hover:shadow-card-hover">
-      <CardContent className="p-4 sm:p-5">
-        <div className="flex items-start gap-3">
-          {/* Icon Box - Black rounded */}
-          <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg ${bgColors[color]}`}>
-            <Icon size={22} className="text-white" strokeWidth={2} />
+      <CardContent className="p-3 sm:p-4">
+        <div className="flex items-start gap-2.5">
+          {/* Icon Box - Compact */}
+          <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${bgColors[color]}`}>
+            <Icon size={18} className="text-white" strokeWidth={2.5} />
           </div>
 
           {/* Content */}
           <div className="flex-1 min-w-0">
-            <div className="text-xs font-medium text-ash uppercase tracking-wider mb-1.5">
+            <div className="text-[10px] font-medium text-ash uppercase tracking-wider mb-0.5">
               {title}
             </div>
-            <div className={`text-xl sm:text-2xl font-bold leading-tight ${valueClass || 'text-ink'}`} style={{ fontWeight: 700 }}>
+            <div className={`text-lg sm:text-xl font-bold leading-tight ${valueClass || 'text-ink'}`} style={{ fontWeight: 700 }}>
               {value}
             </div>
             {sub && (
-              <div className="text-xs text-stone mt-1">
+              <div className="text-[10px] text-stone mt-0.5">
                 {sub}
               </div>
             )}
