@@ -26,24 +26,24 @@ export default function StatCard({
   }
 
   return (
-    <Card className="transition-shadow hover:shadow-card-hover">
-      <CardContent className="p-3 sm:p-4">
-        <div className="flex items-start gap-2.5">
+    <Card className="transition-all hover:shadow-card-hover border border-hairline">
+      <CardContent className="p-2.5 sm:p-3">
+        <div className="flex items-center gap-2">
           {/* Icon Box - Compact */}
-          <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${bgColors[color]}`}>
-            <Icon size={18} className="text-white" strokeWidth={2.5} />
+          <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${bgColors[color]}`}>
+            <Icon size={16} className="text-white" strokeWidth={2.5} />
           </div>
 
           {/* Content */}
           <div className="flex-1 min-w-0">
-            <div className="text-[10px] font-medium text-ash uppercase tracking-wider mb-0.5">
+            <div className="text-[9px] font-medium text-ash uppercase tracking-wider leading-tight">
               {title}
             </div>
-            <div className={`text-lg sm:text-xl font-bold leading-tight ${valueClass || 'text-ink'}`} style={{ fontWeight: 700 }}>
+            <div className={`text-base sm:text-lg font-bold leading-tight mt-0.5 ${valueClass || 'text-ink'}`} style={{ fontWeight: 700 }}>
               {value}
             </div>
             {sub && (
-              <div className="text-[10px] text-stone mt-0.5">
+              <div className="text-[9px] text-stone leading-tight mt-0.5">
                 {sub}
               </div>
             )}
