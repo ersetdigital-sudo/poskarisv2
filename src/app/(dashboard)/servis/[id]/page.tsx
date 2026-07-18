@@ -78,27 +78,42 @@ export default function ServisDetailPage() {
     try {
       const doc = NotaServisPDF({ service, ...storeInfo })
 
-      // Pesan detail untuk customer
+      // Format tanggal masuk
+      const tglMasuk = new Date(service.date_in).toLocaleDateString('id-ID', {
+        day: 'numeric', month: 'long', year: 'numeric',
+      })
+
+      // Hitung sisa pembayaran
+      const sisa = service.total_fee - (service.dp_amount || 0)
+
+      // Pesan detail untuk customer (format rapi)
       const lines = [
-        `*${storeInfo.storeName || 'Kasir POS'}*`,
-        `━━━━━━━━━━━━━━━━━━`,
+        `📢 *Halo ${service.customer_name},*`,
         ``,
-        `Halo *${service.customer_name}*,`,
-        `Servis perangkat Anda sudah *selesai*.`,
+        `Kabar baik! Perangkat Anda telah selesai diservis dan siap diambil. 🎉`,
         ``,
-        `📋 *Detail Servis*`,
-        `Nota: *${service.nota_number}*`,
-        `Perangkat: ${service.device_type} ${service.device_brand || ''} ${service.device_model || ''}`.trim(),
-        service.complaint ? `Keluhan: ${service.complaint}` : null,
+        `━━━━━━━━━━━━━━`,
+        `📋 *DETAIL SERVIS*`,
+        `• *No. Nota:* ${service.nota_number}`,
+        `• *Perangkat:* ${service.device_type} ${service.device_brand || ''} ${service.device_model || ''}`.trim(),
+        service.complaint ? `• *Keluhan:* ${service.complaint}` : null,
+        `• *Tanggal Masuk:* ${tglMasuk}`,
+        service.notes ? `• *Keterangan:* ${service.notes}` : null,
+        `━━━━━━━━━━━━━━`,
         ``,
-        `💰 *Rincian Biaya*`,
-        `Biaya Jasa: ${formatRupiah(service.service_fee)}`,
-        `Biaya Sparepart: ${formatRupiah(service.parts_fee)}`,
-        `*Total: ${formatRupiah(service.total_fee)}*`,
+        `💰 *RINCIAN BIAYA*`,
+        `• Biaya Jasa: *${formatRupiah(service.service_fee)}*`,
+        `• Biaya Sparepart: *${formatRupiah(service.parts_fee)}*`,
+        `────────────────`,
+        `*Total Pembayaran: ${formatRupiah(service.total_fee)}*`,
+        service.dp_amount > 0 ? `*DP/Uang Muka: ${formatRupiah(service.dp_amount)}*` : null,
+        service.dp_amount > 0 ? `*Sisa Pembayaran: ${formatRupiah(sisa)}*` : null,
         ``,
-        `Nota PDF terlampir di pesan ini.`,
+        `📄 Nota servis dalam format PDF telah kami lampirkan pada pesan ini.`,
         ``,
-        `Terima kasih atas kepercayaan Anda! 🙏`,
+        `Terima kasih telah mempercayakan servis perangkat Anda kepada kami. 🙏`,
+        ``,
+        `Jika ada pertanyaan, silakan balas pesan ini. Kami siap membantu.`,
       ].filter(Boolean).join('\n')
 
       const result = await sendWhatsAppPDF({
@@ -233,6 +248,18 @@ export default function ServisDetailPage() {
                   <span className="text-sm font-bold text-foreground">Total</span>
                   <span className="font-mono text-lg font-bold text-foreground">{formatRupiah(service.total_fee)}</span>
                 </div>
+                {service.dp_amount > 0 && (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-badge-success">DP/Uang Muka</span>
+                      <span className="font-mono text-sm font-medium text-badge-success">{formatRupiah(service.dp_amount)}</span>
+                    </div>
+                    <div className="flex justify-between border-t border-border pt-2.5">
+                      <span className="text-sm font-bold text-foreground">Sisa Pembayaran</span>
+                      <span className="font-mono text-lg font-bold text-foreground">{formatRupiah(service.total_fee - service.dp_amount)}</span>
+                    </div>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>

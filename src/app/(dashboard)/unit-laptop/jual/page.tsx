@@ -27,17 +27,13 @@ export default function JualUnitPage() {
 
   async function fetchUnits() {
     try {
-      // Coba ambil kategori "Unit Laptop" dulu
-      const { data: cat, error: catError } = await supabase.from('categories').select('id').eq('name', 'Unit Laptop').maybeSingle()
-      
-      let query = supabase.from('products').select('*').gt('quantity', 0).neq('status', 'sold').order('created_at', { ascending: false })
-      
-      // Kalau kategori ada, filter by category
-      if (cat && !catError) {
-        query = query.eq('category_id', cat.id)
-      }
-      
-      const { data, error } = await query
+      // Tampilkan semua produk dengan stok > 0 dan belum terjual (kategori apapun)
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .gt('quantity', 0)
+        .neq('status', 'sold')
+        .order('created_at', { ascending: false })
       if (error) throw error
       setUnits(data || [])
     } catch (e) { console.error(e) }

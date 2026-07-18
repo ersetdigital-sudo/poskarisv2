@@ -290,6 +290,18 @@ export function NotaServisPDF({
             <Text style={styles.totalLabel}>TOTAL</Text>
             <Text style={styles.totalValue}>{formatRupiah(service.total_fee)}</Text>
           </View>
+          {service.dp_amount > 0 && (
+            <>
+              <View style={{ ...styles.summaryRow, marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#e0e0e0' }}>
+                <Text style={{ ...styles.summaryLabel, color: '#10b981' }}>DP / Uang Muka</Text>
+                <Text style={{ ...styles.summaryValue, color: '#10b981' }}>- {formatRupiah(service.dp_amount)}</Text>
+              </View>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>SISA PEMBAYARAN</Text>
+                <Text style={styles.totalValue}>{formatRupiah(service.total_fee - service.dp_amount)}</Text>
+              </View>
+            </>
+          )}
         </View>
 
         {/* Dates */}

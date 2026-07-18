@@ -39,19 +39,39 @@ export async function POST(request: NextRequest) {
     if (formattedPhone.startsWith('0')) formattedPhone = '62' + formattedPhone.slice(1)
     if (!formattedPhone.startsWith('62')) formattedPhone = '62' + formattedPhone
 
-    // Build multipart form data
     const formData = new FormData()
     formData.append('target', formattedPhone)
     formData.append('message', message)
 
-    // Attach PDF file
+    // Upload PDF ke Supabase Storage → dapat URL → kirim URL ke Fonnte
     if (fileBase64 && filename) {
       const buffer = Buffer.from(fileBase64, 'base64')
-      // Fonnte expects a File/Blob with proper MIME type
-      const file = new File([buffer], filename.endsWith('.pdf') ? filename : `${filename}.pdf`, {
-        type: 'application/pdf',
-      })
-      formData.append('file', file)
+      const cleanFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '_')
+      const filePath = `nota/${Date.now()}-${cleanFilename}`
+
+      // Upload ke Supabase storage
+      const { error: uploadError } = await supabaseAdmin.storage
+        .from('nota')
+        .upload(filePath, buffer, {
+          contentType: 'application/pdf',
+          upsert: true,
+        })
+
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError)
+        // Fallback: kirim tanpa file
+      } else {
+        // Dapatkan public URL
+        const { data: urlData } = supabaseAdmin.storage
+          .from('nota')
+          .getPublicUrl(filePath)
+
+        if (urlData?.publicUrl) {
+          // Kirim URL ke Fonnte (Fonnte akan download dan kirim sebagai file)
+          formData.append('url', urlData.publicUrl)
+          formData.append('filename', cleanFilename)
+        }
+      }
     }
 
     const response = await fetch('https://api.fonnte.com/send', {

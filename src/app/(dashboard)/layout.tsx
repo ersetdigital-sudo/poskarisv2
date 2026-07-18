@@ -113,15 +113,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className={`mb-0.5 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm no-underline transition-colors ${
+                className={`mb-1 flex items-center gap-3 rounded-lg px-3 py-3 text-sm no-underline transition-colors min-h-[48px] ${
                   isActive
                     ? 'bg-white/10 font-semibold text-white'
-                    : 'font-medium hover:bg-white/5'
+                    : 'font-medium hover:bg-white/5 active:bg-white/10'
                 }`}
                 style={{ color: isActive ? '#fff' : 'var(--sidebar-foreground)' }}
               >
-                <item.icon size={18} strokeWidth={isActive ? 2 : 1.5} />
-                {item.label}
+                <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                <span>{item.label}</span>
               </Link>
             )
           })}
@@ -159,24 +159,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Topbar */}
-        <header className="flex h-14 shrink-0 items-center justify-between border-b bg-card px-4 sm:px-6">
-          <button onClick={() => setOpen(true)} aria-label="Buka menu" className="mobile-only h-8 w-8 border-none bg-transparent p-0 cursor-pointer text-muted-foreground">
-            <Menu size={20} />
-          </button>
+        <header className="flex h-14 shrink-0 items-center justify-between border-b bg-card px-4">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setOpen(true)} aria-label="Buka menu" className="lg:hidden flex items-center justify-center h-10 w-10 -ml-1 border-none bg-transparent cursor-pointer text-muted-foreground rounded-lg hover:bg-muted active:bg-muted transition-colors">
+              <Menu size={22} />
+            </button>
 
-          <div className="desktop-only items-center gap-2">
-            <span className="text-sm text-muted-foreground">Kasir POS</span>
-            <span className="text-xs text-muted-foreground/50">/</span>
-            <span className="font-serif text-sm font-semibold text-foreground">{currentPage?.label ?? 'Dashboard'}</span>
+            <div className="hidden lg:flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Kasir POS</span>
+              <span className="text-xs text-muted-foreground/50">/</span>
+              <span className="font-serif text-sm font-semibold text-foreground">{currentPage?.label ?? 'Dashboard'}</span>
+            </div>
+
+            <div className="lg:hidden">
+              <span className="font-serif text-sm font-bold text-foreground">{currentPage?.label ?? 'Dashboard'}</span>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="sm-block text-right">
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:block text-right">
               <p className="text-sm font-semibold text-foreground leading-tight">{profile.name}</p>
               <p className="text-xs capitalize text-muted-foreground">{profile.role}</p>
             </div>
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-              <span className="font-serif text-sm font-bold text-primary">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-white">
+              <span className="text-sm font-bold">
                 {profile.name.charAt(0).toUpperCase()}
               </span>
             </div>
@@ -184,8 +190,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 lg:p-8">
-          <div className="mx-auto max-w-6xl">
+        <main className="flex-1 overflow-y-auto bg-background">
+          <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
             {children}
           </div>
         </main>

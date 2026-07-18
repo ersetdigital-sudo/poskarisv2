@@ -20,6 +20,8 @@ export default function ServisPage() {
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [showForm, setShowForm] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<Service | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => { fetchServices() }, [])
 
@@ -29,6 +31,40 @@ export default function ServisPage() {
       if (error) throw error
       setServices(data || [])
     } catch (e) { console.error(e) } finally { setLoading(false) }
+  }
+
+  async function handleDelete(service: Service) {
+    setDeleting(true)
+    try {
+      // Ambil service_parts untuk restore stok
+      const { data: parts } = await supabase.from('service_parts').select('product_id, quantity').eq('service_id', service.id)
+      
+      // Restore stok sparepart (tambahkan kembali)
+      if (parts && parts.length > 0) {
+        for (const part of parts) {
+          // Dapatkan stok saat ini
+          const { data: product } = await supabase.from('products').select('quantity').eq('id', part.product_id).single()
+          if (product) {
+            await supabase.from('products').update({ quantity: product.quantity + part.quantity }).eq('id', part.product_id)
+          }
+        }
+      }
+      
+      // Hapus service_parts terkait
+      await supabase.from('service_parts').delete().eq('service_id', service.id)
+      // Hapus stock_movements terkait
+      await supabase.from('stock_movements').delete().eq('reference_id', service.id).eq('reference_type', 'servis')
+      // Hapus service
+      const { error } = await supabase.from('services').delete().eq('id', service.id)
+      if (error) throw error
+      setDeleteConfirm(null)
+      fetchServices()
+    } catch (e) {
+      console.error(e)
+      alert('Gagal menghapus data servis')
+    } finally {
+      setDeleting(false)
+    }
   }
 
   const filtered = services.filter(s => {
@@ -94,81 +130,179 @@ export default function ServisPage() {
         </CardContent>
       </Card>
 
-      {/* Table */}
-      <Card className="shadow-card">
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-hairline">
-                  <th className="text-left p-3 text-xs font-medium text-ash uppercase tracking-wide">Nota</th>
-                  <th className="text-left p-3 text-xs font-medium text-ash uppercase tracking-wide">Customer</th>
-                  <th className="text-left p-3 text-xs font-medium text-ash uppercase tracking-wide">Perangkat</th>
-                  <th className="text-right p-3 text-xs font-medium text-ash uppercase tracking-wide">Total</th>
-                  <th className="text-left p-3 text-xs font-medium text-ash uppercase tracking-wide">Status</th>
-                  <th className="text-left p-3 text-xs font-medium text-ash uppercase tracking-wide">Tanggal</th>
-                  <th className="text-center p-3 text-xs font-medium text-ash uppercase tracking-wide">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="text-center p-8 text-xs text-stone">
-                      Belum ada data servis
-                    </td>
+      {/* Mobile Card View */}
+      <div className="block lg:hidden space-y-2">
+        {filtered.length === 0 ? (
+          <Card className="shadow-card">
+            <CardContent className="p-8 text-center">
+              <p className="text-sm text-muted-foreground">Belum ada data servis</p>
+            </CardContent>
+          </Card>
+        ) : filtered.map(s => (
+          <Card key={s.id} className="shadow-card">
+            <CardContent className="p-3">
+              <div className="flex items-start justify-between mb-2">
+                <div>
+                  <p className="text-xs font-mono font-semibold text-ink">{s.nota_number}</p>
+                  <p className="text-sm font-semibold text-ink mt-0.5">{s.customer_name}</p>
+                </div>
+                <Badge variant={statusVariant(s.status)} className="text-[10px] px-2 py-0.5 shrink-0">
+                  {s.status}
+                </Badge>
+              </div>
+              
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-muted-foreground truncate">{s.device_type} {s.device_brand} {s.device_model}</p>
+                </div>
+                <p className="text-xs font-bold font-mono text-ink">{formatRupiah(s.total_fee)}</p>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] text-stone">{new Date(s.date_in).toLocaleDateString('id-ID')}</p>
+                <div className="flex gap-1">
+                  <Link href={`/servis/${s.id}`}>
+                    <Button variant="ghost" size="sm" className="h-8 px-2.5 text-xs gap-1.5">
+                      <Eye size={14} /> Detail
+                    </Button>
+                  </Link>
+                  {isAdmin && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 px-2.5 text-xs gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => setDeleteConfirm(s)}
+                    >
+                      <Trash2 size={14} />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden lg:block">
+        <Card className="shadow-card">
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-hairline">
+                    <th className="text-left p-3 text-xs font-medium text-ash uppercase tracking-wide">Nota</th>
+                    <th className="text-left p-3 text-xs font-medium text-ash uppercase tracking-wide">Customer</th>
+                    <th className="text-left p-3 text-xs font-medium text-ash uppercase tracking-wide">Perangkat</th>
+                    <th className="text-right p-3 text-xs font-medium text-ash uppercase tracking-wide">Total</th>
+                    <th className="text-left p-3 text-xs font-medium text-ash uppercase tracking-wide">Status</th>
+                    <th className="text-left p-3 text-xs font-medium text-ash uppercase tracking-wide">Tanggal</th>
+                    <th className="text-center p-3 text-xs font-medium text-ash uppercase tracking-wide">Aksi</th>
                   </tr>
-                ) : filtered.map(s => (
-                  <tr key={s.id} className="border-b border-hairline hover:bg-secondary/30 transition-colors">
-                    <td className="p-3">
-                      <p className="text-xs font-mono font-semibold text-ink">{s.nota_number}</p>
-                    </td>
-                    <td className="p-3">
-                      <p className="text-xs font-semibold text-ink">{s.customer_name}</p>
-                      <p className="text-[10px] text-stone mt-0.5">{s.customer_phone}</p>
-                    </td>
-                    <td className="p-3">
-                      <p className="text-xs font-semibold text-ink">{s.device_type}</p>
-                      {s.device_brand && (
-                        <p className="text-[10px] text-stone mt-0.5">{s.device_brand} {s.device_model}</p>
-                      )}
-                    </td>
-                    <td className="p-3 text-right">
-                      <p className="text-xs font-bold text-ink font-mono">{formatRupiah(s.total_fee)}</p>
-                    </td>
-                    <td className="p-3">
-                      <Badge variant={statusVariant(s.status)} className="text-[10px] px-2 py-0.5">
-                        {s.status}
-                      </Badge>
-                    </td>
-                    <td className="p-3">
-                      <p className="text-[10px] text-stone">{new Date(s.date_in).toLocaleDateString('id-ID')}</p>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex gap-1 justify-center">
-                        <Link href={`/servis/${s.id}`}>
-                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                            <Eye size={13} />
-                          </Button>
-                        </Link>
-                        {s.status === 'selesai' && (
-                          <>
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                              <FileText size={13} />
-                            </Button>
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                              <Send size={13} />
-                            </Button>
-                          </>
+                </thead>
+                <tbody>
+                  {filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="text-center p-8 text-xs text-stone">
+                        Belum ada data servis
+                      </td>
+                    </tr>
+                  ) : filtered.map(s => (
+                    <tr key={s.id} className="border-b border-hairline hover:bg-secondary/30 transition-colors">
+                      <td className="p-3">
+                        <p className="text-xs font-mono font-semibold text-ink">{s.nota_number}</p>
+                      </td>
+                      <td className="p-3">
+                        <p className="text-xs font-semibold text-ink">{s.customer_name}</p>
+                        <p className="text-[10px] text-stone mt-0.5">{s.customer_phone}</p>
+                      </td>
+                      <td className="p-3">
+                        <p className="text-xs font-semibold text-ink">{s.device_type}</p>
+                        {s.device_brand && (
+                          <p className="text-[10px] text-stone mt-0.5">{s.device_brand} {s.device_model}</p>
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </td>
+                      <td className="p-3 text-right">
+                        <p className="text-xs font-bold text-ink font-mono">{formatRupiah(s.total_fee)}</p>
+                      </td>
+                      <td className="p-3">
+                        <Badge variant={statusVariant(s.status)} className="text-[10px] px-2 py-0.5">
+                          {s.status}
+                        </Badge>
+                      </td>
+                      <td className="p-3">
+                        <p className="text-[10px] text-stone">{new Date(s.date_in).toLocaleDateString('id-ID')}</p>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex gap-1 justify-center">
+                          <Link href={`/servis/${s.id}`}>
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                              <Eye size={13} />
+                            </Button>
+                          </Link>
+                          {s.status === 'selesai' && (
+                            <>
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                <FileText size={13} />
+                              </Button>
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                <Send size={13} />
+                              </Button>
+                            </>
+                          )}
+                          {isAdmin && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => setDeleteConfirm(s)}
+                            >
+                              <Trash2 size={13} />
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <Modal title="Hapus Servis" onClose={() => setDeleteConfirm(null)} maxWidth="sm">
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Yakin ingin menghapus servis <span className="font-semibold text-foreground">{deleteConfirm.nota_number}</span>?
+            </p>
+            <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3">
+              <p className="text-xs text-destructive">
+                Data yang dihapus tidak dapat dikembalikan. Stok sparepart yang terkait akan dikembalikan.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="secondary" 
+                className="flex-1 h-10"
+                onClick={() => setDeleteConfirm(null)}
+              >
+                Batal
+              </Button>
+              <Button 
+                variant="destructive" 
+                className="flex-1 h-10"
+                onClick={() => handleDelete(deleteConfirm)}
+                disabled={deleting}
+              >
+                {deleting ? 'Menghapus...' : 'Hapus'}
+              </Button>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </Modal>
+      )}
 
       {showForm && <ServisForm onClose={() => setShowForm(false)} onSaved={fetchServices} />}
     </div>
@@ -192,12 +326,13 @@ function ServisForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
   const [form, setForm] = useState({
     customer_name: '', customer_phone: '', device_type: 'Laptop',
     device_brand: '', device_model: '', complaint: '',
-    service_fee: 0, notes: '',
+    service_fee: 0, dp_amount: 0, notes: '',
   })
 
   // Hitung total biaya sparepart dari items
   const parts_fee = items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
   const total = form.service_fee + parts_fee
+  const sisa = total - form.dp_amount
   const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
 
   // Fetch sparepart dari stok
@@ -255,7 +390,7 @@ function ServisForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
         device_type: form.device_type, device_brand: form.device_brand || null,
         device_model: form.device_model || null, complaint: form.complaint || null,
         service_fee: form.service_fee, parts_fee: parts_fee,
-        total_fee: total, status: 'proses', created_by: user?.id,
+        total_fee: total, dp_amount: form.dp_amount, status: 'proses', created_by: user?.id,
       }).select('id').single()
       if (serviceError) throw serviceError
 
@@ -415,6 +550,14 @@ function ServisForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
           <RupiahInput value={form.service_fee} onChange={v => setForm({ ...form, service_fee: v })} className="h-10 w-full font-mono" />
         </div>
 
+        {/* DP (Uang Muka) */}
+        <div>
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            DP / Uang Muka (Rp)
+          </label>
+          <RupiahInput value={form.dp_amount} onChange={v => setForm({ ...form, dp_amount: v })} className="h-10 w-full font-mono" />
+        </div>
+
         {/* Ringkasan Biaya */}
         <div className="rounded-lg border border-border bg-secondary/50 p-4">
           <div className="space-y-2 text-sm">
@@ -430,6 +573,18 @@ function ServisForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
               <span className="font-bold text-foreground">Total Biaya</span>
               <span className="font-mono text-lg font-bold text-foreground">{formatRupiah(total)}</span>
             </div>
+            {form.dp_amount > 0 && (
+              <>
+                <div className="flex justify-between text-badge-success">
+                  <span>DP / Uang Muka</span>
+                  <span className="font-mono">- {formatRupiah(form.dp_amount)}</span>
+                </div>
+                <div className="flex justify-between border-t border-border pt-2">
+                  <span className="font-bold text-foreground">Sisa Pembayaran</span>
+                  <span className="font-mono text-lg font-bold text-foreground">{formatRupiah(sisa)}</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

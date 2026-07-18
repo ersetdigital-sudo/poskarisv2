@@ -50,6 +50,7 @@ export interface Service {
   service_fee: number
   parts_fee: number
   total_fee: number
+  dp_amount: number
   status: 'proses' | 'selesai' | 'dibatalkan'
   date_in: string
   date_out: string | null
