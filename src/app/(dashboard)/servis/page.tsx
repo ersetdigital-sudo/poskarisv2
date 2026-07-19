@@ -108,32 +108,32 @@ export default function ServisPage() {
       const sisa = service.total_fee - (service.dp_amount || 0)
 
       const lines = [
-        `📢 *Halo ${service.customer_name},*`,
+        `*Halo ${service.customer_name},*`,
         ``,
-        `Kabar baik! Perangkat Anda telah selesai diservis dan siap diambil. 🎉`,
-        ``,
-        `━━━━━━━━━━━━━━`,
-        `📋 *DETAIL SERVIS*`,
-        `━━━━━━━━━━━━━━`,
-        `• *No. Nota:* ${service.nota_number}`,
-        `• *Perangkat:* ${service.device_type} ${service.device_brand || ''} ${service.device_model || ''}`.trim(),
-        service.complaint ? `• *Keluhan:* ${service.complaint}` : null,
-        `• *Tanggal Masuk:* ${tglMasuk}`,
+        `Kabar baik! Perangkat Anda telah selesai diservis dan siap diambil.`,
         ``,
         `━━━━━━━━━━━━━━`,
-        `💰 *RINCIAN BIAYA*`,
+        `*DETAIL SERVIS*`,
         `━━━━━━━━━━━━━━`,
-        `• Biaya Jasa: *${formatRupiah(service.service_fee)}*`,
-        `• Biaya Sparepart: *${formatRupiah(service.parts_fee)}*`,
+        `*No. Nota:* ${service.nota_number}`,
+        `*Perangkat:* ${service.device_type} ${service.device_brand || ''} ${service.device_model || ''}`.trim(),
+        service.complaint ? `*Keluhan:* ${service.complaint}` : null,
+        `*Tanggal Masuk:* ${tglMasuk}`,
+        ``,
+        `━━━━━━━━━━━━━━`,
+        `*RINCIAN BIAYA*`,
+        `━━━━━━━━━━━━━━`,
+        `Biaya Jasa: *${formatRupiah(service.service_fee)}*`,
+        `Biaya Sparepart: *${formatRupiah(service.parts_fee)}*`,
         `────────────────`,
         `*Total Pembayaran: ${formatRupiah(service.total_fee)}*`,
         service.dp_amount > 0 ? `*DP/Uang Muka: ${formatRupiah(service.dp_amount)}*` : null,
         service.dp_amount > 0 ? `*Sisa Pembayaran: ${formatRupiah(sisa)}*` : null,
         ``,
-        service.garansi && service.garansi.toLowerCase() !== 'tanpa garansi' ? `🛡️ *Garansi: ${service.garansi}*` : null,
-        service.warranty_end_date ? `📅 *Garansi Berakhir: ${new Date(service.warranty_end_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}*` : null,
+        service.garansi && service.garansi.toLowerCase() !== 'tanpa garansi' ? `*Garansi: ${service.garansi}*` : null,
+        service.warranty_end_date ? `*Garansi Berakhir: ${new Date(service.warranty_end_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}*` : null,
         ``,
-        `Terima kasih telah mempercayakan servis perangkat Anda kepada kami. 🙏`,
+        `Terima kasih telah mempercayakan servis perangkat Anda kepada kami.`,
         ``,
         `Jika ada pertanyaan, silakan balas pesan ini. Kami siap membantu.`,
       ].filter(Boolean).join('\n')
@@ -147,6 +147,81 @@ export default function ServisPage() {
 
       if (result.success) {
         setWaResult({ id: service.id, ok: true, msg: 'Nota berhasil dikirim ke WhatsApp!' })
+      } else {
+        const waUrl = `https://wa.me/${service.customer_phone.replace(/^0/, '62')}?text=${encodeURIComponent(lines)}`
+        window.open(waUrl, '_blank')
+        setWaResult({ id: service.id, ok: false, msg: `Gagal via API. Membuka WhatsApp Web...` })
+      }
+    } catch (e) {
+      console.error('WhatsApp error:', e)
+      setWaResult({ id: service.id, ok: false, msg: 'Terjadi kesalahan' })
+    } finally {
+      setSendingWA(null)
+    }
+  }
+
+  async function handleKirimNotif(service: Service) {
+    setSendingWA(service.id)
+    setWaResult(null)
+    try {
+      const tglMasuk = new Date(service.date_in).toLocaleDateString('id-ID', {
+        day: 'numeric', month: 'long', year: 'numeric',
+      })
+      const sisa = service.total_fee - (service.dp_amount || 0)
+
+      const statusMessages: Record<string, string> = {
+        proses: 'Perangkat Anda sedang dalam proses servis.',
+        selesai: 'Kabar baik! Perangkat Anda telah selesai diservis dan siap diambil.',
+        menunggu: 'Perangkat Anda sedang menunggu konfirmasi.',
+        dibatalkan: 'Servis perangkat Anda telah dibatalkan.',
+      }
+
+      const lines = [
+        `*Halo ${service.customer_name},*`,
+        ``,
+        statusMessages[service.status] || statusMessages.proses,
+        ``,
+        `━━━━━━━━━━━━━━`,
+        `*DETAIL SERVIS*`,
+        `━━━━━━━━━━━━━━`,
+        `*No. Nota:* ${service.nota_number}`,
+        `*Perangkat:* ${service.device_type} ${service.device_brand || ''} ${service.device_model || ''}`.trim(),
+        service.complaint ? `*Keluhan:* ${service.complaint}` : null,
+        `*Tanggal Masuk:* ${tglMasuk}`,
+        `*Status:* ${service.status.toUpperCase()}`,
+        service.notes ? `*Keterangan:* ${service.notes}` : null,
+        ``,
+        `━━━━━━━━━━━━━━`,
+        `*RINCIAN BIAYA*`,
+        `━━━━━━━━━━━━━━`,
+        `Biaya Jasa: *${formatRupiah(service.service_fee)}*`,
+        `Biaya Sparepart: *${formatRupiah(service.parts_fee)}*`,
+        `────────────────`,
+        `*Total Pembayaran: ${formatRupiah(service.total_fee)}*`,
+        service.dp_amount > 0 ? `*DP/Uang Muka: ${formatRupiah(service.dp_amount)}*` : null,
+        service.dp_amount > 0 ? `*Sisa Pembayaran: ${formatRupiah(sisa)}*` : null,
+        ``,
+        service.garansi && service.garansi.toLowerCase() !== 'tanpa garansi' ? `*Garansi: ${service.garansi}*` : null,
+        service.warranty_end_date ? `*Garansi Berakhir: ${new Date(service.warranty_end_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}*` : null,
+        ``,
+        `Terima kasih telah mempercayakan servis perangkat Anda kepada kami.`,
+        ``,
+        `Jika ada pertanyaan, silakan balas pesan ini. Kami siap membantu.`,
+      ].filter(Boolean).join('\n')
+
+      const res = await fetch('/api/send-whatsapp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: service.customer_phone,
+          message: lines,
+        }),
+      })
+
+      const result = await res.json()
+
+      if (res.ok) {
+        setWaResult({ id: service.id, ok: true, msg: 'Notifikasi berhasil dikirim!' })
       } else {
         const waUrl = `https://wa.me/${service.customer_phone.replace(/^0/, '62')}?text=${encodeURIComponent(lines)}`
         window.open(waUrl, '_blank')
@@ -286,21 +361,19 @@ export default function ServisPage() {
                         <Eye size={12} /> Detail
                       </Button>
                     </Link>
-                    {s.status === 'selesai' && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-7 px-2 text-[11px] gap-1 text-badge-success border-badge-success/30 hover:bg-badge-success/10"
-                        onClick={() => handleKirimWhatsApp(s)}
-                        disabled={sendingWA === s.id}
-                      >
-                        {sendingWA === s.id ? (
-                          <span className="h-3 w-3 animate-spin rounded-full border-2 border-badge-success/30 border-t-badge-success" />
-                        ) : (
-                          <Send size={12} />
-                        )}
-                      </Button>
-                    )}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-7 px-2 text-[11px] gap-1"
+                      onClick={() => handleKirimNotif(s)}
+                      disabled={sendingWA === s.id}
+                    >
+                      {sendingWA === s.id ? (
+                        <span className="h-3 w-3 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-foreground" />
+                      ) : (
+                        <Send size={12} />
+                      )}
+                    </Button>
                     {isAdmin && (
                       <Button 
                         variant="outline" 
@@ -376,23 +449,19 @@ export default function ServisPage() {
                               <Eye size={13} />
                             </Button>
                           </Link>
-                          {s.status === 'selesai' && (
-                            <>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-7 w-7 p-0"
-                                onClick={() => handleKirimWhatsApp(s)}
-                                disabled={sendingWA === s.id}
-                              >
-                                {sendingWA === s.id ? (
-                                  <span className="h-3 w-3 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-foreground" />
-                                ) : (
-                                  <Send size={13} />
-                                )}
-                              </Button>
-                            </>
-                          )}
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-7 w-7 p-0"
+                            onClick={() => handleKirimNotif(s)}
+                            disabled={sendingWA === s.id}
+                          >
+                            {sendingWA === s.id ? (
+                              <span className="h-3 w-3 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-foreground" />
+                            ) : (
+                              <Send size={13} />
+                            )}
+                          </Button>
                           {isAdmin && (
                             <Button 
                               variant="ghost" 
