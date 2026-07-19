@@ -112,6 +112,9 @@ export default function ServisPage() {
         service.dp_amount > 0 ? `*DP/Uang Muka: ${formatRupiah(service.dp_amount)}*` : null,
         service.dp_amount > 0 ? `*Sisa Pembayaran: ${formatRupiah(sisa)}*` : null,
         ``,
+        service.garansi && service.garansi !== 'Tanpa Garansi' ? `🛡️ *Garansi: ${service.garansi}*` : null,
+        service.warranty_end_date ? `📅 *Garansi Berakhir: ${new Date(service.warranty_end_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}*` : null,
+        ``,
         `📄 Nota servis dalam format PDF telah kami lampirkan pada pesan ini.`,
         ``,
         `Terima kasih telah mempercayakan servis perangkat Anda kepada kami. 🙏`,
@@ -463,8 +466,8 @@ function ServisForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
   const [items, setItems] = useState<SparepartItem[]>([])
   const [form, setForm] = useState({
     customer_name: '', customer_phone: '', device_type: 'Laptop',
-    device_brand: '', device_model: '', complaint: '',
-    service_fee: 0, dp_amount: 0, notes: '',
+    device_brand: '', device_model: '', complaint: '', kelengkapan: '',
+    service_fee: 0, dp_amount: 0, notes: '', garansi: 'Tanpa Garansi',
   })
 
   // Hitung total biaya sparepart dari items
@@ -472,6 +475,21 @@ function ServisForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
   const total = form.service_fee + parts_fee
   const sisa = total - form.dp_amount
   const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
+
+  // Hitung tanggal berakhir garansi
+  function hitungWarrantyEnd(): string | null {
+    if (form.garansi === 'Tanpa Garansi') return null
+    const now = new Date()
+    const durasiMap: Record<string, number> = {
+      '7 Hari': 7,
+      '14 Hari': 14,
+      '30 Hari': 30,
+      '3 Bulan': 90,
+    }
+    const hari = durasiMap[form.garansi] || 0
+    now.setDate(now.getDate() + hari)
+    return now.toISOString()
+  }
 
   // Fetch sparepart dari stok
   const fetchSpareparts = useCallback(async () => {
@@ -527,8 +545,12 @@ function ServisForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
         customer_name: form.customer_name, customer_phone: form.customer_phone,
         device_type: form.device_type, device_brand: form.device_brand || null,
         device_model: form.device_model || null, complaint: form.complaint || null,
+        kelengkapan: form.kelengkapan || null,
         service_fee: form.service_fee, parts_fee: parts_fee,
-        total_fee: total, dp_amount: form.dp_amount, status: 'proses', created_by: user?.id,
+        total_fee: total, dp_amount: form.dp_amount,
+        garansi: form.garansi, warranty_end_date: hitungWarrantyEnd(),
+        notes: form.notes || null,
+        status: 'proses', created_by: user?.id,
       }).select('id').single()
       if (serviceError) throw serviceError
 
@@ -605,6 +627,12 @@ function ServisForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
             <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Model/Tipe</label>
             <Input type="text" value={form.device_model} onChange={e => setForm({ ...form, device_model: e.target.value })} className="h-10 w-full" placeholder="Contoh: ROG" />
           </div>
+        </div>
+
+        {/* Kelengkapan */}
+        <div>
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Kelengkapan</label>
+          <Input type="text" value={form.kelengkapan} onChange={e => setForm({ ...form, kelengkapan: e.target.value })} className="h-10 w-full" placeholder="Contoh: Charger, Tas, Unit saja" />
         </div>
 
         {/* Complaint */}
@@ -690,12 +718,35 @@ function ServisForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
           <RupiahInput value={form.service_fee} onChange={v => setForm({ ...form, service_fee: v })} className="h-10 w-full font-mono" />
         </div>
 
+        {/* Keterangan atau Tindakan */}
+        <div>
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Keterangan atau Tindakan</label>
+          <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} className="w-full resize-none rounded-lg border border-input bg-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20" placeholder="Tulis keterangan atau tindakan yang dilakukan..." />
+        </div>
+
         {/* DP (Uang Muka) */}
         <div>
           <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             DP / Uang Muka (Rp)
           </label>
           <RupiahInput value={form.dp_amount} onChange={v => setForm({ ...form, dp_amount: v })} className="h-10 w-full font-mono" />
+        </div>
+
+        {/* Garansi */}
+        <div>
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Garansi</label>
+          <select value={form.garansi} onChange={e => setForm({ ...form, garansi: e.target.value })} className="h-10 w-full rounded-lg border border-input bg-surface px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20">
+            <option>Tanpa Garansi</option>
+            <option>7 Hari</option>
+            <option>14 Hari</option>
+            <option>30 Hari</option>
+            <option>3 Bulan</option>
+          </select>
+          {form.garansi !== 'Tanpa Garansi' && (
+            <p className="mt-1.5 text-[10px] text-muted-foreground">
+              Garansi berlaku hingga: {new Date(hitungWarrantyEnd() || '').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+          )}
         </div>
 
         {/* Ringkasan Biaya */}
@@ -726,12 +777,6 @@ function ServisForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
               </>
             )}
           </div>
-        </div>
-
-        {/* Notes */}
-        <div>
-          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Catatan Tambahan</label>
-          <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} className="w-full resize-none rounded-lg border border-input bg-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20" placeholder="Catatan internal (opsional)..." />
         </div>
 
         {/* Actions */}

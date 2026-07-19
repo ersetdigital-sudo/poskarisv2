@@ -145,10 +145,14 @@ CREATE TABLE public.services (
   device_brand TEXT,
   device_model TEXT,
   complaint TEXT, -- keluhan
+  kelengkapan TEXT, -- barang bawaan customer (Charger, Tas, dll)
   -- Biaya
   service_fee BIGINT DEFAULT 0, -- biaya jasa
   parts_fee BIGINT DEFAULT 0, -- biaya sparepart
   total_fee BIGINT DEFAULT 0, -- total
+  -- Garansi
+  garansi TEXT DEFAULT 'Tanpa Garansi', -- durasi garansi
+  warranty_end_date TIMESTAMPTZ, -- tanggal berakhir garansi
   -- Status
   status TEXT DEFAULT 'proses' CHECK (status IN ('proses', 'selesai', 'dibatalkan')),
   -- Tanggal

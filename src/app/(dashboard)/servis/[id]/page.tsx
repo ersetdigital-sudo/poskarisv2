@@ -3,11 +3,14 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase, Service } from '@/lib/supabase'
-import { ArrowLeft, Send, CheckCircle, Download } from 'lucide-react'
+import { ArrowLeft, Send, CheckCircle, Download, Edit } from 'lucide-react'
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Modal } from '@/components/ui/modal'
+import { RupiahInput } from '@/components/ui/rupiah-input'
 import { NotaServisPDF } from '@/components/pdf/nota-servis'
 import { downloadPDF, sendWhatsAppPDF } from '@/components/pdf/utils'
 
@@ -21,6 +24,7 @@ export default function ServisDetailPage() {
   const [waLoading, setWaLoading] = useState(false)
   const [waResult, setWaResult] = useState<{ ok: boolean; msg: string } | null>(null)
   const [storeInfo, setStoreInfo] = useState({ storeName: 'Kasir POS', storeAddress: '', storePhone: '' })
+  const [showEditForm, setShowEditForm] = useState(false)
 
   useEffect(() => {
     if (params.id) fetchService(params.id as string)
@@ -109,6 +113,9 @@ export default function ServisDetailPage() {
         service.dp_amount > 0 ? `*DP/Uang Muka: ${formatRupiah(service.dp_amount)}*` : null,
         service.dp_amount > 0 ? `*Sisa Pembayaran: ${formatRupiah(sisa)}*` : null,
         ``,
+        service.garansi && service.garansi !== 'Tanpa Garansi' ? `🛡️ *Garansi: ${service.garansi}*` : null,
+        service.warranty_end_date ? `📅 *Garansi Berakhir: ${new Date(service.warranty_end_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}*` : null,
+        ``,
         `📄 Nota servis dalam format PDF telah kami lampirkan pada pesan ini.`,
         ``,
         `Terima kasih telah mempercayakan servis perangkat Anda kepada kami. 🙏`,
@@ -161,14 +168,20 @@ export default function ServisDetailPage() {
   return (
     <div className="space-y-3">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Button onClick={() => router.back()} variant="secondary" className="h-9 w-9 shrink-0 p-0">
-          <ArrowLeft size={16} />
-        </Button>
-        <div>
-          <h1 className="font-serif text-lg font-bold tracking-tight text-foreground">Detail Servis {service.nota_number}</h1>
-          <p className="text-xs text-muted-foreground">Detail transaksi servis pelanggan</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button onClick={() => router.back()} variant="secondary" className="h-9 w-9 shrink-0 p-0">
+            <ArrowLeft size={16} />
+          </Button>
+          <div>
+            <h1 className="font-serif text-lg font-bold tracking-tight text-foreground">Detail Servis {service.nota_number}</h1>
+            <p className="text-xs text-muted-foreground">Detail transaksi servis pelanggan</p>
+          </div>
         </div>
+        <Button onClick={() => setShowEditForm(true)} variant="outline" className="gap-2">
+          <Edit size={14} />
+          Edit
+        </Button>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -207,6 +220,10 @@ export default function ServisDetailPage() {
                   <p className="text-sm font-semibold text-foreground">{service.device_model || '-'}</p>
                 </div>
                 <div>
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Kelengkapan</p>
+                  <p className="text-sm font-semibold text-foreground">{service.kelengkapan || '-'}</p>
+                </div>
+                <div className="sm:col-span-2">
                   <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Keluhan</p>
                   <p className="text-sm font-semibold text-foreground">{service.complaint || '-'}</p>
                 </div>
@@ -217,7 +234,7 @@ export default function ServisDetailPage() {
           {service.notes && (
             <Card className="shadow-card">
               <CardContent className="p-4 sm:p-5">
-                <h3 className="mb-2 text-sm font-bold text-foreground">Catatan</h3>
+                <h3 className="mb-2 text-sm font-bold text-foreground">Keterangan atau Tindakan</h3>
                 <p className="text-sm text-muted-foreground">{service.notes}</p>
               </CardContent>
             </Card>
@@ -259,6 +276,18 @@ export default function ServisDetailPage() {
                       <span className="font-mono text-lg font-bold text-foreground">{formatRupiah(service.total_fee - service.dp_amount)}</span>
                     </div>
                   </>
+                )}
+                <div className="flex justify-between border-t border-border pt-2.5">
+                  <span className="text-sm text-muted-foreground">Garansi</span>
+                  <span className="text-sm font-medium text-foreground">{service.garansi || 'Tanpa Garansi'}</span>
+                </div>
+                {service.warranty_end_date && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Garansi Berakhir</span>
+                    <span className="text-sm font-medium text-foreground">
+                      {new Date(service.warranty_end_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </span>
+                  </div>
                 )}
               </div>
             </CardContent>
@@ -327,6 +356,197 @@ export default function ServisDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Edit Form Modal */}
+      {showEditForm && service && (
+        <ServisEditForm
+          service={service}
+          onClose={() => setShowEditForm(false)}
+          onSaved={() => {
+            fetchService(service.id)
+            setShowEditForm(false)
+          }}
+        />
+      )}
     </div>
+  )
+}
+
+// Edit Form Component
+function ServisEditForm({ service, onClose, onSaved }: { service: Service; onClose: () => void; onSaved: () => void }) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [form, setForm] = useState({
+    customer_name: service.customer_name,
+    customer_phone: service.customer_phone,
+    device_type: service.device_type,
+    device_brand: service.device_brand || '',
+    device_model: service.device_model || '',
+    complaint: service.complaint || '',
+    kelengkapan: service.kelengkapan || '',
+    service_fee: service.service_fee,
+    dp_amount: service.dp_amount,
+    notes: service.notes || '',
+    garansi: service.garansi || 'Tanpa Garansi',
+  })
+
+  const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
+
+  // Hitung tanggal berakhir garansi
+  function hitungWarrantyEnd(): string | null {
+    if (form.garansi === 'Tanpa Garansi') return null
+    const now = new Date()
+    const durasiMap: Record<string, number> = {
+      '7 Hari': 7,
+      '14 Hari': 14,
+      '30 Hari': 30,
+      '3 Bulan': 90,
+    }
+    const hari = durasiMap[form.garansi] || 0
+    now.setDate(now.getDate() + hari)
+    return now.toISOString()
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+
+    try {
+      const { error: updateError } = await supabase.from('services').update({
+        customer_name: form.customer_name,
+        customer_phone: form.customer_phone,
+        device_type: form.device_type,
+        device_brand: form.device_brand || null,
+        device_model: form.device_model || null,
+        complaint: form.complaint || null,
+        kelengkapan: form.kelengkapan || null,
+        service_fee: form.service_fee,
+        dp_amount: form.dp_amount,
+        notes: form.notes || null,
+        garansi: form.garansi,
+        warranty_end_date: hitungWarrantyEnd(),
+        updated_at: new Date().toISOString(),
+      }).eq('id', service.id)
+
+      if (updateError) throw updateError
+      onSaved()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Gagal mengupdate data')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Modal title="Edit Servis" onClose={onClose} maxWidth="2xl">
+      {error && (
+        <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 p-3">
+          <p className="text-xs text-destructive">{error}</p>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Customer Info */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Nama Customer <span className="text-destructive">*</span>
+            </label>
+            <Input type="text" required value={form.customer_name} onChange={e => setForm({ ...form, customer_name: e.target.value })} className="h-10 w-full" placeholder="Masukkan nama customer" />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              No. WhatsApp <span className="text-destructive">*</span>
+            </label>
+            <Input type="text" required value={form.customer_phone} onChange={e => setForm({ ...form, customer_phone: e.target.value })} placeholder="08xxxxxxxxxx" className="h-10 w-full" />
+          </div>
+        </div>
+
+        {/* Device Info */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Jenis Perangkat <span className="text-destructive">*</span>
+            </label>
+            <select value={form.device_type} onChange={e => setForm({ ...form, device_type: e.target.value })} className="h-10 w-full rounded-lg border border-input bg-surface px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20">
+              <option>Laptop</option><option>PC</option><option>Printer</option><option>Lainnya</option>
+            </select>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Merk</label>
+            <Input type="text" value={form.device_brand} onChange={e => setForm({ ...form, device_brand: e.target.value })} className="h-10 w-full" placeholder="Contoh: Asus" />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Model/Tipe</label>
+            <Input type="text" value={form.device_model} onChange={e => setForm({ ...form, device_model: e.target.value })} className="h-10 w-full" placeholder="Contoh: ROG" />
+          </div>
+        </div>
+
+        {/* Kelengkapan */}
+        <div>
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Kelengkapan</label>
+          <Input type="text" value={form.kelengkapan} onChange={e => setForm({ ...form, kelengkapan: e.target.value })} className="h-10 w-full" placeholder="Contoh: Charger, Tas, Unit saja" />
+        </div>
+
+        {/* Complaint */}
+        <div>
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Keluhan/Kerusakan</label>
+          <textarea value={form.complaint} onChange={e => setForm({ ...form, complaint: e.target.value })} rows={3} className="w-full resize-none rounded-lg border border-input bg-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20" placeholder="Deskripsikan keluhan atau kerusakan perangkat..." />
+        </div>
+
+        {/* Biaya Jasa */}
+        <div>
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            Biaya Jasa (Rp)
+          </label>
+          <RupiahInput value={form.service_fee} onChange={v => setForm({ ...form, service_fee: v })} className="h-10 w-full font-mono" />
+        </div>
+
+        {/* Keterangan atau Tindakan */}
+        <div>
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Keterangan atau Tindakan</label>
+          <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} className="w-full resize-none rounded-lg border border-input bg-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20" placeholder="Tulis keterangan atau tindakan yang dilakukan..." />
+        </div>
+
+        {/* DP (Uang Muka) */}
+        <div>
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            DP / Uang Muka (Rp)
+          </label>
+          <RupiahInput value={form.dp_amount} onChange={v => setForm({ ...form, dp_amount: v })} className="h-10 w-full font-mono" />
+        </div>
+
+        {/* Garansi */}
+        <div>
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Garansi</label>
+          <select value={form.garansi} onChange={e => setForm({ ...form, garansi: e.target.value })} className="h-10 w-full rounded-lg border border-input bg-surface px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20">
+            <option>Tanpa Garansi</option>
+            <option>7 Hari</option>
+            <option>14 Hari</option>
+            <option>30 Hari</option>
+            <option>3 Bulan</option>
+          </select>
+          {form.garansi !== 'Tanpa Garansi' && (
+            <p className="mt-1.5 text-[10px] text-muted-foreground">
+              Garansi berlaku hingga: {new Date(hitungWarrantyEnd() || '').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row">
+          <Button type="button" onClick={onClose} variant="secondary" className="h-11 w-full sm:flex-1">Batal</Button>
+          <Button type="submit" disabled={loading} className="h-11 w-full sm:flex-1">
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                Menyimpan...
+              </span>
+            ) : 'Simpan Perubahan'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   )
 }

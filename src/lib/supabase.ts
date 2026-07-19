@@ -47,10 +47,13 @@ export interface Service {
   device_brand: string | null
   device_model: string | null
   complaint: string | null
+  kelengkapan: string | null
   service_fee: number
   parts_fee: number
   total_fee: number
   dp_amount: number
+  garansi: string
+  warranty_end_date: string | null
   status: 'proses' | 'selesai' | 'dibatalkan'
   date_in: string
   date_out: string | null

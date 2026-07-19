@@ -249,6 +249,12 @@ export function NotaServisPDF({
               <Text style={styles.value}>: {service.device_brand} {service.device_model}</Text>
             </View>
           )}
+          {service.kelengkapan && (
+            <View style={styles.row}>
+              <Text style={styles.label}>Kelengkapan</Text>
+              <Text style={styles.value}>: {service.kelengkapan}</Text>
+            </View>
+          )}
           {service.complaint && (
             <View style={styles.row}>
               <Text style={styles.label}>Keluhan</Text>
@@ -317,6 +323,20 @@ export function NotaServisPDF({
             </View>
           )}
         </View>
+
+        {/* Garansi */}
+        {service.garansi && service.garansi !== 'Tanpa Garansi' && (
+          <View style={{ marginTop: 12, padding: 8, backgroundColor: '#f0fdf4', borderRadius: 3, borderWidth: 1, borderColor: '#bbf7d0' }}>
+            <Text style={{ fontSize: 9, fontWeight: 'bold', fontFamily: 'Helvetica-Bold', color: '#15803d' }}>
+              Garansi: {service.garansi}
+            </Text>
+            {service.warranty_end_date && (
+              <Text style={{ fontSize: 8, color: '#166534', marginTop: 2 }}>
+                Berlaku hingga: {formatDate(service.warranty_end_date)}
+              </Text>
+            )}
+          </View>
+        )}
 
         {/* Notes */}
         {service.notes && (
