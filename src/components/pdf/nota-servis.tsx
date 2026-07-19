@@ -1,162 +1,237 @@
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
 import type { Service } from '@/lib/supabase'
 
+const RED = '#E53935'
+
 const styles = StyleSheet.create({
   page: {
-    padding: 40,
+    padding: 24,
     fontFamily: 'Helvetica',
-    fontSize: 10,
+    fontSize: 8,
     color: '#000000',
+    lineHeight: 1.3,
   },
+  // Header
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 20,
-    paddingBottom: 16,
+    marginBottom: 8,
+    paddingBottom: 6,
     borderBottomWidth: 2,
-    borderBottomColor: '#000000',
+    borderBottomColor: RED,
+  },
+  headerLeft: {
+    flex: 1,
   },
   storeName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    fontFamily: 'Helvetica-Bold',
-    marginBottom: 4,
-  },
-  storeInfo: {
-    fontSize: 9,
-    color: '#666666',
-    lineHeight: 1.4,
-  },
-  notaTitle: {
     fontSize: 14,
     fontWeight: 'bold',
     fontFamily: 'Helvetica-Bold',
-    textAlign: 'right',
-    marginBottom: 4,
+    marginBottom: 1,
   },
-  notaNumber: {
-    fontSize: 10,
-    fontFamily: 'Courier',
-    textAlign: 'right',
-    color: '#444444',
+  storeTagline: {
+    fontSize: 7,
+    color: '#555',
+    marginBottom: 1,
   },
-  section: {
-    marginBottom: 16,
+  storePhone: {
+    fontSize: 7,
+    color: '#555',
   },
-  sectionTitle: {
-    fontSize: 9,
+  notaTitle: {
+    fontSize: 12,
     fontWeight: 'bold',
     fontFamily: 'Helvetica-Bold',
-    color: '#888888',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 8,
-  },
-  row: {
-    flexDirection: 'row',
+    color: RED,
     marginBottom: 4,
   },
-  label: {
-    width: 120,
-    fontSize: 10,
-    color: '#666666',
+  headerRight: {
+    width: 180,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 6,
   },
-  value: {
-    fontSize: 10,
+  headerRightRow: {
+    flexDirection: 'row',
+    marginBottom: 2,
+  },
+  headerRightLabel: {
+    fontSize: 7,
+    color: '#666',
+    width: 55,
+  },
+  headerRightValue: {
+    fontSize: 7,
     fontWeight: 'bold',
     fontFamily: 'Helvetica-Bold',
     flex: 1,
   },
-  tableHeader: {
+  // Tipe Laptop row
+  tipeRow: {
     flexDirection: 'row',
+    marginBottom: 6,
+    paddingVertical: 3,
+    paddingHorizontal: 4,
     backgroundColor: '#f5f5f5',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderWidth: 1,
+    borderColor: '#ddd',
   },
-  tableHeaderText: {
-    fontSize: 9,
+  tipeLabel: {
+    fontSize: 8,
     fontWeight: 'bold',
     fontFamily: 'Helvetica-Bold',
-    color: '#666666',
+    width: 70,
+  },
+  tipeValue: {
+    fontSize: 8,
+    flex: 1,
+  },
+  // Table
+  table: {
+    marginBottom: 6,
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    backgroundColor: RED,
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+  },
+  tableHeaderText: {
+    fontSize: 7,
+    fontWeight: 'bold',
+    fontFamily: 'Helvetica-Bold',
+    color: '#ffffff',
     textTransform: 'uppercase',
   },
   tableRow: {
     flexDirection: 'row',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    paddingVertical: 3,
+    paddingHorizontal: 4,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#e0e0e0',
+    minHeight: 14,
   },
-  tableCell: {
-    fontSize: 10,
+  tableRowAlt: {
+    backgroundColor: '#fafafa',
+  },
+  colNo: {
+    width: 20,
+    fontSize: 7,
+    textAlign: 'center',
+  },
+  colService: {
     flex: 1,
+    fontSize: 7,
   },
-  tableCellRight: {
-    fontSize: 10,
+  colHarga: {
+    width: 70,
+    fontSize: 7,
     textAlign: 'right',
     fontFamily: 'Courier',
   },
+  colKeterangan: {
+    width: 80,
+    fontSize: 6,
+    color: '#555',
+    paddingLeft: 4,
+  },
+  // Summary (kanan bawah)
+  summaryContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: 6,
+  },
   summaryBox: {
-    marginTop: 16,
-    padding: 16,
-    backgroundColor: '#f8f8f8',
-    borderRadius: 4,
+    width: 180,
   },
   summaryRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 6,
+    marginBottom: 1,
   },
   summaryLabel: {
-    fontSize: 10,
-    color: '#666666',
+    flex: 1,
+    fontSize: 7,
+    fontWeight: 'bold',
+    fontFamily: 'Helvetica-Bold',
+    backgroundColor: RED,
+    color: '#fff',
+    paddingHorizontal: 4,
+    paddingVertical: 2,
   },
   summaryValue: {
-    fontSize: 10,
+    width: 90,
+    fontSize: 7,
+    textAlign: 'right',
     fontFamily: 'Courier',
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: '#ddd',
   },
-  totalRow: {
+  // Info rows (Kelengkapan, Garansi)
+  infoRow: {
+    flexDirection: 'row',
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  infoLabel: {
+    width: 120,
+    fontSize: 7,
+    fontWeight: 'bold',
+    fontFamily: 'Helvetica-Bold',
+    backgroundColor: RED,
+    color: '#fff',
+    paddingHorizontal: 4,
+    paddingVertical: 3,
+  },
+  infoValue: {
+    flex: 1,
+    fontSize: 7,
+    paddingHorizontal: 4,
+    paddingVertical: 3,
+  },
+  // Syarat
+  syaratContainer: {
+    marginTop: 6,
+    marginBottom: 8,
+    padding: 4,
+    backgroundColor: '#f9f9f9',
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+  syaratTitle: {
+    fontSize: 7,
+    fontWeight: 'bold',
+    fontFamily: 'Helvetica-Bold',
+    marginBottom: 2,
+  },
+  syaratText: {
+    fontSize: 6,
+    color: '#444',
+    lineHeight: 1.3,
+  },
+  // Tanda tangan
+  ttdContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    marginTop: 12,
   },
-  totalLabel: {
-    fontSize: 12,
+  ttdBox: {
+    width: 120,
+    alignItems: 'center',
+  },
+  ttdLine: {
+    width: '100%',
+    borderBottomWidth: 1,
+    borderBottomColor: '#000',
+    height: 30,
+    marginBottom: 4,
+  },
+  ttdLabel: {
+    fontSize: 7,
     fontWeight: 'bold',
     fontFamily: 'Helvetica-Bold',
-  },
-  totalValue: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    fontFamily: 'Helvetica-Bold',
-  },
-  statusBadge: {
-    fontSize: 9,
-    fontWeight: 'bold',
-    fontFamily: 'Helvetica-Bold',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 3,
-    overflow: 'hidden',
-    alignSelf: 'flex-start',
-  },
-  footer: {
-    marginTop: 32,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    textAlign: 'center',
-  },
-  footerText: {
-    fontSize: 8,
-    color: '#999999',
-    textAlign: 'center',
   },
 })
 
@@ -167,12 +242,6 @@ function formatRupiah(n: number): string {
 function formatDate(d: string | null): string {
   if (!d) return '-'
   return new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
-}
-
-function formatDateTime(d: string): string {
-  return new Date(d).toLocaleDateString('id-ID', {
-    day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
-  })
 }
 
 interface NotaServisProps {
@@ -186,170 +255,166 @@ interface NotaServisProps {
 export function NotaServisPDF({
   service,
   parts = [],
-  storeName = 'Kasir POS',
-  storeAddress = 'Jl. Contoh No. 123, Kota',
+  storeName = 'CENTRAL LAPTOP COMPUTER',
+  storeAddress = '',
   storePhone = '0812-3456-7890',
 }: NotaServisProps) {
-  const statusColor: Record<string, string> = {
-    proses: '#f59e0b',
-    selesai: '#10b981',
-    dibatalkan: '#ef4444',
+  // Build table rows
+  const tableRows: { no: number; service: string; harga: number; keterangan: string }[] = []
+
+  // Sparepart rows
+  parts.forEach((part) => {
+    tableRows.push({
+      no: tableRows.length + 1,
+      service: `${part.name} (Qty: ${part.quantity})`,
+      harga: part.price * part.quantity,
+      keterangan: '',
+    })
+  })
+
+  // Jasa Servis row
+  if (service.service_fee > 0) {
+    tableRows.push({
+      no: tableRows.length + 1,
+      service: 'Jasa Servis',
+      harga: service.service_fee,
+      keterangan: '',
+    })
   }
+
+  // Fill keterangan di baris pertama saja
+  if (tableRows.length > 0 && service.notes) {
+    tableRows[0].keterangan = service.notes
+  }
+
+  // Pad to minimum 5 rows
+  while (tableRows.length < 5) {
+    tableRows.push({
+      no: tableRows.length + 1,
+      service: '',
+      harga: 0,
+      keterangan: '',
+    })
+  }
+
+  // Device type string
+  const tipePerangkat = [service.device_type, service.device_brand, service.device_model]
+    .filter(Boolean)
+    .join(' - ')
+
+  // Garansi info
+  const garansiText = service.garansi && service.garansi.toLowerCase() !== 'tanpa garansi'
+    ? service.garansi
+    : ''
+  const garansiEndDate = service.warranty_end_date ? formatDate(service.warranty_end_date) : ''
 
   return (
     <Document>
-      <Page size="A5" style={styles.page}>
-        {/* Header */}
+      <Page size={[297, 210]} style={styles.page} orientation="landscape">
+        {/* HEADER */}
         <View style={styles.header}>
-          <View>
+          <View style={styles.headerLeft}>
+            <Text style={styles.notaTitle}>NOTA SERVICE</Text>
             <Text style={styles.storeName}>{storeName}</Text>
-            <Text style={styles.storeInfo}>{storeAddress}</Text>
-            <Text style={styles.storeInfo}>Telp: {storePhone}</Text>
+            <Text style={styles.storeTagline}>Service Laptop, Komputer, Software, Upgrade</Text>
+            <Text style={styles.storePhone}>WA: {storePhone}</Text>
           </View>
-          <View>
-            <Text style={styles.notaTitle}>NOTA SERVIS</Text>
-            <Text style={styles.notaNumber}>{service.nota_number}</Text>
+          <View style={styles.headerRight}>
+            <View style={styles.headerRightRow}>
+              <Text style={styles.headerRightLabel}>Tanggal Masuk</Text>
+              <Text style={styles.headerRightValue}>: {formatDate(service.date_in)}</Text>
+            </View>
+            <View style={styles.headerRightRow}>
+              <Text style={styles.headerRightLabel}>Nama</Text>
+              <Text style={styles.headerRightValue}>: {service.customer_name}</Text>
+            </View>
+            <View style={styles.headerRightRow}>
+              <Text style={styles.headerRightLabel}>Nomor WA</Text>
+              <Text style={styles.headerRightValue}>: {service.customer_phone}</Text>
+            </View>
           </View>
         </View>
 
-        {/* Status */}
-        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 16 }}>
-          <Text style={{
-            ...styles.statusBadge,
-            backgroundColor: statusColor[service.status] + '20',
-            color: statusColor[service.status],
-          }}>
-            {service.status.toUpperCase()}
+        {/* TIPE LAPTOP */}
+        <View style={styles.tipeRow}>
+          <Text style={styles.tipeLabel}>Tipe Laptop :</Text>
+          <Text style={styles.tipeValue}>{tipePerangkat || '-'}</Text>
+        </View>
+
+        {/* TABEL UTAMA */}
+        <View style={styles.table}>
+          {/* Table Header */}
+          <View style={styles.tableHeader}>
+            <Text style={{ ...styles.tableHeaderText, width: 20, textAlign: 'center' }}>No.</Text>
+            <Text style={{ ...styles.tableHeaderText, flex: 1 }}>Service / Kerusakan / Upgrade</Text>
+            <Text style={{ ...styles.tableHeaderText, width: 70, textAlign: 'right' }}>Harga</Text>
+            <Text style={{ ...styles.tableHeaderText, width: 80, paddingLeft: 4 }}>Keterangan</Text>
+          </View>
+
+          {/* Table Rows */}
+          {tableRows.map((row, i) => (
+            <View key={i} style={[styles.tableRow, i % 2 === 1 ? styles.tableRowAlt : {}]}>
+              <Text style={styles.colNo}>{row.no}</Text>
+              <Text style={styles.colService}>{row.service}</Text>
+              <Text style={styles.colHarga}>{row.harga > 0 ? formatRupiah(row.harga) : ''}</Text>
+              <Text style={styles.colKeterangan}>{row.keterangan}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* RINGKASAN BIAYA */}
+        <View style={styles.summaryContainer}>
+          <View style={styles.summaryBox}>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Total</Text>
+              <Text style={styles.summaryValue}>{formatRupiah(service.total_fee)}</Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>DP</Text>
+              <Text style={styles.summaryValue}>{formatRupiah(service.dp_amount)}</Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Sisa</Text>
+              <Text style={styles.summaryValue}>{formatRupiah(service.total_fee - service.dp_amount)}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* KELENGKAPAN */}
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Kelengkapan :</Text>
+          <Text style={styles.infoValue}>{service.kelengkapan || '-'}</Text>
+        </View>
+
+        {/* GARANSI */}
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Garansi Service / Upgrade :</Text>
+          <Text style={styles.infoValue}>
+            {garansiText ? `${garansiText}${garansiEndDate ? ` (berlaku s/d ${garansiEndDate})` : ''}` : 'Tanpa Garansi'}
           </Text>
         </View>
 
-        {/* Customer Info */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Data Customer</Text>
-          <View style={styles.row}>
-            <Text style={styles.label}>Nama</Text>
-            <Text style={styles.value}>: {service.customer_name}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>No. WhatsApp</Text>
-            <Text style={styles.value}>: {service.customer_phone}</Text>
-          </View>
+        {/* SYARAT & KETENTUAN */}
+        <View style={styles.syaratContainer}>
+          <Text style={styles.syaratTitle}>Syarat & Ketentuan :</Text>
+          <Text style={styles.syaratText}>
+            1. Jika barang service tidak diambil dalam kurun waktu 1 bulan, kehilangan atau kerusakan kembali bukan tanggung jawab kami.
+          </Text>
+          <Text style={styles.syaratText}>
+            2. Garansi tidak berlaku jika segel rusak, Human Error, Barang tertukar.
+          </Text>
         </View>
 
-        {/* Device Info */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Data Perangkat</Text>
-          <View style={styles.row}>
-            <Text style={styles.label}>Jenis</Text>
-            <Text style={styles.value}>: {service.device_type}</Text>
+        {/* TANDA TANGAN */}
+        <View style={styles.ttdContainer}>
+          <View style={styles.ttdBox}>
+            <Text style={styles.ttdLabel}>Customer</Text>
+            <View style={styles.ttdLine} />
           </View>
-          {service.device_brand && (
-            <View style={styles.row}>
-              <Text style={styles.label}>Merk / Model</Text>
-              <Text style={styles.value}>: {service.device_brand} {service.device_model}</Text>
-            </View>
-          )}
-          {service.kelengkapan && (
-            <View style={styles.row}>
-              <Text style={styles.label}>Kelengkapan</Text>
-              <Text style={styles.value}>: {service.kelengkapan}</Text>
-            </View>
-          )}
-          {service.complaint && (
-            <View style={styles.row}>
-              <Text style={styles.label}>Keluhan</Text>
-              <Text style={styles.value}>: {service.complaint}</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Sparepart Table */}
-        {parts.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Sparepart yang Dipakai</Text>
-            <View style={styles.tableHeader}>
-              <Text style={{ ...styles.tableHeaderText, flex: 2 }}>Barang</Text>
-              <Text style={{ ...styles.tableHeaderText, flex: 1, textAlign: 'center' }}>Qty</Text>
-              <Text style={{ ...styles.tableHeaderText, flex: 1, textAlign: 'right' }}>Harga</Text>
-            </View>
-            {parts.map((part, i) => (
-              <View key={i} style={styles.tableRow}>
-                <Text style={{ ...styles.tableCell, flex: 2 }}>{part.name}</Text>
-                <Text style={{ ...styles.tableCell, flex: 1, textAlign: 'center' }}>{part.quantity}x</Text>
-                <Text style={{ ...styles.tableCellRight, flex: 1 }}>{formatRupiah(part.price)}</Text>
-              </View>
-            ))}
+          <View style={styles.ttdBox}>
+            <Text style={styles.ttdLabel}>Hormat Kami</Text>
+            <View style={styles.ttdLine} />
           </View>
-        )}
-
-        {/* Summary */}
-        <View style={styles.summaryBox}>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Biaya Jasa</Text>
-            <Text style={styles.summaryValue}>{formatRupiah(service.service_fee)}</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Biaya Sparepart</Text>
-            <Text style={styles.summaryValue}>{formatRupiah(service.parts_fee)}</Text>
-          </View>
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>TOTAL</Text>
-            <Text style={styles.totalValue}>{formatRupiah(service.total_fee)}</Text>
-          </View>
-          {service.dp_amount > 0 && (
-            <>
-              <View style={{ ...styles.summaryRow, marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#e0e0e0' }}>
-                <Text style={{ ...styles.summaryLabel, color: '#10b981' }}>DP / Uang Muka</Text>
-                <Text style={{ ...styles.summaryValue, color: '#10b981' }}>- {formatRupiah(service.dp_amount)}</Text>
-              </View>
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>SISA PEMBAYARAN</Text>
-                <Text style={styles.totalValue}>{formatRupiah(service.total_fee - service.dp_amount)}</Text>
-              </View>
-            </>
-          )}
-        </View>
-
-        {/* Dates */}
-        <View style={{ marginTop: 16, flexDirection: 'row', justifyContent: 'space-between' }}>
-          <View>
-            <Text style={{ fontSize: 8, color: '#999' }}>Tanggal Masuk</Text>
-            <Text style={{ fontSize: 9 }}>{formatDateTime(service.date_in)}</Text>
-          </View>
-          {service.date_out && (
-            <View>
-              <Text style={{ fontSize: 8, color: '#999', textAlign: 'right' }}>Tanggal Selesai</Text>
-              <Text style={{ fontSize: 9, textAlign: 'right' }}>{formatDate(service.date_out)}</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Garansi */}
-        {service.garansi && service.garansi.toLowerCase() !== 'tanpa garansi' && (
-          <View style={{ marginTop: 12, padding: 8, backgroundColor: '#f0fdf4', borderRadius: 3, borderWidth: 1, borderColor: '#bbf7d0' }}>
-            <Text style={{ fontSize: 9, fontWeight: 'bold', fontFamily: 'Helvetica-Bold', color: '#15803d' }}>
-              Garansi: {service.garansi}
-            </Text>
-            {service.warranty_end_date && (
-              <Text style={{ fontSize: 8, color: '#166534', marginTop: 2 }}>
-                Berlaku hingga: {formatDate(service.warranty_end_date)}
-              </Text>
-            )}
-          </View>
-        )}
-
-        {/* Notes */}
-        {service.notes && (
-          <View style={{ marginTop: 12, padding: 8, backgroundColor: '#f8f8f8', borderRadius: 3 }}>
-            <Text style={{ fontSize: 8, color: '#999', marginBottom: 2 }}>Catatan:</Text>
-            <Text style={{ fontSize: 9 }}>{service.notes}</Text>
-          </View>
-        )}
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Terima kasih atas kepercayaan Anda</Text>
-          <Text style={styles.footerText}>Dokumen ini dicetak secara otomatis oleh sistem</Text>
         </View>
       </Page>
     </Document>

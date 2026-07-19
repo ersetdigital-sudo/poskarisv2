@@ -5,16 +5,56 @@ import type { ReactElement } from 'react'
 type PDFDocument = ReactElement<DocumentProps>
 
 // Render PDF document dan trigger download di browser
+// Compatible dengan mobile browser (Chrome, Safari, Samsung Internet)
 export async function downloadPDF(document: PDFDocument, filename: string) {
   const blob = await pdf(document).toBlob()
   const url = URL.createObjectURL(blob)
-  const link = window.document.createElement('a')
-  link.href = url
-  link.download = filename
-  window.document.body.appendChild(link)
-  link.click()
-  window.document.body.removeChild(link)
-  URL.revokeObjectURL(url)
+
+  // Detect mobile browser
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+
+  if (isMobile) {
+    // Mobile: buka di tab baru, user bisa manual save dari sana
+    // Beberapa mobile browser memblok programmatic download
+    const newWindow = window.open(url, '_blank')
+    if (!newWindow) {
+      // Fallback kalau popup diblok: pakai anchor click
+      const link = window.document.createElement('a')
+      link.href = url
+      link.download = filename
+      link.style.display = 'none'
+      window.document.body.appendChild(link)
+
+      // Paksa trigger click dengan dispatch event
+      const event = new MouseEvent('click', {
+        view: window,
+        bubbles: true,
+        cancelable: true,
+      })
+      link.dispatchEvent(event)
+
+      setTimeout(() => {
+        window.document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+      }, 100)
+    } else {
+      // Cleanup setelah delay
+      setTimeout(() => URL.revokeObjectURL(url), 10000)
+    }
+  } else {
+    // Desktop: anchor click biasa
+    const link = window.document.createElement('a')
+    link.href = url
+    link.download = filename
+    link.style.display = 'none'
+    window.document.body.appendChild(link)
+    link.click()
+
+    setTimeout(() => {
+      window.document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    }, 100)
+  }
 }
 
 // Render PDF dan buka di tab baru (untuk preview / print)
