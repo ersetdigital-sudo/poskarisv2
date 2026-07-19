@@ -119,6 +119,7 @@ export default function ServisPage() {
           `*Perangkat:* ${service.device_type} ${service.device_brand || ''} ${service.device_model || ''}`.trim(),
           service.complaint ? `*Keluhan:* ${service.complaint}` : null,
           `*Tanggal Masuk:* ${tglMasuk}`,
+          `*Keterangan:* ${service.notes || '-'}`,
         ].filter(Boolean).join('\n'),
         [
           `━━━━━━━━━━━━━━`,
@@ -194,7 +195,7 @@ export default function ServisPage() {
           service.complaint ? `*Keluhan:* ${service.complaint}` : null,
           `*Tanggal Masuk:* ${tglMasuk}`,
           `*Status:* ${service.status.toUpperCase()}`,
-          service.notes ? `*Keterangan:* ${service.notes}` : null,
+          `*Keterangan:* ${service.notes || '-'}`,
         ].filter(Boolean).join('\n'),
         [
           `━━━━━━━━━━━━━━`,

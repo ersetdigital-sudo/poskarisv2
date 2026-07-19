@@ -104,7 +104,7 @@ export default function ServisDetailPage() {
         service.complaint ? `*Keluhan:* ${service.complaint}` : null,
         `*Tanggal Masuk:* ${tglMasuk}`,
         `*Status:* ${service.status.toUpperCase()}`,
-        service.notes ? `*Keterangan:* ${service.notes}` : null,
+        `*Keterangan:* ${service.notes || '-'}`,
       ].filter(Boolean).join('\n'),
       [
         `━━━━━━━━━━━━━━`,
