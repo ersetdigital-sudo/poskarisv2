@@ -12,6 +12,7 @@ import { NotaUnitPDF } from '@/components/pdf/nota-unit'
 import { NotaSparepartPDF } from '@/components/pdf/nota-sparepart'
 import { downloadPDF } from '@/components/pdf/utils'
 import PageHeader from '@/components/dashboard/PageHeader'
+import StatCard from '@/components/dashboard/StatCard'
 
 export default function RiwayatPenjualanPage() {
   const [sales, setSales] = useState<(Sale & { products?: Product })[]>([])
@@ -113,60 +114,32 @@ export default function RiwayatPenjualanPage() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card className="shadow-card">
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                <DollarSign size={18} className="text-primary" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Total Penjualan</p>
-                <p className="text-sm sm:text-base font-bold text-foreground font-mono">{formatRupiah(totalPenjualan)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="shadow-card">
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/10">
-                <ShoppingCart size={18} className="text-blue-500" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Total Transaksi</p>
-                <p className="text-sm sm:text-base font-bold text-foreground">{totalTransaksi}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="shadow-card">
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-500/10">
-                <Laptop size={18} className="text-purple-500" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Unit Laptop</p>
-                <p className="text-xs sm:text-sm font-bold text-foreground">{totalUnit} unit</p>
-                <p className="text-[10px] font-mono text-muted-foreground">{formatRupiah(totalUnitRp)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="shadow-card">
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500/10">
-                <Package size={18} className="text-orange-500" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Sparepart</p>
-                <p className="text-xs sm:text-sm font-bold text-foreground">{totalSparepart} item</p>
-                <p className="text-[10px] font-mono text-muted-foreground">{formatRupiah(totalSparepartRp)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="Total Penjualan"
+          value={formatRupiah(totalPenjualan)}
+          icon={DollarSign}
+          color="primary"
+        />
+        <StatCard
+          title="Total Transaksi"
+          value={String(totalTransaksi)}
+          icon={ShoppingCart}
+          color="sky"
+        />
+        <StatCard
+          title="Unit Laptop"
+          value={`${totalUnit} unit`}
+          sub={formatRupiah(totalUnitRp)}
+          icon={Laptop}
+          color="emerald"
+        />
+        <StatCard
+          title="Sparepart"
+          value={`${totalSparepart} item`}
+          sub={formatRupiah(totalSparepartRp)}
+          icon={Package}
+          color="orange"
+        />
       </div>
 
       {/* Filters */}
