@@ -40,8 +40,10 @@ export default function JualBarangPage() {
   const [spareparts, setSpareparts] = useState<Product[]>([])
   const [selectedSparepart, setSelectedSparepart] = useState<Product | null>(null)
 
+  const bonusOptions = ['Mouse', 'Keyboard', 'Tas', 'Mousepad']
   const [form, setForm] = useState({
     buyer_name: '', buyer_phone: '', sell_price: 0, quantity: 1,
+    dp_amount: 0, bonus: [] as string[], bonus_lainnya: '',
     payment_method: '', garansi: 'Tanpa Garansi', notes: '',
   })
 
@@ -125,7 +127,7 @@ export default function JualBarangPage() {
   }
 
   function resetForm() {
-    setForm({ buyer_name: '', buyer_phone: '', sell_price: 0, quantity: 1, payment_method: paymentMethods[0]?.name || '', garansi: 'Tanpa Garansi', notes: '' })
+    setForm({ buyer_name: '', buyer_phone: '', sell_price: 0, quantity: 1, dp_amount: 0, bonus: [], bonus_lainnya: '', payment_method: paymentMethods[0]?.name || '', garansi: 'Tanpa Garansi', notes: '' })
     setSelectedUnit(null)
     setSelectedSparepart(null)
   }
@@ -153,6 +155,7 @@ export default function JualBarangPage() {
           item_name: `${selectedUnit.brand} ${selectedUnit.model}`,
           quantity: 1, buyer_name: form.buyer_name, buyer_phone: form.buyer_phone || null,
           sell_price: form.sell_price, buy_price: selectedUnit.buy_price, payment_method: form.payment_method,
+          dp_amount: form.dp_amount, bonus: form.bonus.length > 0 ? form.bonus : null, bonus_lainnya: form.bonus_lainnya || null,
           garansi: form.garansi, warranty_end_date: hitungWarrantyEnd(),
           notes: form.notes || null, created_by: user?.id,
         }).select('id, invoice_number, item_type').single()
@@ -193,7 +196,7 @@ export default function JualBarangPage() {
       let doc
       if (savedSale.item_type === 'unit' && selectedUnit) {
         doc = NotaUnitPDF({
-          sale: { ...savedSale, buyer_name: form.buyer_name, buyer_phone: form.buyer_phone, sell_price: form.sell_price, buy_price: selectedUnit.buy_price, payment_method: form.payment_method, garansi: form.garansi, warranty_end_date: hitungWarrantyEnd(), date: new Date().toISOString() },
+          sale: { ...savedSale, buyer_name: form.buyer_name, buyer_phone: form.buyer_phone, sell_price: form.sell_price, buy_price: selectedUnit.buy_price, dp_amount: form.dp_amount, bonus: form.bonus, bonus_lainnya: form.bonus_lainnya, payment_method: form.payment_method, garansi: form.garansi, warranty_end_date: hitungWarrantyEnd(), date: new Date().toISOString() },
           product: selectedUnit, ...storeInfo,
         })
       } else if (savedSale.item_type === 'sparepart' && selectedSparepart) {
@@ -339,11 +342,15 @@ export default function JualBarangPage() {
                 </div>
               </div>
 
-              {/* Harga & Metode Bayar */}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {/* Harga, DP & Metode Bayar */}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div>
                   <label className={labelClass}>Harga Jual (Rp) *</label>
                   <RupiahInput value={form.sell_price} onChange={v => setForm({ ...form, sell_price: v })} className="h-10 w-full font-mono" />
+                </div>
+                <div>
+                  <label className={labelClass}>DP / Uang Muka (Rp)</label>
+                  <RupiahInput value={form.dp_amount} onChange={v => setForm({ ...form, dp_amount: v })} className="h-10 w-full font-mono" />
                 </div>
                 <div>
                   <label className={labelClass}>Metode Bayar *</label>
@@ -367,6 +374,59 @@ export default function JualBarangPage() {
                 </div>
               )}
 
+              {/* Bonus (hanya untuk unit) */}
+              {tab === 'unit' && (
+                <div>
+                  <label className={labelClass}>Bonus</label>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {bonusOptions.map(opt => (
+                      <label key={opt} className="flex items-center gap-2 rounded-lg border border-border bg-card p-2.5 cursor-pointer hover:bg-secondary/50 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={form.bonus.includes(opt)}
+                          onChange={e => {
+                            if (e.target.checked) {
+                              setForm(f => ({ ...f, bonus: [...f.bonus, opt] }))
+                            } else {
+                              setForm(f => ({ ...f, bonus: f.bonus.filter(b => b !== opt) }))
+                            }
+                          }}
+                          className="h-4 w-4 rounded border-border"
+                        />
+                        <span className="text-sm text-foreground">{opt}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="mt-2">
+                    <Input
+                      type="text"
+                      value={form.bonus_lainnya}
+                      onChange={e => setForm({ ...form, bonus_lainnya: e.target.value })}
+                      className="h-10 w-full"
+                      placeholder="Bonus lainnya (opsional), contoh: Cooling Pad"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Summary DP & Sisa (hanya untuk unit) */}
+              {tab === 'unit' && form.dp_amount > 0 && (
+                <div className="rounded-lg border border-border bg-secondary/50 p-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Harga Jual</span>
+                    <span className="font-mono font-medium text-foreground">{formatRupiah(form.sell_price)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm mt-1">
+                    <span className="text-muted-foreground">DP / Uang Muka</span>
+                    <span className="font-mono font-medium text-badge-success">- {formatRupiah(form.dp_amount)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm mt-2 pt-2 border-t border-border">
+                    <span className="font-bold text-foreground">Sisa Pembayaran</span>
+                    <span className="font-mono text-lg font-bold text-foreground">{formatRupiah(form.sell_price - form.dp_amount)}</span>
+                  </div>
+                </div>
+              )}
+
               {/* Margin */}
               {tab === 'unit' && selectedUnit && (
                 <div className="flex items-center justify-between rounded-lg border border-border bg-secondary/50 p-3">
@@ -376,8 +436,8 @@ export default function JualBarangPage() {
               )}
 
               <div>
-                <label className={labelClass}>Catatan</label>
-                <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} className={textareaClass} />
+                <label className={labelClass}>Catatan OS dan Aplikasi</label>
+                <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} className={textareaClass} placeholder="Contoh: Sudah Terinstal Aplikasi Office Standar" />
               </div>
 
               <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row">

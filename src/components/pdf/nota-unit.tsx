@@ -108,6 +108,9 @@ interface NotaUnitProps {
     buyer_phone: string | null
     sell_price: number
     buy_price: number
+    dp_amount?: number
+    bonus?: string[] | null
+    bonus_lainnya?: string | null
     payment_method: string
     garansi: string
     warranty_end_date: string | null
@@ -200,12 +203,37 @@ export function NotaUnitPDF({
               <Text style={styles.summaryLabel}>Harga Jual</Text>
               <Text style={styles.summaryValue}>{formatRupiah(sale.sell_price)}</Text>
             </View>
+            {(sale.dp_amount ?? 0) > 0 && (
+              <>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>DP</Text>
+                  <Text style={styles.summaryValue}>{formatRupiah(sale.dp_amount ?? 0)}</Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Sisa</Text>
+                  <Text style={styles.summaryValue}>{formatRupiah(sale.sell_price - (sale.dp_amount ?? 0))}</Text>
+                </View>
+              </>
+            )}
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Metode Bayar</Text>
               <Text style={styles.summaryValue}>{sale.payment_method}</Text>
             </View>
           </View>
         </View>
+
+        {/* BONUS */}
+        {(sale.bonus && sale.bonus.length > 0) || sale.bonus_lainnya ? (
+          <View style={styles.garansiBox}>
+            <Text style={styles.garansiText}>Bonus:</Text>
+            {sale.bonus && sale.bonus.length > 0 && (
+              <Text style={styles.garansiDate}>{sale.bonus.join(', ')}</Text>
+            )}
+            {sale.bonus_lainnya && (
+              <Text style={styles.garansiDate}>{sale.bonus_lainnya}</Text>
+            )}
+          </View>
+        ) : null}
 
         {/* GARANSI */}
         {sale.garansi && sale.garansi.toLowerCase() !== 'tanpa garansi' && (

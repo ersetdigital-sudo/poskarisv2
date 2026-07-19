@@ -98,6 +98,9 @@ export interface Sale {
   sell_price: number
   buy_price: number
   margin: number
+  dp_amount: number
+  bonus: string[] | null
+  bonus_lainnya: string | null
   payment_method: string
   garansi: string
   warranty_end_date: string | null
