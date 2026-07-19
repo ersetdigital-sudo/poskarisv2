@@ -21,17 +21,23 @@ export default function ServisPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [filterMonth, setFilterMonth] = useState(() => {
+    const now = new Date()
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  })
+  const [currentPage, setCurrentPage] = useState(1)
   const [showForm, setShowForm] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<Service | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [sendingWA, setSendingWA] = useState<string | null>(null)
   const [waResult, setWaResult] = useState<{ id: string; ok: boolean; msg: string } | null>(null)
   const [storeInfo, setStoreInfo] = useState({ storeName: 'Kasir POS', storeAddress: '', storePhone: '' })
+  const itemsPerPage = 10
 
   useEffect(() => { 
     fetchServices()
     fetchStoreSettings()
-  }, [])
+  }, [filterMonth])
 
   async function fetchStoreSettings() {
     try {
@@ -48,9 +54,19 @@ export default function ServisPage() {
 
   async function fetchServices() {
     try {
-      const { data, error } = await supabase.from('services').select('*').order('created_at', { ascending: false })
+      const [year, month] = filterMonth.split('-').map(Number)
+      const startDate = new Date(year, month - 1, 1).toISOString()
+      const endDate = new Date(year, month, 0, 23, 59, 59).toISOString()
+
+      const { data, error } = await supabase
+        .from('services')
+        .select('*')
+        .gte('date_in', startDate)
+        .lte('date_in', endDate)
+        .order('created_at', { ascending: false })
       if (error) throw error
       setServices(data || [])
+      setCurrentPage(1)
     } catch (e) { console.error(e) } finally { setLoading(false) }
   }
 
@@ -152,6 +168,10 @@ export default function ServisPage() {
     return matchSearch && matchStatus
   })
 
+  // Pagination
+  const totalPages = Math.ceil(filtered.length / itemsPerPage)
+  const paginatedData = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+
   const statusVariant = (status: string): 'default' | 'secondary' | 'success' | 'warning' | 'destructive' => {
     const map: Record<string, 'default' | 'secondary' | 'success' | 'warning' | 'destructive'> = {
       proses: 'warning',
@@ -162,6 +182,16 @@ export default function ServisPage() {
   }
 
   const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
+
+  // Generate month options for quick select
+  const monthOptions = []
+  const now = new Date()
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const label = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
+    monthOptions.push({ value, label })
+  }
 
   if (loading) {
     return <div className="flex items-center justify-center p-12"><div className="spinner" /></div>
@@ -189,33 +219,41 @@ export default function ServisPage() {
                 type="text" 
                 placeholder="Cari nama, nota, atau perangkat..." 
                 value={search} 
-                onChange={e => setSearch(e.target.value)} 
+                onChange={e => { setSearch(e.target.value); setCurrentPage(1) }} 
                 className="pl-9 h-9 text-sm"
               />
             </div>
-            <select 
-              value={filterStatus} 
-              onChange={e => setFilterStatus(e.target.value)} 
-              className="h-9 rounded-lg border border-hairline-strong bg-surface px-3 text-sm sm:w-[160px]"
-            >
-              <option value="all">Semua Status</option>
-              <option value="proses">Proses</option>
-              <option value="selesai">Selesai</option>
-              <option value="dibatalkan">Dibatalkan</option>
-            </select>
+            <div className="flex gap-2">
+              <input
+                type="month"
+                value={filterMonth}
+                onChange={e => setFilterMonth(e.target.value)}
+                className="h-9 rounded-lg border border-hairline-strong bg-surface px-3 text-sm flex-1 sm:w-[160px]"
+              />
+              <select 
+                value={filterStatus} 
+                onChange={e => { setFilterStatus(e.target.value); setCurrentPage(1) }} 
+                className="h-9 rounded-lg border border-hairline-strong bg-surface px-3 text-sm flex-1 sm:w-[160px]"
+              >
+                <option value="all">Semua Status</option>
+                <option value="proses">Proses</option>
+                <option value="selesai">Selesai</option>
+                <option value="dibatalkan">Dibatalkan</option>
+              </select>
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Mobile Card View */}
       <div className="block lg:hidden space-y-2">
-        {filtered.length === 0 ? (
+        {paginatedData.length === 0 ? (
           <Card className="shadow-card">
             <CardContent className="p-6 text-center">
               <p className="text-sm text-muted-foreground">Belum ada data servis</p>
             </CardContent>
           </Card>
-        ) : filtered.map(s => (
+        ) : paginatedData.map(s => (
           <Card key={s.id} className="shadow-card overflow-hidden">
             <CardContent className="p-0">
               {/* Header with status */}
@@ -297,13 +335,13 @@ export default function ServisPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.length === 0 ? (
+                  {paginatedData.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="text-center p-8 text-xs text-stone">
                         Belum ada data servis
                       </td>
                     </tr>
-                  ) : filtered.map(s => (
+                  ) : paginatedData.map(s => (
                     <tr key={s.id} className="border-b border-hairline hover:bg-secondary/30 transition-colors">
                       <td className="p-3">
                         <p className="text-xs font-mono font-semibold text-ink">{s.nota_number}</p>
@@ -373,6 +411,62 @@ export default function ServisPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Card className="shadow-card">
+          <CardContent className="p-2.5 sm:p-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs text-muted-foreground">
+                Menampilkan {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, filtered.length)} dari {filtered.length} data
+              </p>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-2 text-xs"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  &laquo;
+                </Button>
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum: number
+                  if (totalPages <= 5) {
+                    pageNum = i + 1
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i
+                  } else {
+                    pageNum = currentPage - 2 + i
+                  }
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? 'default' : 'outline'}
+                      size="sm"
+                      className="h-8 w-8 p-0 text-xs"
+                      onClick={() => setCurrentPage(pageNum)}
+                    >
+                      {pageNum}
+                    </Button>
+                  )
+                })}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-2 text-xs"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  &raquo;
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
