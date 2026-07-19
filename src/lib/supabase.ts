@@ -95,11 +95,22 @@ export interface Sale {
   sell_price: number
   buy_price: number
   margin: number
-  payment_method: 'tunai' | 'transfer' | 'tempo'
+  payment_method: string
+  garansi: string
+  warranty_end_date: string | null
   status: 'completed' | 'returned' | 'cancelled'
   date: string
   notes: string | null
   created_by: string | null
+  created_at: string
+}
+
+export interface PaymentMethod {
+  id: string
+  name: string
+  description: string | null
+  is_active: boolean
+  sort_order: number
   created_at: string
 }
 

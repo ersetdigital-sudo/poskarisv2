@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { supabase, Profile } from '@/lib/supabase'
+import { supabase, Profile, PaymentMethod } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
-import { Plus, UserCheck, UserX, Store, Save, Eye, EyeOff, CheckCircle, Wifi, Lock } from 'lucide-react'
+import { Plus, UserCheck, UserX, Store, Save, Eye, EyeOff, CheckCircle, Wifi, Lock, Trash2, GripVertical } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -14,7 +14,7 @@ import PageHeader from '@/components/dashboard/PageHeader'
 
 const labelClass = 'mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground'
 
-type Tab = 'users' | 'settings' | 'password'
+type Tab = 'users' | 'settings' | 'payment' | 'password'
 
 export default function PengaturanPage() {
   const { user } = useAuth()
@@ -43,6 +43,14 @@ export default function PengaturanPage() {
           Toko & Integrasi
         </button>
         <button
+          onClick={() => setTab('payment')}
+          className={`flex-1 rounded-md px-3 py-2 text-xs sm:text-sm font-medium transition-colors ${
+            tab === 'payment' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Pembayaran
+        </button>
+        <button
           onClick={() => setTab('password')}
           className={`flex-1 rounded-md px-3 py-2 text-xs sm:text-sm font-medium transition-colors ${
             tab === 'password' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
@@ -54,6 +62,7 @@ export default function PengaturanPage() {
 
       {tab === 'users' && <UsersTab userId={user?.id} />}
       {tab === 'settings' && <SettingsTab />}
+      {tab === 'payment' && <PaymentMethodsTab />}
       {tab === 'password' && <PasswordTab />}
     </div>
   )
@@ -548,6 +557,162 @@ function PasswordTab() {
             </Button>
           </div>
         </form>
+      </CardContent>
+    </Card>
+  )
+}
+
+/* ═══════════════════════════════════════════════
+   TAB: PAYMENT METHODS
+   ═══════════════════════════════════════════════ */
+function PaymentMethodsTab() {
+  const [methods, setMethods] = useState<PaymentMethod[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [editItem, setEditItem] = useState<PaymentMethod | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<PaymentMethod | null>(null)
+  const [form, setForm] = useState({ name: '', description: '' })
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => { fetchMethods() }, [])
+
+  async function fetchMethods() {
+    try {
+      const { data, error } = await supabase
+        .from('payment_methods')
+        .select('*')
+        .order('sort_order', { ascending: true })
+      if (error) throw error
+      setMethods(data || [])
+    } catch (e) { console.error(e) } finally { setLoading(false) }
+  }
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      if (editItem) {
+        const { error } = await supabase
+          .from('payment_methods')
+          .update({ name: form.name, description: form.description || null })
+          .eq('id', editItem.id)
+        if (error) throw error
+      } else {
+        const maxOrder = methods.reduce((max, m) => Math.max(max, m.sort_order), 0)
+        const { error } = await supabase
+          .from('payment_methods')
+          .insert({ name: form.name, description: form.description || null, sort_order: maxOrder + 1 })
+        if (error) throw error
+      }
+      setShowForm(false)
+      setEditItem(null)
+      setForm({ name: '', description: '' })
+      fetchMethods()
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Gagal menyimpan')
+    } finally { setSaving(false) }
+  }
+
+  async function handleDelete(item: PaymentMethod) {
+    try {
+      const { error } = await supabase.from('payment_methods').delete().eq('id', item.id)
+      if (error) throw error
+      setDeleteConfirm(null)
+      fetchMethods()
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Gagal menghapus')
+    }
+  }
+
+  async function toggleActive(item: PaymentMethod) {
+    await supabase.from('payment_methods').update({ is_active: !item.is_active }).eq('id', item.id)
+    fetchMethods()
+  }
+
+  function openEdit(item: PaymentMethod) {
+    setEditItem(item)
+    setForm({ name: item.name, description: item.description || '' })
+    setShowForm(true)
+  }
+
+  if (loading) return <div className="flex items-center justify-center p-12"><div className="spinner" /></div>
+
+  return (
+    <Card className="shadow-card">
+      <CardContent className="p-4 sm:p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-bold text-foreground">Metode Pembayaran</h3>
+            <p className="text-xs text-muted-foreground">Kelola metode pembayaran yang tersedia di form penjualan</p>
+          </div>
+          <Button onClick={() => { setEditItem(null); setForm({ name: '', description: '' }); setShowForm(true) }} size="sm" className="gap-1.5">
+            <Plus size={14} /> Tambah
+          </Button>
+        </div>
+
+        <div className="space-y-2">
+          {methods.map(m => (
+            <div key={m.id} className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
+              <GripVertical size={14} className="text-muted-foreground shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground">{m.name}</p>
+                {m.description && <p className="text-xs text-muted-foreground">{m.description}</p>}
+              </div>
+              <Badge variant={m.is_active ? 'success' : 'secondary'} className="text-[10px] shrink-0">
+                {m.is_active ? 'Aktif' : 'Nonaktif'}
+              </Badge>
+              <div className="flex gap-1 shrink-0">
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => toggleActive(m)}>
+                  <CheckCircle size={13} className={m.is_active ? 'text-badge-success' : 'text-muted-foreground'} />
+                </Button>
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openEdit(m)}>
+                  <Store size={13} />
+                </Button>
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive hover:text-destructive" onClick={() => setDeleteConfirm(m)}>
+                  <Trash2 size={13} />
+                </Button>
+              </div>
+            </div>
+          ))}
+          {methods.length === 0 && (
+            <p className="py-4 text-center text-xs text-muted-foreground">Belum ada metode pembayaran</p>
+          )}
+        </div>
+
+        {/* Form Modal */}
+        {showForm && (
+          <Modal title={editItem ? 'Edit Metode Pembayaran' : 'Tambah Metode Pembayaran'} onClose={() => { setShowForm(false); setEditItem(null) }} maxWidth="sm">
+            <form onSubmit={handleSave} className="space-y-4">
+              <div>
+                <label className={labelClass}>Nama *</label>
+                <Input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Contoh: Cash, Transfer BCA" className="h-10 w-full" />
+              </div>
+              <div>
+                <label className={labelClass}>Deskripsi</label>
+                <Input type="text" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Keterangan (opsional)" className="h-10 w-full" />
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" variant="secondary" className="flex-1 h-10" onClick={() => { setShowForm(false); setEditItem(null) }}>Batal</Button>
+                <Button type="submit" disabled={saving} className="flex-1 h-10">{saving ? 'Menyimpan...' : 'Simpan'}</Button>
+              </div>
+            </form>
+          </Modal>
+        )}
+
+        {/* Delete Confirmation */}
+        {deleteConfirm && (
+          <Modal title="Hapus Metode Pembayaran" onClose={() => setDeleteConfirm(null)} maxWidth="sm">
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Yakin ingin menghapus <span className="font-semibold text-foreground">{deleteConfirm.name}</span>?
+              </p>
+              <div className="flex gap-2">
+                <Button variant="secondary" className="flex-1 h-10" onClick={() => setDeleteConfirm(null)}>Batal</Button>
+                <Button variant="destructive" className="flex-1 h-10" onClick={() => handleDelete(deleteConfirm)}>Hapus</Button>
+              </div>
+            </div>
+          </Modal>
+        )}
       </CardContent>
     </Card>
   )
