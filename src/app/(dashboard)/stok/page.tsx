@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, Product, StockMovement } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
-import { Search, ArrowDown, ArrowUp, AlertTriangle, Plus, Package, X, Cpu, Wrench } from 'lucide-react'
+import { Search, ArrowDown, ArrowUp, AlertTriangle, Plus, Package, X, Cpu, Wrench, Pencil, Trash2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -744,23 +744,100 @@ function AddCategoryForm({ existingCategories, onClose, onSaved }: {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({ name: '', description: '' })
+  const [editItem, setEditItem] = useState<{ id: string; name: string; description?: string } | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null)
+  const [deleteError, setDeleteError] = useState('')
+  const [deleting, setDeleting] = useState(false)
+  const [categories, setCategories] = useState(existingCategories)
+
+  // Deduplicate categories by name (case-insensitive)
+  const uniqueCategories = categories.reduce((acc, cat) => {
+    const key = cat.name.toLowerCase().trim()
+    if (!acc.has(key)) {
+      acc.set(key, cat)
+    }
+    return acc
+  }, new Map<string, { id: string; name: string }>())
+
+  const displayCategories = Array.from(uniqueCategories.values())
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError('')
     try {
-      const { error } = await supabase.from('categories').insert({ name: form.name, description: form.description || null })
-      if (error) throw error
-      onSaved(); onClose()
+      if (editItem) {
+        // Update existing category
+        const { error } = await supabase.from('categories').update({ 
+          name: form.name, 
+          description: form.description || null 
+        }).eq('id', editItem.id)
+        if (error) throw error
+      } else {
+        // Insert new category
+        const { error } = await supabase.from('categories').insert({ name: form.name, description: form.description || null })
+        if (error) throw error
+      }
+      onSaved()
+      // Refresh categories list
+      const { data } = await supabase.from('categories').select('id, name').order('name')
+      setCategories(data || [])
+      setForm({ name: '', description: '' })
+      setEditItem(null)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Gagal menyimpan kategori')
     } finally { setLoading(false) }
   }
 
+  async function handleDelete(cat: { id: string; name: string }) {
+    setDeleteError('')
+    setDeleting(true)
+    try {
+      // Check if category is used by products
+      const { count, error: countError } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+        .eq('category_id', cat.id)
+
+      if (countError) throw countError
+
+      if (count && count > 0) {
+        setDeleteError(`Kategori "${cat.name}" masih dipakai oleh ${count} produk, tidak bisa dihapus.`)
+        setDeleting(false)
+        return
+      }
+
+      // Safe to delete
+      const { error } = await supabase.from('categories').delete().eq('id', cat.id)
+      if (error) throw error
+
+      setDeleteConfirm(null)
+      onSaved()
+      // Refresh categories list
+      const { data } = await supabase.from('categories').select('id, name').order('name')
+      setCategories(data || [])
+    } catch (err: unknown) {
+      setDeleteError(err instanceof Error ? err.message : 'Gagal menghapus kategori')
+    } finally { setDeleting(false) }
+  }
+
+  function startEdit(cat: { id: string; name: string }) {
+    setEditItem(cat)
+    setForm({ name: cat.name, description: '' })
+    setError('')
+  }
+
+  function cancelEdit() {
+    setEditItem(null)
+    setForm({ name: '', description: '' })
+    setError('')
+  }
+
   return (
-    <Modal title="Tambah Kategori" onClose={onClose} maxWidth="md">
-      <p className="mb-4 -mt-1 text-sm text-muted-foreground">Kategori untuk mengelompokkan produk</p>
+    <Modal title={editItem ? 'Edit Kategori' : 'Tambah Kategori'} onClose={onClose} maxWidth="md">
+      <p className="mb-4 -mt-1 text-sm text-muted-foreground">
+        {editItem ? 'Ubah nama kategori' : 'Kategori untuk mengelompokkan produk'}
+      </p>
 
       {error && (
         <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 p-3">
@@ -778,20 +855,72 @@ function AddCategoryForm({ existingCategories, onClose, onSaved }: {
           <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={2} placeholder="Keterangan kategori..." className={textareaClass} />
         </div>
 
-        {existingCategories.length > 0 && (
-          <div className="rounded-lg border border-border bg-secondary/50 p-3">
-            <p className="mb-2 text-xs text-muted-foreground">Kategori yang sudah ada:</p>
-            <div className="flex flex-wrap gap-1.5">
-              {existingCategories.map(c => <Badge key={c.id} variant="secondary" className="text-[10px]">{c.name}</Badge>)}
-            </div>
-          </div>
-        )}
-
-        <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row">
-          <Button type="button" onClick={onClose} variant="secondary" className="h-11 w-full sm:flex-1">Batal</Button>
-          <Button type="submit" disabled={loading} className="h-11 w-full sm:flex-1">{loading ? 'Menyimpan...' : 'Simpan Kategori'}</Button>
+        <div className="flex gap-2">
+          {editItem && (
+            <Button type="button" variant="secondary" onClick={cancelEdit} className="flex-1 h-10">Batal Edit</Button>
+          )}
+          <Button type="submit" disabled={loading} className="flex-1 h-10">
+            {loading ? 'Menyimpan...' : editItem ? 'Simpan Perubahan' : 'Simpan Kategori'}
+          </Button>
         </div>
       </form>
+
+      {/* Existing Categories List */}
+      {displayCategories.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-border">
+          <p className="mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Kategori yang sudah ada:</p>
+          <div className="space-y-2">
+            {displayCategories.map(c => (
+              <div key={c.id} className="flex items-center justify-between rounded-lg border border-border bg-card p-2.5 group hover:bg-secondary/30 transition-colors">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-foreground truncate">{c.name}</p>
+                </div>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    type="button"
+                    onClick={() => startEdit(c)}
+                    className="h-7 w-7 flex items-center justify-center rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                    title="Edit kategori"
+                  >
+                    <Pencil size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setDeleteConfirm(c); setDeleteError('') }}
+                    className="h-7 w-7 flex items-center justify-center rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                    title="Hapus kategori"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={() => setDeleteConfirm(null)}>
+          <div className="w-full max-w-sm rounded-xl bg-card p-5 shadow-elevated" onClick={e => e.stopPropagation()}>
+            <h3 className="text-base font-bold text-foreground mb-2">Hapus Kategori</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Yakin ingin menghapus kategori <span className="font-semibold text-foreground">{deleteConfirm.name}</span>?
+            </p>
+            {deleteError && (
+              <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 p-3">
+                <p className="text-xs text-destructive">{deleteError}</p>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Button variant="secondary" className="flex-1 h-10" onClick={() => setDeleteConfirm(null)}>Batal</Button>
+              <Button variant="destructive" className="flex-1 h-10" onClick={() => handleDelete(deleteConfirm)} disabled={deleting || !!deleteError}>
+                {deleting ? 'Menghapus...' : 'Hapus'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </Modal>
   )
 }
