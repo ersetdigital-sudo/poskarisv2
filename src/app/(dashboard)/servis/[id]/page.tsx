@@ -163,9 +163,27 @@ export default function ServisDetailPage() {
     setWaResult(null)
     try {
       const lines = getWhatsAppMessage()
-      const waUrl = `https://wa.me/${service.customer_phone.replace(/^0/, '62')}?text=${encodeURIComponent(lines)}`
-      window.open(waUrl, '_blank')
-      setWaResult({ ok: true, msg: 'WhatsApp dibuka, silakan kirim pesan.' })
+
+      // Kirim via API (sama seperti handleKirimWhatsApp, tapi tanpa PDF)
+      const res = await fetch('/api/send-whatsapp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: service.customer_phone,
+          message: lines,
+        }),
+      })
+
+      const result = await res.json()
+
+      if (res.ok) {
+        setWaResult({ ok: true, msg: 'Notifikasi berhasil dikirim ke WhatsApp!' })
+      } else {
+        // Fallback: buka wa.me
+        const waUrl = `https://wa.me/${service.customer_phone.replace(/^0/, '62')}?text=${encodeURIComponent(lines)}`
+        window.open(waUrl, '_blank')
+        setWaResult({ ok: false, msg: `Gagal kirim via API (${result.error}). Membuka WhatsApp Web...` })
+      }
     } catch (e) {
       console.error('WhatsApp error:', e)
       setWaResult({ ok: false, msg: 'Terjadi kesalahan' })
