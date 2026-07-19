@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import {
   LayoutDashboard, Wrench, Laptop, Package, Receipt,
-  BarChart3, Users, LogOut, Menu, X,
+  BarChart3, Users, LogOut, Menu, X, ShoppingCart,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
@@ -19,6 +19,7 @@ const getNavItems = (role: string) => {
   const admin = [
     { href: '/unit-laptop', label: 'Unit Laptop', icon: Laptop,   roles: ['admin'] },
     { href: '/stok',        label: 'Stok Barang', icon: Package,  roles: ['admin'] },
+    { href: '/riwayat-penjualan', label: 'Riwayat Penjualan', icon: ShoppingCart, roles: ['admin'] },
     { href: '/operasional', label: 'Operasional', icon: Receipt,  roles: ['admin'] },
     { href: '/laporan',     label: 'Laporan',     icon: BarChart3,roles: ['admin'] },
     { href: '/pengaturan',  label: 'Pengaturan',  icon: Users,    roles: ['admin'] },

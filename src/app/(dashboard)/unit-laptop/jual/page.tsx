@@ -4,37 +4,50 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase, Product, PaymentMethod } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
-import { ArrowLeft, Download, Send } from 'lucide-react'
+import { ArrowLeft, Download, Send, Laptop, Package } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { RupiahInput } from '@/components/ui/rupiah-input'
 import { NotaUnitPDF } from '@/components/pdf/nota-unit'
+import { NotaSparepartPDF } from '@/components/pdf/nota-sparepart'
 import { downloadPDF, sendWhatsAppPDF } from '@/components/pdf/utils'
 
 const labelClass = 'mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground'
 const selectClass = 'h-10 w-full rounded-lg border border-input bg-surface px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20'
 const textareaClass = 'w-full resize-none rounded-lg border border-input bg-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20'
 
-export default function JualUnitPage() {
+type TabType = 'unit' | 'sparepart'
+
+export default function JualBarangPage() {
   const router = useRouter()
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [units, setUnits] = useState<Product[]>([])
-  const [selectedUnit, setSelectedUnit] = useState<Product | null>(null)
+  const [tab, setTab] = useState<TabType>('unit')
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
-  const [savedSale, setSavedSale] = useState<{ id: string; invoice_number: string } | null>(null)
+  const [savedSale, setSavedSale] = useState<{ id: string; invoice_number: string; item_type: string } | null>(null)
   const [pdfLoading, setPdfLoading] = useState(false)
   const [waLoading, setWaLoading] = useState(false)
   const [storeInfo, setStoreInfo] = useState({ storeName: 'Kasir POS', storeAddress: '', storePhone: '' })
+
+  // Unit state
+  const [units, setUnits] = useState<Product[]>([])
+  const [selectedUnit, setSelectedUnit] = useState<Product | null>(null)
+
+  // Sparepart state
+  const [spareparts, setSpareparts] = useState<Product[]>([])
+  const [selectedSparepart, setSelectedSparepart] = useState<Product | null>(null)
+
   const [form, setForm] = useState({
-    buyer_name: '', buyer_phone: '', sell_price: 0,
+    buyer_name: '', buyer_phone: '', sell_price: 0, quantity: 1,
     payment_method: '', garansi: 'Tanpa Garansi', notes: '',
   })
 
   useEffect(() => {
     fetchUnits()
+    fetchSpareparts()
     fetchPaymentMethods()
     fetchStoreSettings()
   }, [])
@@ -65,6 +78,21 @@ export default function JualUnitPage() {
     } catch (e) { console.error(e) }
   }
 
+  async function fetchSpareparts() {
+    try {
+      const { data: cat } = await supabase.from('categories').select('id').eq('name', 'Sparepart').maybeSingle()
+      if (!cat) return
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('category_id', cat.id)
+        .gt('quantity', 0)
+        .order('name')
+      if (error) throw error
+      setSpareparts(data || [])
+    } catch (e) { console.error(e) }
+  }
+
   async function fetchPaymentMethods() {
     try {
       const { data, error } = await supabase
@@ -74,7 +102,7 @@ export default function JualUnitPage() {
         .order('sort_order', { ascending: true })
       if (error) throw error
       setPaymentMethods(data || [])
-      if (data && data.length > 0 && !form.payment_method) {
+      if (data && data.length > 0) {
         setForm(f => ({ ...f, payment_method: data[0].name }))
       }
     } catch (e) { console.error(e) }
@@ -82,137 +110,109 @@ export default function JualUnitPage() {
 
   const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
 
-  // Hitung tanggal berakhir garansi
   function hitungWarrantyEnd(): string | null {
     const input = form.garansi.trim().toLowerCase()
     if (!input || input === 'tanpa garansi') return null
-
     const now = new Date()
     const match = input.match(/(\d+)\s*(hari|minggu|bulan|mgg|bln)/i)
     if (!match) return null
-
     const angka = parseInt(match[1])
     const satuan = match[2].toLowerCase()
-
     if (satuan === 'hari') now.setDate(now.getDate() + angka)
     else if (satuan === 'minggu' || satuan === 'mgg') now.setDate(now.getDate() + (angka * 7))
     else if (satuan === 'bulan' || satuan === 'bln') now.setMonth(now.getMonth() + angka)
-
     return now.toISOString()
+  }
+
+  function resetForm() {
+    setForm({ buyer_name: '', buyer_phone: '', sell_price: 0, quantity: 1, payment_method: paymentMethods[0]?.name || '', garansi: 'Tanpa Garansi', notes: '' })
+    setSelectedUnit(null)
+    setSelectedSparepart(null)
+  }
+
+  function handleTabChange(newTab: TabType) {
+    setTab(newTab)
+    resetForm()
+    setError('')
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!selectedUnit) { setError('Pilih unit terlebih dahulu'); return }
-    setLoading(true)
     setError('')
+
+    if (tab === 'unit' && !selectedUnit) { setError('Pilih unit terlebih dahulu'); return }
+    if (tab === 'sparepart' && !selectedSparepart) { setError('Pilih sparepart terlebih dahulu'); return }
+    if (tab === 'sparepart' && form.quantity <= 0) { setError('Qty harus lebih dari 0'); return }
+    if (tab === 'sparepart' && selectedSparepart && form.quantity > selectedSparepart.quantity) { setError('Qty melebihi stok tersedia'); return }
+
+    setLoading(true)
     try {
-      const { data: sale, error: saleError } = await supabase.from('sales').insert({
-        product_id: selectedUnit.id, buyer_name: form.buyer_name, buyer_phone: form.buyer_phone || null,
-        sell_price: form.sell_price, buy_price: selectedUnit.buy_price, payment_method: form.payment_method,
-        garansi: form.garansi, warranty_end_date: hitungWarrantyEnd(),
-        notes: form.notes || null, created_by: user?.id,
-      }).select('id, invoice_number').single()
-      if (saleError) throw saleError
+      if (tab === 'unit' && selectedUnit) {
+        const { data: sale, error: saleError } = await supabase.from('sales').insert({
+          product_id: selectedUnit.id, item_type: 'unit',
+          item_name: `${selectedUnit.brand} ${selectedUnit.model}`,
+          quantity: 1, buyer_name: form.buyer_name, buyer_phone: form.buyer_phone || null,
+          sell_price: form.sell_price, buy_price: selectedUnit.buy_price, payment_method: form.payment_method,
+          garansi: form.garansi, warranty_end_date: hitungWarrantyEnd(),
+          notes: form.notes || null, created_by: user?.id,
+        }).select('id, invoice_number, item_type').single()
+        if (saleError) throw saleError
 
-      await supabase.from('products').update({ status: 'sold', sell_price: form.sell_price }).eq('id', selectedUnit.id)
-      await supabase.from('stock_movements').insert({
-        product_id: selectedUnit.id, type: 'keluar', quantity: 1, reference_type: 'penjualan_unit',
-        reference_id: sale.id, notes: `Penjualan unit ${selectedUnit.brand} ${selectedUnit.model} ke ${form.buyer_name}`, created_by: user?.id,
-      })
+        await supabase.from('products').update({ status: 'sold', sell_price: form.sell_price }).eq('id', selectedUnit.id)
+        await supabase.from('stock_movements').insert({
+          product_id: selectedUnit.id, type: 'keluar', quantity: 1, reference_type: 'penjualan_unit',
+          reference_id: sale.id, notes: `Penjualan unit ke ${form.buyer_name}`, created_by: user?.id,
+        })
+        setSavedSale(sale)
+      } else if (tab === 'sparepart' && selectedSparepart) {
+        const { data: sale, error: saleError } = await supabase.from('sales').insert({
+          product_id: selectedSparepart.id, item_type: 'sparepart',
+          item_name: selectedSparepart.name,
+          quantity: form.quantity, buyer_name: form.buyer_name, buyer_phone: form.buyer_phone || null,
+          sell_price: form.sell_price, buy_price: selectedSparepart.buy_price * form.quantity,
+          payment_method: form.payment_method, notes: form.notes || null, created_by: user?.id,
+        }).select('id, invoice_number, item_type').single()
+        if (saleError) throw saleError
 
-      setSavedSale(sale)
+        await supabase.from('stock_movements').insert({
+          product_id: selectedSparepart.id, type: 'keluar', quantity: form.quantity,
+          reference_type: 'penjualan_unit', reference_id: sale.id,
+          notes: `Penjualan sparepart ke ${form.buyer_name}`, created_by: user?.id,
+        })
+        setSavedSale(sale)
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Gagal menyimpan data')
     } finally { setLoading(false) }
   }
 
   async function handleDownloadPDF() {
-    if (!savedSale || !selectedUnit) return
+    if (!savedSale) return
     setPdfLoading(true)
     try {
-      const doc = NotaUnitPDF({
-        sale: {
-          ...savedSale,
-          buyer_name: form.buyer_name,
-          buyer_phone: form.buyer_phone,
-          sell_price: form.sell_price,
-          buy_price: selectedUnit.buy_price,
-          payment_method: form.payment_method,
-          garansi: form.garansi,
-          warranty_end_date: hitungWarrantyEnd(),
-          date: new Date().toISOString(),
-        },
-        product: selectedUnit,
-        ...storeInfo,
-      })
-      await downloadPDF(doc, `Invoice-${savedSale.invoice_number}.pdf`)
-    } catch (e) {
-      console.error('Gagal generate PDF:', e)
-    } finally { setPdfLoading(false) }
-  }
-
-  async function handleKirimWhatsApp() {
-    if (!savedSale || !selectedUnit) return
-    setWaLoading(true)
-    try {
-      const doc = NotaUnitPDF({
-        sale: {
-          ...savedSale,
-          buyer_name: form.buyer_name,
-          buyer_phone: form.buyer_phone,
-          sell_price: form.sell_price,
-          buy_price: selectedUnit.buy_price,
-          payment_method: form.payment_method,
-          garansi: form.garansi,
-          warranty_end_date: hitungWarrantyEnd(),
-          date: new Date().toISOString(),
-        },
-        product: selectedUnit,
-        ...storeInfo,
-      })
-
-      const message = [
-        `*Halo ${form.buyer_name},*`,
-        ``,
-        `Terima kasih telah membeli unit laptop di toko kami.`,
-        ``,
-        `━━━━━━━━━━━━━━`,
-        `*DETAIL PEMBELIAN*`,
-        `━━━━━━━━━━━━━━`,
-        `*No. Invoice:* ${savedSale.invoice_number}`,
-        `*Unit:* ${selectedUnit.brand} ${selectedUnit.model}`,
-        `*Spesifikasi:* ${selectedUnit.specs || '-'}`,
-        `*Harga:* ${formatRupiah(form.sell_price)}`,
-        `*Metode Bayar:* ${form.payment_method}`,
-        ``,
-        form.garansi.toLowerCase() !== 'tanpa garansi' ? `*Garansi: ${form.garansi}*` : null,
-        ``,
-        `Terima kasih atas kepercayaan Anda.`,
-      ].filter(Boolean).join('\n\n')
-
-      const result = await sendWhatsAppPDF({
-        document: doc,
-        filename: `Invoice-${savedSale.invoice_number}.pdf`,
-        phone: form.buyer_phone,
-        message,
-      })
-
-      if (!result.success) {
-        const waUrl = `https://wa.me/${form.buyer_phone.replace(/^0/, '62')}?text=${encodeURIComponent(message)}`
-        window.open(waUrl, '_blank')
+      let doc
+      if (savedSale.item_type === 'unit' && selectedUnit) {
+        doc = NotaUnitPDF({
+          sale: { ...savedSale, buyer_name: form.buyer_name, buyer_phone: form.buyer_phone, sell_price: form.sell_price, buy_price: selectedUnit.buy_price, payment_method: form.payment_method, garansi: form.garansi, warranty_end_date: hitungWarrantyEnd(), date: new Date().toISOString() },
+          product: selectedUnit, ...storeInfo,
+        })
+      } else if (savedSale.item_type === 'sparepart' && selectedSparepart) {
+        doc = NotaSparepartPDF({
+          sale: { ...savedSale, buyer_name: form.buyer_name, buyer_phone: form.buyer_phone, sell_price: form.sell_price, quantity: form.quantity, payment_method: form.payment_method, date: new Date().toISOString() },
+          product: selectedSparepart, ...storeInfo,
+        })
       }
-    } catch (e) {
-      console.error('WhatsApp error:', e)
-    } finally { setWaLoading(false) }
+      if (doc) await downloadPDF(doc, `Invoice-${savedSale.invoice_number}.pdf`)
+    } catch (e) { console.error('Gagal generate PDF:', e) }
+    finally { setPdfLoading(false) }
   }
 
-  // Setelah berhasil simpan
+  // Success page
   if (savedSale) {
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-3">
-          <Button onClick={() => router.push('/unit-laptop')} variant="secondary" className="h-9 w-9 shrink-0 p-0">
+          <Button onClick={() => { setSavedSale(null); resetForm() }} variant="secondary" className="h-9 w-9 shrink-0 p-0">
             <ArrowLeft size={16} />
           </Button>
           <div>
@@ -220,7 +220,6 @@ export default function JualUnitPage() {
             <p className="text-xs text-muted-foreground">Invoice {savedSale.invoice_number} telah dibuat</p>
           </div>
         </div>
-
         <Card className="shadow-card">
           <CardContent className="p-6 text-center space-y-4">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-badge-success/20">
@@ -237,16 +236,11 @@ export default function JualUnitPage() {
                 {pdfLoading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-foreground" /> : <Download size={16} />}
                 {pdfLoading ? 'Generating...' : 'Download Invoice PDF'}
               </Button>
-              {form.buyer_phone && (
-                <Button onClick={handleKirimWhatsApp} disabled={waLoading} className="gap-2 bg-badge-success/90 hover:bg-badge-success text-white">
-                  {waLoading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> : <Send size={16} />}
-                  {waLoading ? 'Mengirim...' : 'Kirim ke WhatsApp'}
-                </Button>
-              )}
             </div>
-            <Button onClick={() => router.push('/unit-laptop')} variant="secondary" className="w-full sm:w-auto">
-              Kembali ke Daftar Unit
-            </Button>
+            <div className="flex gap-2 justify-center">
+              <Button onClick={() => { setSavedSale(null); resetForm() }} variant="secondary">Jual Lagi</Button>
+              <Button onClick={() => router.push('/riwayat-penjualan')} variant="outline">Lihat Riwayat</Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -255,18 +249,27 @@ export default function JualUnitPage() {
 
   return (
     <div className="space-y-3">
-      {/* Back + header */}
       <div className="flex items-center gap-3">
         <Button onClick={() => router.back()} variant="secondary" className="h-9 w-9 shrink-0 p-0">
           <ArrowLeft size={16} />
         </Button>
         <div>
-          <h1 className="font-serif text-lg font-bold tracking-tight text-foreground">Jual Unit Laptop</h1>
-          <p className="text-xs text-muted-foreground">Catat penjualan unit laptop</p>
+          <h1 className="font-serif text-lg font-bold tracking-tight text-foreground">Jual Barang</h1>
+          <p className="text-xs text-muted-foreground">Catat penjualan unit laptop atau sparepart</p>
         </div>
       </div>
 
       <div className="mx-auto max-w-2xl">
+        {/* Tab Toggle */}
+        <div className="flex gap-1 rounded-lg border border-border bg-secondary/50 p-1 mb-4">
+          <button onClick={() => handleTabChange('unit')} className={`flex-1 flex items-center justify-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${tab === 'unit' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+            <Laptop size={16} /> Unit Laptop
+          </button>
+          <button onClick={() => handleTabChange('sparepart')} className={`flex-1 flex items-center justify-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${tab === 'sparepart' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+            <Package size={16} /> Sparepart
+          </button>
+        </div>
+
         <Card className="shadow-card">
           <CardContent className="p-4 sm:p-6">
             {error && (
@@ -276,33 +279,52 @@ export default function JualUnitPage() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className={labelClass}>Pilih Unit *</label>
-                <select
-                  value={selectedUnit?.id || ''}
-                  onChange={e => {
-                    const unit = units.find(u => u.id === e.target.value)
-                    setSelectedUnit(unit || null)
-                    if (unit) setForm({ ...form, sell_price: unit.sell_price || 0 })
-                  }}
-                  className={selectClass}
-                >
-                  <option value="">Pilih unit...</option>
-                  {units.map(u => <option key={u.id} value={u.id}>{u.brand} {u.model} - {u.specs} (Beli: {formatRupiah(u.buy_price)})</option>)}
-                </select>
-              </div>
-
-              {selectedUnit && (
-                <div className="rounded-lg border border-border bg-secondary/50 p-3">
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div><span className="text-muted-foreground">Unit: </span><span className="font-medium text-foreground">{selectedUnit.brand} {selectedUnit.model}</span></div>
-                    <div><span className="text-muted-foreground">Kondisi: </span><span className="font-medium capitalize text-foreground">{selectedUnit.condition}</span></div>
-                    <div><span className="text-muted-foreground">Harga Beli: </span><span className="font-medium text-foreground">{formatRupiah(selectedUnit.buy_price)}</span></div>
-                    {selectedUnit.imei_serial && <div><span className="text-muted-foreground">SN: </span><span className="font-mono font-medium text-foreground">{selectedUnit.imei_serial}</span></div>}
-                  </div>
+              {/* Pilih Barang */}
+              {tab === 'unit' ? (
+                <div>
+                  <label className={labelClass}>Pilih Unit *</label>
+                  <select value={selectedUnit?.id || ''} onChange={e => { const u = units.find(u => u.id === e.target.value); setSelectedUnit(u || null); if (u) setForm(f => ({ ...f, sell_price: u.sell_price || 0 })) }} className={selectClass}>
+                    <option value="">Pilih unit...</option>
+                    {units.map(u => <option key={u.id} value={u.id}>{u.brand} {u.model} - {u.specs} (Jual: {formatRupiah(u.sell_price)})</option>)}
+                  </select>
+                  {selectedUnit && (
+                    <div className="mt-2 rounded-lg border border-border bg-secondary/50 p-3">
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div><span className="text-muted-foreground">Unit: </span><span className="font-medium text-foreground">{selectedUnit.brand} {selectedUnit.model}</span></div>
+                        <div><span className="text-muted-foreground">Kondisi: </span><span className="font-medium capitalize text-foreground">{selectedUnit.condition}</span></div>
+                        <div><span className="text-muted-foreground">Harga Beli: </span><span className="font-medium text-foreground">{formatRupiah(selectedUnit.buy_price)}</span></div>
+                        {selectedUnit.imei_serial && <div><span className="text-muted-foreground">SN: </span><span className="font-mono font-medium text-foreground">{selectedUnit.imei_serial}</span></div>}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <label className={labelClass}>Pilih Sparepart *</label>
+                  <select value={selectedSparepart?.id || ''} onChange={e => { const s = spareparts.find(s => s.id === e.target.value); setSelectedSparepart(s || null); if (s) setForm(f => ({ ...f, sell_price: s.sell_price || 0, quantity: 1 })) }} className={selectClass}>
+                    <option value="">Pilih sparepart...</option>
+                    {spareparts.map(s => <option key={s.id} value={s.id}>{s.name} (Stok: {s.quantity}) - {formatRupiah(s.sell_price)}</option>)}
+                  </select>
+                  {selectedSparepart && (
+                    <div className="mt-2 rounded-lg border border-border bg-secondary/50 p-3">
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div><span className="text-muted-foreground">Nama: </span><span className="font-medium text-foreground">{selectedSparepart.name}</span></div>
+                        <div><span className="text-muted-foreground">Stok: </span><span className="font-medium text-foreground">{selectedSparepart.quantity}</span></div>
+                        <div><span className="text-muted-foreground">Harga Beli: </span><span className="font-medium text-foreground">{formatRupiah(selectedSparepart.buy_price)}</span></div>
+                        <div><span className="text-muted-foreground">Harga Jual: </span><span className="font-medium text-foreground">{formatRupiah(selectedSparepart.sell_price)}</span></div>
+                      </div>
+                    </div>
+                  )}
+                  {tab === 'sparepart' && (
+                    <div className="mt-3">
+                      <label className={labelClass}>Qty *</label>
+                      <Input type="number" min={1} max={selectedSparepart?.quantity || 999} required value={form.quantity} onChange={e => { const qty = Math.min(Number(e.target.value), selectedSparepart?.quantity || 999); setForm(f => ({ ...f, quantity: qty, sell_price: (selectedSparepart?.sell_price || 0) * qty })) }} className="h-10 w-full" />
+                    </div>
+                  )}
                 </div>
               )}
 
+              {/* Data Pembeli */}
               <div className="border-t border-border pt-4">
                 <h3 className="mb-3 text-sm font-bold text-foreground">Data Pembeli</h3>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -317,6 +339,7 @@ export default function JualUnitPage() {
                 </div>
               </div>
 
+              {/* Harga & Metode Bayar */}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className={labelClass}>Harga Jual (Rp) *</label>
@@ -331,18 +354,21 @@ export default function JualUnitPage() {
                 </div>
               </div>
 
-              {/* Garansi */}
-              <div>
-                <label className={labelClass}>Garansi</label>
-                <Input type="text" value={form.garansi} onChange={e => setForm({ ...form, garansi: e.target.value })} className="h-10 w-full" placeholder="Contoh: 7 Hari, 1 Bulan, Tanpa Garansi" />
-                {form.garansi && form.garansi.toLowerCase() !== 'tanpa garansi' && hitungWarrantyEnd() && (
-                  <p className="mt-1.5 text-[10px] text-muted-foreground">
-                    Garansi berlaku hingga: {new Date(hitungWarrantyEnd() || '').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                  </p>
-                )}
-              </div>
+              {/* Garansi (hanya untuk unit) */}
+              {tab === 'unit' && (
+                <div>
+                  <label className={labelClass}>Garansi</label>
+                  <Input type="text" value={form.garansi} onChange={e => setForm({ ...form, garansi: e.target.value })} className="h-10 w-full" placeholder="Contoh: 7 Hari, 1 Bulan, Tanpa Garansi" />
+                  {form.garansi && form.garansi.toLowerCase() !== 'tanpa garansi' && hitungWarrantyEnd() && (
+                    <p className="mt-1.5 text-[10px] text-muted-foreground">
+                      Garansi berlaku hingga: {new Date(hitungWarrantyEnd() || '').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    </p>
+                  )}
+                </div>
+              )}
 
-              {selectedUnit && (
+              {/* Margin */}
+              {tab === 'unit' && selectedUnit && (
                 <div className="flex items-center justify-between rounded-lg border border-border bg-secondary/50 p-3">
                   <span className="text-sm text-muted-foreground">Margin</span>
                   <span className="font-mono text-lg font-bold text-primary">{formatRupiah(form.sell_price - selectedUnit.buy_price)}</span>
@@ -356,7 +382,7 @@ export default function JualUnitPage() {
 
               <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row">
                 <Button type="button" onClick={() => router.back()} variant="secondary" className="h-11 w-full sm:flex-1">Batal</Button>
-                <Button type="submit" disabled={loading || !selectedUnit} className="h-11 w-full sm:flex-1">{loading ? 'Menyimpan...' : 'Simpan Penjualan'}</Button>
+                <Button type="submit" disabled={loading} className="h-11 w-full sm:flex-1">{loading ? 'Menyimpan...' : 'Simpan Penjualan'}</Button>
               </div>
             </form>
           </CardContent>

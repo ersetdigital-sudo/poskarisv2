@@ -89,7 +89,10 @@ export interface Purchase {
 export interface Sale {
   id: string
   invoice_number: string
-  product_id: string
+  product_id: string | null
+  item_type: 'unit' | 'sparepart'
+  item_name: string | null
+  quantity: number
   buyer_name: string
   buyer_phone: string | null
   sell_price: number

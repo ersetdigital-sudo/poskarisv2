@@ -70,7 +70,7 @@ export default function UnitLaptopPage() {
           <Link href="/unit-laptop/jual">
             <Button className="gap-2">
               <ShoppingCart size={16} strokeWidth={2} />
-              Jual Unit
+              Jual Barang
             </Button>
           </Link>
         </div>
