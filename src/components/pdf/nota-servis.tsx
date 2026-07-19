@@ -325,7 +325,7 @@ export function NotaServisPDF({
         </View>
 
         {/* Garansi */}
-        {service.garansi && service.garansi !== 'Tanpa Garansi' && (
+        {service.garansi && service.garansi.toLowerCase() !== 'tanpa garansi' && (
           <View style={{ marginTop: 12, padding: 8, backgroundColor: '#f0fdf4', borderRadius: 3, borderWidth: 1, borderColor: '#bbf7d0' }}>
             <Text style={{ fontSize: 9, fontWeight: 'bold', fontFamily: 'Helvetica-Bold', color: '#15803d' }}>
               Garansi: {service.garansi}

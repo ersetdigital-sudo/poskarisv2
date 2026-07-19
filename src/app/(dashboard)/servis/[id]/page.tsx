@@ -113,7 +113,7 @@ export default function ServisDetailPage() {
         service.dp_amount > 0 ? `*DP/Uang Muka: ${formatRupiah(service.dp_amount)}*` : null,
         service.dp_amount > 0 ? `*Sisa Pembayaran: ${formatRupiah(sisa)}*` : null,
         ``,
-        service.garansi && service.garansi !== 'Tanpa Garansi' ? `🛡️ *Garansi: ${service.garansi}*` : null,
+        service.garansi && service.garansi.toLowerCase() !== 'tanpa garansi' ? `🛡️ *Garansi: ${service.garansi}*` : null,
         service.warranty_end_date ? `📅 *Garansi Berakhir: ${new Date(service.warranty_end_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}*` : null,
         ``,
         `📄 Nota servis dalam format PDF telah kami lampirkan pada pesan ini.`,
@@ -392,18 +392,27 @@ function ServisEditForm({ service, onClose, onSaved }: { service: Service; onClo
 
   const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
 
-  // Hitung tanggal berakhir garansi
+  // Hitung tanggal berakhir garansi dari input manual
   function hitungWarrantyEnd(): string | null {
-    if (form.garansi === 'Tanpa Garansi') return null
+    const input = form.garansi.trim().toLowerCase()
+    if (!input || input === 'tanpa garansi') return null
+
     const now = new Date()
-    const durasiMap: Record<string, number> = {
-      '7 Hari': 7,
-      '14 Hari': 14,
-      '30 Hari': 30,
-      '3 Bulan': 90,
+    // Pattern: angka + satuan (hari/minggu/bulan)
+    const match = input.match(/(\d+)\s*(hari|minggu|bulan|hari|mgg|bln)/i)
+    if (!match) return null
+
+    const angka = parseInt(match[1])
+    const satuan = match[2].toLowerCase()
+
+    if (satuan === 'hari') {
+      now.setDate(now.getDate() + angka)
+    } else if (satuan === 'minggu' || satuan === 'mgg') {
+      now.setDate(now.getDate() + (angka * 7))
+    } else if (satuan === 'bulan' || satuan === 'bln') {
+      now.setMonth(now.getMonth() + angka)
     }
-    const hari = durasiMap[form.garansi] || 0
-    now.setDate(now.getDate() + hari)
+
     return now.toISOString()
   }
 
@@ -520,14 +529,8 @@ function ServisEditForm({ service, onClose, onSaved }: { service: Service; onClo
         {/* Garansi */}
         <div>
           <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Garansi</label>
-          <select value={form.garansi} onChange={e => setForm({ ...form, garansi: e.target.value })} className="h-10 w-full rounded-lg border border-input bg-surface px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20">
-            <option>Tanpa Garansi</option>
-            <option>7 Hari</option>
-            <option>14 Hari</option>
-            <option>30 Hari</option>
-            <option>3 Bulan</option>
-          </select>
-          {form.garansi !== 'Tanpa Garansi' && (
+          <Input type="text" value={form.garansi} onChange={e => setForm({ ...form, garansi: e.target.value })} className="h-10 w-full" placeholder="Contoh: 7 Hari, 2 Minggu, 1 Bulan, Tanpa Garansi" />
+          {form.garansi && form.garansi.toLowerCase() !== 'tanpa garansi' && hitungWarrantyEnd() && (
             <p className="mt-1.5 text-[10px] text-muted-foreground">
               Garansi berlaku hingga: {new Date(hitungWarrantyEnd() || '').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
             </p>
