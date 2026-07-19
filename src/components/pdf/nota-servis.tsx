@@ -191,8 +191,8 @@ const styles = StyleSheet.create({
   },
   // Syarat
   syaratContainer: {
-    marginTop: 4,
-    marginBottom: 4,
+    marginTop: 3,
+    marginBottom: 3,
     padding: 3,
     backgroundColor: '#f9f9f9',
     borderWidth: 1,
@@ -209,11 +209,36 @@ const styles = StyleSheet.create({
     color: '#444',
     lineHeight: 1.2,
   },
+  // Info Rekening
+  rekeningContainer: {
+    marginBottom: 3,
+    padding: 3,
+    backgroundColor: '#f9f9f9',
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+  rekeningTitle: {
+    fontSize: 6,
+    fontWeight: 'bold',
+    fontFamily: 'Helvetica-Bold',
+    marginBottom: 1,
+  },
+  rekeningText: {
+    fontSize: 5.5,
+    color: '#444',
+    lineHeight: 1.2,
+  },
+  rekeningBold: {
+    fontSize: 5.5,
+    fontWeight: 'bold',
+    fontFamily: 'Helvetica-Bold',
+    color: '#000',
+  },
   // Tanda tangan
   ttdContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 8,
+    marginTop: 6,
   },
   ttdBox: {
     width: 100,
@@ -398,6 +423,19 @@ export function NotaServisPDF({
           </Text>
           <Text style={styles.syaratText}>
             2. Garansi tidak berlaku jika segel rusak, Human Error, Barang tertukar.
+          </Text>
+        </View>
+
+        {/* INFO REKENING */}
+        <View style={styles.rekeningContainer}>
+          <Text style={styles.rekeningTitle}>Info Rekening Transfer :</Text>
+          <Text style={styles.rekeningText}>
+            Transfer ke: <Text style={styles.rekeningBold}>BCA</Text>
+          </Text>
+          <Text style={styles.rekeningBold}>0670493041</Text>
+          <Text style={styles.rekeningBold}>A/N Prawira Lambang Budi</Text>
+          <Text style={styles.rekeningText}>
+            Kirimkan bukti jika sudah transfer
           </Text>
         </View>
 
