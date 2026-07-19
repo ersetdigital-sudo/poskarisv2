@@ -76,22 +76,14 @@ export default function ServisDetailPage() {
   }
 
   // Status messages
-  const statusMessages: Record<string, { header: string; body: string }> = {
-    proses: {
-      header: 'Perangkat Anda sedang dalam proses servis. 🔧',
-      body: 'Kami akan mengabari Anda begitu servis selesai.',
-    },
-    selesai: {
-      header: 'Kabar baik! Perangkat Anda telah selesai diservis dan siap diambil. 🎉',
-      body: 'Nota servis dalam format PDF telah kami lampirkan pada pesan ini.',
-    },
-    dibatalkan: {
-      header: 'Servis perangkat Anda telah dibatalkan.',
-      body: 'Silakan hubungi kami untuk informasi lebih lanjut.',
-    },
+  const statusMessages: Record<string, string> = {
+    proses: 'Perangkat Anda sedang dalam proses servis. 🔧',
+    selesai: 'Kabar baik! Perangkat Anda telah selesai diservis dan siap diambil. 🎉',
+    menunggu: 'Perangkat Anda sedang menunggu konfirmasi. ⏳',
+    dibatalkan: 'Servis perangkat Anda telah dibatalkan.',
   }
 
-  function getWhatsAppMessage(withPdf: boolean) {
+  function getWhatsAppMessage() {
     if (!service) return ''
     const tglMasuk = new Date(service.date_in).toLocaleDateString('id-ID', {
       day: 'numeric', month: 'long', year: 'numeric',
@@ -102,19 +94,21 @@ export default function ServisDetailPage() {
     const lines = [
       `📢 *Halo ${service.customer_name},*`,
       ``,
-      statusMsg.header,
+      statusMsg,
       ``,
       `━━━━━━━━━━━━━━`,
       `📋 *DETAIL SERVIS*`,
+      `━━━━━━━━━━━━━━`,
       `• *No. Nota:* ${service.nota_number}`,
       `• *Perangkat:* ${service.device_type} ${service.device_brand || ''} ${service.device_model || ''}`.trim(),
       service.complaint ? `• *Keluhan:* ${service.complaint}` : null,
       `• *Tanggal Masuk:* ${tglMasuk}`,
       `• *Status:* ${service.status.toUpperCase()}`,
       service.notes ? `• *Keterangan:* ${service.notes}` : null,
-      `━━━━━━━━━━━━━━`,
       ``,
+      `━━━━━━━━━━━━━━`,
       `💰 *RINCIAN BIAYA*`,
+      `━━━━━━━━━━━━━━`,
       `• Biaya Jasa: *${formatRupiah(service.service_fee)}*`,
       `• Biaya Sparepart: *${formatRupiah(service.parts_fee)}*`,
       `────────────────`,
@@ -124,8 +118,6 @@ export default function ServisDetailPage() {
       ``,
       service.garansi && service.garansi.toLowerCase() !== 'tanpa garansi' ? `🛡️ *Garansi: ${service.garansi}*` : null,
       service.warranty_end_date ? `📅 *Garansi Berakhir: ${new Date(service.warranty_end_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}*` : null,
-      ``,
-      withPdf ? statusMsg.body : null,
       ``,
       `Terima kasih telah mempercayakan servis perangkat Anda kepada kami. 🙏`,
       ``,
@@ -141,7 +133,7 @@ export default function ServisDetailPage() {
     setWaResult(null)
     try {
       const doc = NotaServisPDF({ service, ...storeInfo })
-      const lines = getWhatsAppMessage(true)
+      const lines = getWhatsAppMessage()
 
       const result = await sendWhatsAppPDF({
         document: doc,
@@ -170,7 +162,7 @@ export default function ServisDetailPage() {
     setWaLoading(true)
     setWaResult(null)
     try {
-      const lines = getWhatsAppMessage(false)
+      const lines = getWhatsAppMessage()
       const waUrl = `https://wa.me/${service.customer_phone.replace(/^0/, '62')}?text=${encodeURIComponent(lines)}`
       window.open(waUrl, '_blank')
       setWaResult({ ok: true, msg: 'WhatsApp dibuka, silakan kirim pesan.' })
