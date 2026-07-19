@@ -175,6 +175,7 @@ export default function ServisPage() {
   const statusVariant = (status: string): 'default' | 'secondary' | 'success' | 'warning' | 'destructive' => {
     const map: Record<string, 'default' | 'secondary' | 'success' | 'warning' | 'destructive'> = {
       proses: 'warning',
+      menunggu: 'default',
       selesai: 'success',
       dibatalkan: 'destructive',
     }
@@ -237,6 +238,7 @@ export default function ServisPage() {
               >
                 <option value="all">Semua Status</option>
                 <option value="proses">Proses</option>
+                <option value="menunggu">Menunggu Konfirmasi</option>
                 <option value="selesai">Selesai</option>
                 <option value="dibatalkan">Dibatalkan</option>
               </select>

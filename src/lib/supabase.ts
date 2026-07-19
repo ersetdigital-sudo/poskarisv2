@@ -54,7 +54,7 @@ export interface Service {
   dp_amount: number
   garansi: string
   warranty_end_date: string | null
-  status: 'proses' | 'selesai' | 'dibatalkan'
+  status: 'proses' | 'menunggu' | 'selesai' | 'dibatalkan'
   date_in: string
   date_out: string | null
   notes: string | null

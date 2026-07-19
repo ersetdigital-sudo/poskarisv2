@@ -75,53 +75,73 @@ export default function ServisDetailPage() {
     }
   }
 
+  // Status messages
+  const statusMessages: Record<string, { header: string; body: string }> = {
+    proses: {
+      header: 'Perangkat Anda sedang dalam proses servis. 🔧',
+      body: 'Kami akan mengabari Anda begitu servis selesai.',
+    },
+    selesai: {
+      header: 'Kabar baik! Perangkat Anda telah selesai diservis dan siap diambil. 🎉',
+      body: 'Nota servis dalam format PDF telah kami lampirkan pada pesan ini.',
+    },
+    dibatalkan: {
+      header: 'Servis perangkat Anda telah dibatalkan.',
+      body: 'Silakan hubungi kami untuk informasi lebih lanjut.',
+    },
+  }
+
+  function getWhatsAppMessage(withPdf: boolean) {
+    if (!service) return ''
+    const tglMasuk = new Date(service.date_in).toLocaleDateString('id-ID', {
+      day: 'numeric', month: 'long', year: 'numeric',
+    })
+    const sisa = service.total_fee - (service.dp_amount || 0)
+    const statusMsg = statusMessages[service.status] || statusMessages.proses
+
+    const lines = [
+      `📢 *Halo ${service.customer_name},*`,
+      ``,
+      statusMsg.header,
+      ``,
+      `━━━━━━━━━━━━━━`,
+      `📋 *DETAIL SERVIS*`,
+      `• *No. Nota:* ${service.nota_number}`,
+      `• *Perangkat:* ${service.device_type} ${service.device_brand || ''} ${service.device_model || ''}`.trim(),
+      service.complaint ? `• *Keluhan:* ${service.complaint}` : null,
+      `• *Tanggal Masuk:* ${tglMasuk}`,
+      `• *Status:* ${service.status.toUpperCase()}`,
+      service.notes ? `• *Keterangan:* ${service.notes}` : null,
+      `━━━━━━━━━━━━━━`,
+      ``,
+      `💰 *RINCIAN BIAYA*`,
+      `• Biaya Jasa: *${formatRupiah(service.service_fee)}*`,
+      `• Biaya Sparepart: *${formatRupiah(service.parts_fee)}*`,
+      `────────────────`,
+      `*Total Pembayaran: ${formatRupiah(service.total_fee)}*`,
+      service.dp_amount > 0 ? `*DP/Uang Muka: ${formatRupiah(service.dp_amount)}*` : null,
+      service.dp_amount > 0 ? `*Sisa Pembayaran: ${formatRupiah(sisa)}*` : null,
+      ``,
+      service.garansi && service.garansi.toLowerCase() !== 'tanpa garansi' ? `🛡️ *Garansi: ${service.garansi}*` : null,
+      service.warranty_end_date ? `📅 *Garansi Berakhir: ${new Date(service.warranty_end_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}*` : null,
+      ``,
+      withPdf ? statusMsg.body : null,
+      ``,
+      `Terima kasih telah mempercayakan servis perangkat Anda kepada kami. 🙏`,
+      ``,
+      `Jika ada pertanyaan, silakan balas pesan ini. Kami siap membantu.`,
+    ].filter(Boolean).join('\n')
+
+    return lines
+  }
+
   async function handleKirimWhatsApp() {
     if (!service) return
     setWaLoading(true)
     setWaResult(null)
     try {
       const doc = NotaServisPDF({ service, ...storeInfo })
-
-      // Format tanggal masuk
-      const tglMasuk = new Date(service.date_in).toLocaleDateString('id-ID', {
-        day: 'numeric', month: 'long', year: 'numeric',
-      })
-
-      // Hitung sisa pembayaran
-      const sisa = service.total_fee - (service.dp_amount || 0)
-
-      // Pesan detail untuk customer (format rapi)
-      const lines = [
-        `📢 *Halo ${service.customer_name},*`,
-        ``,
-        `Kabar baik! Perangkat Anda telah selesai diservis dan siap diambil. 🎉`,
-        ``,
-        `━━━━━━━━━━━━━━`,
-        `📋 *DETAIL SERVIS*`,
-        `• *No. Nota:* ${service.nota_number}`,
-        `• *Perangkat:* ${service.device_type} ${service.device_brand || ''} ${service.device_model || ''}`.trim(),
-        service.complaint ? `• *Keluhan:* ${service.complaint}` : null,
-        `• *Tanggal Masuk:* ${tglMasuk}`,
-        service.notes ? `• *Keterangan:* ${service.notes}` : null,
-        `━━━━━━━━━━━━━━`,
-        ``,
-        `💰 *RINCIAN BIAYA*`,
-        `• Biaya Jasa: *${formatRupiah(service.service_fee)}*`,
-        `• Biaya Sparepart: *${formatRupiah(service.parts_fee)}*`,
-        `────────────────`,
-        `*Total Pembayaran: ${formatRupiah(service.total_fee)}*`,
-        service.dp_amount > 0 ? `*DP/Uang Muka: ${formatRupiah(service.dp_amount)}*` : null,
-        service.dp_amount > 0 ? `*Sisa Pembayaran: ${formatRupiah(sisa)}*` : null,
-        ``,
-        service.garansi && service.garansi.toLowerCase() !== 'tanpa garansi' ? `🛡️ *Garansi: ${service.garansi}*` : null,
-        service.warranty_end_date ? `📅 *Garansi Berakhir: ${new Date(service.warranty_end_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}*` : null,
-        ``,
-        `📄 Nota servis dalam format PDF telah kami lampirkan pada pesan ini.`,
-        ``,
-        `Terima kasih telah mempercayakan servis perangkat Anda kepada kami. 🙏`,
-        ``,
-        `Jika ada pertanyaan, silakan balas pesan ini. Kami siap membantu.`,
-      ].filter(Boolean).join('\n')
+      const lines = getWhatsAppMessage(true)
 
       const result = await sendWhatsAppPDF({
         document: doc,
@@ -133,11 +153,27 @@ export default function ServisDetailPage() {
       if (result.success) {
         setWaResult({ ok: true, msg: 'Nota PDF berhasil dikirim ke WhatsApp!' })
       } else {
-        // Fallback: buka wa.me link tanpa file
         const waUrl = `https://wa.me/${service.customer_phone.replace(/^0/, '62')}?text=${encodeURIComponent(lines)}`
         window.open(waUrl, '_blank')
         setWaResult({ ok: false, msg: `Gagal kirim via API (${result.error}). Membuka WhatsApp Web...` })
       }
+    } catch (e) {
+      console.error('WhatsApp error:', e)
+      setWaResult({ ok: false, msg: 'Terjadi kesalahan' })
+    } finally {
+      setWaLoading(false)
+    }
+  }
+
+  async function handleKirimNotif() {
+    if (!service) return
+    setWaLoading(true)
+    setWaResult(null)
+    try {
+      const lines = getWhatsAppMessage(false)
+      const waUrl = `https://wa.me/${service.customer_phone.replace(/^0/, '62')}?text=${encodeURIComponent(lines)}`
+      window.open(waUrl, '_blank')
+      setWaResult({ ok: true, msg: 'WhatsApp dibuka, silakan kirim pesan.' })
     } catch (e) {
       console.error('WhatsApp error:', e)
       setWaResult({ ok: false, msg: 'Terjadi kesalahan' })
@@ -159,9 +195,10 @@ export default function ServisDetailPage() {
     )
   }
 
-  const statusVariant: Record<string, 'success' | 'warning' | 'destructive'> = {
+  const statusVariant: Record<string, 'success' | 'warning' | 'destructive' | 'secondary'> = {
     selesai: 'success',
     proses: 'warning',
+    menunggu: 'secondary',
     dibatalkan: 'destructive',
   }
 
@@ -319,6 +356,23 @@ export default function ServisDetailPage() {
                 {updating ? 'Memperbarui...' : 'Tandai Selesai'}
               </Button>
             )}
+
+            {/* Kirim Notif WhatsApp (semua status) */}
+            <Button
+              onClick={handleKirimNotif}
+              disabled={waLoading}
+              variant="outline"
+              className="h-11 w-full gap-2"
+            >
+              {waLoading ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-foreground" />
+              ) : (
+                <Send size={16} />
+              )}
+              {waLoading ? 'Mengirim...' : 'Kirim Update Status'}
+            </Button>
+
+            {/* Download & Kirim Nota (hanya selesai) */}
             {service.status === 'selesai' && (
               <>
                 <Button
@@ -344,14 +398,15 @@ export default function ServisDetailPage() {
                   ) : (
                     <Send size={16} />
                   )}
-                  {waLoading ? 'Mengirim...' : 'Kirim Nota ke WhatsApp'}
+                  {waLoading ? 'Mengirim...' : 'Kirim Nota PDF ke WhatsApp'}
                 </Button>
-                {waResult && (
-                  <div className={`rounded-lg border p-3 text-xs ${waResult.ok ? 'border-badge-success/30 bg-badge-success/10 text-badge-success' : 'border-destructive/30 bg-destructive/10 text-destructive'}`}>
-                    {waResult.msg}
-                  </div>
-                )}
               </>
+            )}
+
+            {waResult && (
+              <div className={`rounded-lg border p-3 text-xs ${waResult.ok ? 'border-badge-success/30 bg-badge-success/10 text-badge-success' : 'border-destructive/30 bg-destructive/10 text-destructive'}`}>
+                {waResult.msg}
+              </div>
             )}
           </div>
         </div>
@@ -388,6 +443,7 @@ function ServisEditForm({ service, onClose, onSaved }: { service: Service; onClo
     dp_amount: service.dp_amount,
     notes: service.notes || '',
     garansi: service.garansi || 'Tanpa Garansi',
+    status: service.status,
   })
 
   const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
@@ -435,6 +491,7 @@ function ServisEditForm({ service, onClose, onSaved }: { service: Service; onClo
         notes: form.notes || null,
         garansi: form.garansi,
         warranty_end_date: hitungWarrantyEnd(),
+        status: form.status,
         updated_at: new Date().toISOString(),
       }).eq('id', service.id)
 
@@ -535,6 +592,17 @@ function ServisEditForm({ service, onClose, onSaved }: { service: Service; onClo
               Garansi berlaku hingga: {new Date(hitungWarrantyEnd() || '').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
             </p>
           )}
+        </div>
+
+        {/* Status */}
+        <div>
+          <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Status</label>
+          <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value as Service['status'] })} className="h-10 w-full rounded-lg border border-input bg-surface px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20">
+            <option value="proses">Proses</option>
+            <option value="menunggu">Menunggu Konfirmasi</option>
+            <option value="selesai">Selesai</option>
+            <option value="dibatalkan">Dibatalkan</option>
+          </select>
         </div>
 
         {/* Actions */}

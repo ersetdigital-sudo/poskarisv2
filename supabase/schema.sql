@@ -154,7 +154,7 @@ CREATE TABLE public.services (
   garansi TEXT DEFAULT 'Tanpa Garansi', -- durasi garansi
   warranty_end_date TIMESTAMPTZ, -- tanggal berakhir garansi
   -- Status
-  status TEXT DEFAULT 'proses' CHECK (status IN ('proses', 'selesai', 'dibatalkan')),
+  status TEXT DEFAULT 'proses' CHECK (status IN ('proses', 'menunggu', 'selesai', 'dibatalkan')),
   -- Tanggal
   date_in TIMESTAMPTZ DEFAULT now(),
   date_out TIMESTAMPTZ,
