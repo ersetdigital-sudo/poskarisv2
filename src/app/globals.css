@@ -41,8 +41,8 @@
   --color-input: #efefef;
   --color-ring: rgba(0, 0, 0, 0.5);
 
-  /* Typography - DM Sans */
-  --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+  /* Typography - Inter */
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
   --font-mono: ui-monospace, 'Cascadia Code', monospace;
 
   /* Border Radius - Pills & Cards */
@@ -187,6 +187,17 @@
 
 /* ── Table number alignment ────────────────────────── */
 table {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tabular nums for number columns */
+.font-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Replace font-mono with tabular-nums for numbers */
+.font-mono {
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif !important;
   font-variant-numeric: tabular-nums;
 }
 
