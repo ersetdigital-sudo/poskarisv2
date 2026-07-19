@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
   colNo: { width: 16, fontSize: 6, textAlign: 'center' },
   colService: { flex: 1, fontSize: 6 },
   colHarga: { width: 55, fontSize: 6, textAlign: 'right', fontFamily: 'Courier' },
-  colKeterangan: { width: 70, fontSize: 5.5, textAlign: 'center', color: '#333' },
+  colKeterangan: { width: 70, fontSize: 5.5, textAlign: 'center', color: '#333', paddingHorizontal: 2 },
   // Summary
   summaryContainer: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 4 },
   summaryBox: { width: 140 },
@@ -233,7 +233,7 @@ export function NotaServisPDF({
               <Text style={styles.colNo}>{row.no}</Text>
               <Text style={styles.colService}>{row.service}</Text>
               <Text style={styles.colHarga}>{row.harga > 0 ? formatRupiah(row.harga) : ''}</Text>
-              <Text style={styles.colKeterangan}>{row.keterangan}</Text>
+              <Text style={{ ...styles.colKeterangan, textAlign: 'center' }}>{row.keterangan}</Text>
             </View>
           ))}
         </View>
