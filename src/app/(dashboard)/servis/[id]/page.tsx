@@ -91,40 +91,43 @@ export default function ServisDetailPage() {
     const sisa = service.total_fee - (service.dp_amount || 0)
     const statusMsg = statusMessages[service.status] || statusMessages.proses
 
-    const lines = [
+    // Build parts, filter null, join with \n\n for spacing
+    const parts: string[] = [
       `*Halo ${service.customer_name},*`,
-      ``,
       statusMsg,
-      ``,
-      `━━━━━━━━━━━━━━`,
-      `*DETAIL SERVIS*`,
-      `━━━━━━━━━━━━━━`,
-      `*No. Nota:* ${service.nota_number}`,
-      `*Perangkat:* ${service.device_type} ${service.device_brand || ''} ${service.device_model || ''}`.trim(),
-      service.complaint ? `*Keluhan:* ${service.complaint}` : null,
-      `*Tanggal Masuk:* ${tglMasuk}`,
-      `*Status:* ${service.status.toUpperCase()}`,
-      service.notes ? `*Keterangan:* ${service.notes}` : null,
-      ``,
-      `━━━━━━━━━━━━━━`,
-      `*RINCIAN BIAYA*`,
-      `━━━━━━━━━━━━━━`,
-      `Biaya Jasa: *${formatRupiah(service.service_fee)}*`,
-      `Biaya Sparepart: *${formatRupiah(service.parts_fee)}*`,
-      `────────────────`,
-      `*Total Pembayaran: ${formatRupiah(service.total_fee)}*`,
-      service.dp_amount > 0 ? `*DP/Uang Muka: ${formatRupiah(service.dp_amount)}*` : null,
-      service.dp_amount > 0 ? `*Sisa Pembayaran: ${formatRupiah(sisa)}*` : null,
-      ``,
-      service.garansi && service.garansi.toLowerCase() !== 'tanpa garansi' ? `*Garansi: ${service.garansi}*` : null,
-      service.warranty_end_date ? `*Garansi Berakhir: ${new Date(service.warranty_end_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}*` : null,
-      ``,
-      `Terima kasih telah mempercayakan servis perangkat Anda kepada kami.`,
-      ``,
-      `Jika ada pertanyaan, silakan balas pesan ini. Kami siap membantu.`,
-    ].filter(Boolean).join('\n')
+      [
+        `━━━━━━━━━━━━━━`,
+        `*DETAIL SERVIS*`,
+        `━━━━━━━━━━━━━━`,
+        `*No. Nota:* ${service.nota_number}`,
+        `*Perangkat:* ${service.device_type} ${service.device_brand || ''} ${service.device_model || ''}`.trim(),
+        service.complaint ? `*Keluhan:* ${service.complaint}` : null,
+        `*Tanggal Masuk:* ${tglMasuk}`,
+        `*Status:* ${service.status.toUpperCase()}`,
+        service.notes ? `*Keterangan:* ${service.notes}` : null,
+      ].filter(Boolean).join('\n'),
+      [
+        `━━━━━━━━━━━━━━`,
+        `*RINCIAN BIAYA*`,
+        `━━━━━━━━━━━━━━`,
+        `Biaya Jasa: *${formatRupiah(service.service_fee)}*`,
+        `Biaya Sparepart: *${formatRupiah(service.parts_fee)}*`,
+        `────────────────`,
+        `*Total Pembayaran: ${formatRupiah(service.total_fee)}*`,
+        service.dp_amount > 0 ? `*DP/Uang Muka: ${formatRupiah(service.dp_amount)}*` : null,
+        service.dp_amount > 0 ? `*Sisa Pembayaran: ${formatRupiah(sisa)}*` : null,
+      ].filter(Boolean).join('\n'),
+    ]
 
-    return lines
+    // Garansi (opsional)
+    if (service.garansi && service.garansi.toLowerCase() !== 'tanpa garansi') {
+      parts.push(`*Garansi: ${service.garansi}*${service.warranty_end_date ? ` (s/d ${new Date(service.warranty_end_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })})` : ''}`)
+    }
+
+    parts.push(`Terima kasih telah mempercayakan servis perangkat Anda kepada kami.`)
+    parts.push(`Jika ada pertanyaan, silakan balas pesan ini. Kami siap membantu.`)
+
+    return parts.join('\n\n')
   }
 
   async function handleKirimWhatsApp() {
