@@ -20,9 +20,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: RED,
   },
-  headerLeft: {
-    flex: 1,
-  },
+  headerLeft: { flex: 1 },
   notaTitle: {
     fontSize: 11,
     fontWeight: 'bold',
@@ -36,37 +34,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Helvetica-Bold',
     marginBottom: 1,
   },
-  storeTagline: {
-    fontSize: 6,
-    color: '#555',
-    marginBottom: 1,
-  },
-  storePhone: {
-    fontSize: 6,
-    color: '#555',
-  },
-  headerRight: {
-    width: 140,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 4,
-  },
-  headerRightRow: {
-    flexDirection: 'row',
-    marginBottom: 1,
-  },
-  headerRightLabel: {
-    fontSize: 6,
-    color: '#666',
-    width: 50,
-  },
-  headerRightValue: {
-    fontSize: 6,
-    fontWeight: 'bold',
-    fontFamily: 'Helvetica-Bold',
-    flex: 1,
-  },
-  // Tipe Laptop row
+  storeTagline: { fontSize: 6, color: '#555', marginBottom: 1 },
+  storePhone: { fontSize: 6, color: '#555' },
+  headerRight: { width: 140, borderWidth: 1, borderColor: '#ccc', padding: 4 },
+  headerRightRow: { flexDirection: 'row', marginBottom: 1 },
+  headerRightLabel: { fontSize: 6, color: '#666', width: 50 },
+  headerRightValue: { fontSize: 6, fontWeight: 'bold', fontFamily: 'Helvetica-Bold', flex: 1 },
+  // Tipe Laptop
   tipeRow: {
     flexDirection: 'row',
     marginBottom: 4,
@@ -76,22 +50,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
   },
-  tipeLabel: {
-    fontSize: 7,
-    fontWeight: 'bold',
-    fontFamily: 'Helvetica-Bold',
-    width: 60,
-  },
-  tipeValue: {
-    fontSize: 7,
-    flex: 1,
-  },
-  // Table (tanpa kolom keterangan)
-  table: {
-    marginBottom: 4,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
+  tipeLabel: { fontSize: 7, fontWeight: 'bold', fontFamily: 'Helvetica-Bold', width: 60 },
+  tipeValue: { fontSize: 7, flex: 1 },
+  // Table
+  table: { marginBottom: 4, borderWidth: 1, borderColor: '#ddd' },
   tableHeader: {
     flexDirection: 'row',
     backgroundColor: RED,
@@ -112,165 +74,43 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e0e0e0',
     minHeight: 12,
   },
-  colNo: {
-    width: 16,
-    fontSize: 6,
-    textAlign: 'center',
-  },
-  colService: {
-    flex: 1,
-    fontSize: 6,
-  },
-  colHarga: {
-    width: 60,
-    fontSize: 6,
-    textAlign: 'right',
-    fontFamily: 'Courier',
-  },
-  // Bottom section: Keterangan kiri + Summary kanan
-  bottomSection: {
-    flexDirection: 'row',
-    marginBottom: 4,
-    gap: 4,
-  },
-  // Keterangan (kiri)
-  keteranganBox: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 3,
-    backgroundColor: '#f9f9f9',
-  },
-  keteranganTitle: {
-    fontSize: 6,
-    fontWeight: 'bold',
-    fontFamily: 'Helvetica-Bold',
-    marginBottom: 2,
-    color: '#333',
-  },
-  keteranganText: {
-    fontSize: 5.5,
-    color: '#444',
-    lineHeight: 1.2,
-  },
-  // Summary (kanan)
-  summaryBox: {
-    width: 140,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    marginBottom: 0,
-  },
+  colNo: { width: 16, fontSize: 6, textAlign: 'center' },
+  colService: { flex: 1, fontSize: 6 },
+  colHarga: { width: 55, fontSize: 6, textAlign: 'right', fontFamily: 'Courier' },
+  colKeterangan: { width: 70, fontSize: 5.5, textAlign: 'center', color: '#333' },
+  // Summary
+  summaryContainer: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 4 },
+  summaryBox: { width: 140 },
+  summaryRow: { flexDirection: 'row', marginBottom: 0 },
   summaryLabel: {
-    width: 50,
-    fontSize: 6,
-    fontWeight: 'bold',
-    fontFamily: 'Helvetica-Bold',
-    backgroundColor: RED,
-    color: '#fff',
-    paddingHorizontal: 3,
-    paddingVertical: 2,
+    width: 50, fontSize: 6, fontWeight: 'bold', fontFamily: 'Helvetica-Bold',
+    backgroundColor: RED, color: '#fff', paddingHorizontal: 3, paddingVertical: 2,
   },
   summaryValue: {
-    width: 90,
-    fontSize: 6,
-    textAlign: 'right',
-    fontFamily: 'Courier',
-    paddingHorizontal: 3,
-    paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: '#ddd',
+    width: 90, fontSize: 6, textAlign: 'right', fontFamily: 'Courier',
+    paddingHorizontal: 3, paddingVertical: 2, borderWidth: 1, borderColor: '#ddd',
   },
   // Info rows
-  infoRow: {
-    flexDirection: 'row',
-    marginBottom: 3,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
+  infoRow: { flexDirection: 'row', marginBottom: 3, borderWidth: 1, borderColor: '#ddd' },
   infoLabel: {
-    width: 110,
-    fontSize: 6,
-    fontWeight: 'bold',
-    fontFamily: 'Helvetica-Bold',
-    backgroundColor: RED,
-    color: '#fff',
-    paddingHorizontal: 3,
-    paddingVertical: 2,
+    width: 110, fontSize: 6, fontWeight: 'bold', fontFamily: 'Helvetica-Bold',
+    backgroundColor: RED, color: '#fff', paddingHorizontal: 3, paddingVertical: 2,
   },
-  infoValue: {
-    flex: 1,
-    fontSize: 6,
-    paddingHorizontal: 3,
-    paddingVertical: 2,
-  },
+  infoValue: { flex: 1, fontSize: 6, paddingHorizontal: 3, paddingVertical: 2 },
   // Syarat
-  syaratContainer: {
-    marginTop: 3,
-    marginBottom: 3,
-    padding: 3,
-    backgroundColor: '#f9f9f9',
-    borderWidth: 1,
-    borderColor: '#eee',
-  },
-  syaratTitle: {
-    fontSize: 6,
-    fontWeight: 'bold',
-    fontFamily: 'Helvetica-Bold',
-    marginBottom: 1,
-  },
-  syaratText: {
-    fontSize: 5.5,
-    color: '#444',
-    lineHeight: 1.2,
-  },
-  // Info Rekening
-  rekeningContainer: {
-    marginBottom: 3,
-    padding: 3,
-    backgroundColor: '#f9f9f9',
-    borderWidth: 1,
-    borderColor: '#eee',
-  },
-  rekeningTitle: {
-    fontSize: 6,
-    fontWeight: 'bold',
-    fontFamily: 'Helvetica-Bold',
-    marginBottom: 1,
-  },
-  rekeningText: {
-    fontSize: 5.5,
-    color: '#444',
-    lineHeight: 1.2,
-  },
-  rekeningBold: {
-    fontSize: 5.5,
-    fontWeight: 'bold',
-    fontFamily: 'Helvetica-Bold',
-    color: '#000',
-  },
-  // Tanda tangan
-  ttdContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 6,
-  },
-  ttdBox: {
-    width: 100,
-    alignItems: 'center',
-  },
-  ttdLine: {
-    width: '100%',
-    borderBottomWidth: 1,
-    borderBottomColor: '#000',
-    height: 24,
-    marginBottom: 2,
-  },
-  ttdLabel: {
-    fontSize: 6,
-    fontWeight: 'bold',
-    fontFamily: 'Helvetica-Bold',
-  },
+  syaratContainer: { marginTop: 3, marginBottom: 3, padding: 3, backgroundColor: '#f9f9f9', borderWidth: 1, borderColor: '#eee' },
+  syaratTitle: { fontSize: 6, fontWeight: 'bold', fontFamily: 'Helvetica-Bold', marginBottom: 1 },
+  syaratText: { fontSize: 5.5, color: '#444', lineHeight: 1.2 },
+  // Rekening
+  rekeningContainer: { marginBottom: 3, padding: 3, backgroundColor: '#f9f9f9', borderWidth: 1, borderColor: '#eee' },
+  rekeningTitle: { fontSize: 6, fontWeight: 'bold', fontFamily: 'Helvetica-Bold', marginBottom: 1 },
+  rekeningText: { fontSize: 5.5, color: '#444', lineHeight: 1.2 },
+  rekeningBold: { fontSize: 5.5, fontWeight: 'bold', fontFamily: 'Helvetica-Bold', color: '#000' },
+  // TTD
+  ttdContainer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
+  ttdBox: { width: 100, alignItems: 'center' },
+  ttdLine: { width: '100%', borderBottomWidth: 1, borderBottomColor: '#000', height: 24, marginBottom: 2 },
+  ttdLabel: { fontSize: 6, fontWeight: 'bold', fontFamily: 'Helvetica-Bold' },
 })
 
 function formatRupiah(n: number): string {
@@ -298,7 +138,7 @@ export function NotaServisPDF({
   storePhone = '0812-3456-7890',
 }: NotaServisProps) {
   // Build table rows
-  const tableRows: { no: number; service: string; harga: number }[] = []
+  const tableRows: { no: number; service: string; harga: number; keterangan: string }[] = []
 
   // Sparepart rows
   parts.forEach((part) => {
@@ -306,6 +146,7 @@ export function NotaServisPDF({
       no: tableRows.length + 1,
       service: `${part.name} (Qty: ${part.quantity})`,
       harga: part.price * part.quantity,
+      keterangan: '',
     })
   })
 
@@ -315,7 +156,13 @@ export function NotaServisPDF({
       no: tableRows.length + 1,
       service: 'Jasa Servis',
       harga: service.service_fee,
+      keterangan: '',
     })
+  }
+
+  // Fill keterangan di baris pertama saja
+  if (tableRows.length > 0 && service.notes) {
+    tableRows[0].keterangan = service.notes
   }
 
   // Pad to minimum 5 rows
@@ -324,6 +171,7 @@ export function NotaServisPDF({
       no: tableRows.length + 1,
       service: '',
       harga: 0,
+      keterangan: '',
     })
   }
 
@@ -371,12 +219,13 @@ export function NotaServisPDF({
           <Text style={styles.tipeValue}>{tipePerangkat || '-'}</Text>
         </View>
 
-        {/* TABEL UTAMA (tanpa kolom keterangan) */}
+        {/* TABEL UTAMA */}
         <View style={styles.table}>
           <View style={styles.tableHeader}>
             <Text style={{ ...styles.tableHeaderText, width: 16, textAlign: 'center' }}>No</Text>
             <Text style={{ ...styles.tableHeaderText, flex: 1 }}>Service / Kerusakan / Upgrade</Text>
-            <Text style={{ ...styles.tableHeaderText, width: 60, textAlign: 'right' }}>Harga</Text>
+            <Text style={{ ...styles.tableHeaderText, width: 55, textAlign: 'right' }}>Harga</Text>
+            <Text style={{ ...styles.tableHeaderText, width: 70, textAlign: 'center' }}>Keterangan</Text>
           </View>
 
           {tableRows.map((row, i) => (
@@ -384,19 +233,13 @@ export function NotaServisPDF({
               <Text style={styles.colNo}>{row.no}</Text>
               <Text style={styles.colService}>{row.service}</Text>
               <Text style={styles.colHarga}>{row.harga > 0 ? formatRupiah(row.harga) : ''}</Text>
+              <Text style={styles.colKeterangan}>{row.keterangan}</Text>
             </View>
           ))}
         </View>
 
-        {/* KETERANGAN + RINGKASAN BIAYA (sejajar) */}
-        <View style={styles.bottomSection}>
-          {/* Keterangan (kiri) */}
-          <View style={styles.keteranganBox}>
-            <Text style={styles.keteranganTitle}>Keterangan / Tindakan :</Text>
-            <Text style={styles.keteranganText}>{service.notes || '-'}</Text>
-          </View>
-
-          {/* Summary (kanan) */}
+        {/* RINGKASAN BIAYA */}
+        <View style={styles.summaryContainer}>
           <View style={styles.summaryBox}>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Total</Text>
