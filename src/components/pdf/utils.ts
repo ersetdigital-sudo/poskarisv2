@@ -9,42 +9,42 @@ type PDFDocument = ReactElement<DocumentProps>
 export async function downloadPDF(document: PDFDocument, filename: string) {
   const blob = await pdf(document).toBlob()
 
-  // Convert blob ke data URL (lebih compatible di mobile)
+  // Detect iOS
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as unknown as { MSStream?: boolean }).MSStream
+
+  // iOS: pakai Web Share API supaya bisa simpan ke Files
+  if (isIOS && navigator.share) {
+    try {
+      const file = new File([blob], filename, { type: 'application/pdf' })
+      await navigator.share({
+        title: filename,
+        files: [file],
+      })
+      return // Berhasil share/save
+    } catch (err) {
+      // User cancel share atau error, fallback ke buka tab baru
+      if ((err as Error).name === 'AbortError') return // User cancel
+    }
+  }
+
+  // Android & Desktop: anchor click dengan data URL
   const dataUrl = await new Promise<string>((resolve) => {
     const reader = new FileReader()
     reader.onloadend = () => resolve(reader.result as string)
     reader.readAsDataURL(blob)
   })
 
-  // Detect iOS Safari
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as unknown as { MSStream?: boolean }).MSStream
+  const link = window.document.createElement('a')
+  link.href = dataUrl
+  link.download = filename
+  link.style.display = 'none'
+  link.target = '_self'
+  window.document.body.appendChild(link)
+  link.click()
 
-  if (isIOS) {
-    // iOS Safari: buka di tab baru dengan data URL
-    // iOS tidak support download attribute, jadi buka di tab baru
-    // user bisa pakai share sheet untuk save
-    const newWindow = window.open(dataUrl, '_blank')
-    if (!newWindow) {
-      // Fallback: redirect ke data URL
-      window.location.href = dataUrl
-    }
-  } else {
-    // Android & Desktop: pakai anchor dengan download attribute
-    const link = window.document.createElement('a')
-    link.href = dataUrl
-    link.download = filename
-    link.style.display = 'none'
-    link.target = '_self'
-    window.document.body.appendChild(link)
-
-    // Trigger click
-    link.click()
-
-    // Cleanup
-    setTimeout(() => {
-      window.document.body.removeChild(link)
-    }, 100)
-  }
+  setTimeout(() => {
+    window.document.body.removeChild(link)
+  }, 100)
 }
 
 // Render PDF dan buka di tab baru (untuk preview / print)
