@@ -5,63 +5,63 @@ const RED = '#E53935'
 
 const styles = StyleSheet.create({
   page: {
-    padding: 24,
+    padding: 12,
     fontFamily: 'Helvetica',
-    fontSize: 8,
+    fontSize: 7,
     color: '#000000',
-    lineHeight: 1.3,
+    lineHeight: 1.2,
   },
   // Header
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
-    paddingBottom: 6,
+    marginBottom: 6,
+    paddingBottom: 4,
     borderBottomWidth: 2,
     borderBottomColor: RED,
   },
   headerLeft: {
     flex: 1,
   },
+  notaTitle: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    fontFamily: 'Helvetica-Bold',
+    color: RED,
+    marginBottom: 2,
+  },
   storeName: {
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: 'bold',
     fontFamily: 'Helvetica-Bold',
     marginBottom: 1,
   },
   storeTagline: {
-    fontSize: 7,
+    fontSize: 6,
     color: '#555',
     marginBottom: 1,
   },
   storePhone: {
-    fontSize: 7,
+    fontSize: 6,
     color: '#555',
   },
-  notaTitle: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    fontFamily: 'Helvetica-Bold',
-    color: RED,
-    marginBottom: 4,
-  },
   headerRight: {
-    width: 180,
+    width: 140,
     borderWidth: 1,
     borderColor: '#ccc',
-    padding: 6,
+    padding: 4,
   },
   headerRightRow: {
     flexDirection: 'row',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   headerRightLabel: {
-    fontSize: 7,
+    fontSize: 6,
     color: '#666',
-    width: 55,
+    width: 50,
   },
   headerRightValue: {
-    fontSize: 7,
+    fontSize: 6,
     fontWeight: 'bold',
     fontFamily: 'Helvetica-Bold',
     flex: 1,
@@ -69,167 +69,165 @@ const styles = StyleSheet.create({
   // Tipe Laptop row
   tipeRow: {
     flexDirection: 'row',
-    marginBottom: 6,
-    paddingVertical: 3,
-    paddingHorizontal: 4,
+    marginBottom: 4,
+    paddingVertical: 2,
+    paddingHorizontal: 3,
     backgroundColor: '#f5f5f5',
     borderWidth: 1,
     borderColor: '#ddd',
   },
   tipeLabel: {
-    fontSize: 8,
+    fontSize: 7,
     fontWeight: 'bold',
     fontFamily: 'Helvetica-Bold',
-    width: 70,
+    width: 60,
   },
   tipeValue: {
-    fontSize: 8,
+    fontSize: 7,
     flex: 1,
   },
   // Table
   table: {
-    marginBottom: 6,
-  },
-  tableHeader: {
-    flexDirection: 'row',
-    backgroundColor: RED,
-    paddingVertical: 4,
-    paddingHorizontal: 4,
-  },
-  tableHeaderText: {
-    fontSize: 7,
-    fontWeight: 'bold',
-    fontFamily: 'Helvetica-Bold',
-    color: '#ffffff',
-    textTransform: 'uppercase',
-  },
-  tableRow: {
-    flexDirection: 'row',
-    paddingVertical: 3,
-    paddingHorizontal: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    minHeight: 14,
-  },
-  tableRowAlt: {
-    backgroundColor: '#fafafa',
-  },
-  colNo: {
-    width: 20,
-    fontSize: 7,
-    textAlign: 'center',
-  },
-  colService: {
-    flex: 1,
-    fontSize: 7,
-  },
-  colHarga: {
-    width: 70,
-    fontSize: 7,
-    textAlign: 'right',
-    fontFamily: 'Courier',
-  },
-  colKeterangan: {
-    width: 80,
-    fontSize: 6,
-    color: '#555',
-    paddingLeft: 4,
-  },
-  // Summary (kanan bawah)
-  summaryContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginBottom: 6,
-  },
-  summaryBox: {
-    width: 180,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    marginBottom: 1,
-  },
-  summaryLabel: {
-    flex: 1,
-    fontSize: 7,
-    fontWeight: 'bold',
-    fontFamily: 'Helvetica-Bold',
-    backgroundColor: RED,
-    color: '#fff',
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-  },
-  summaryValue: {
-    width: 90,
-    fontSize: 7,
-    textAlign: 'right',
-    fontFamily: 'Courier',
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  // Info rows (Kelengkapan, Garansi)
-  infoRow: {
-    flexDirection: 'row',
     marginBottom: 4,
     borderWidth: 1,
     borderColor: '#ddd',
   },
-  infoLabel: {
-    width: 120,
-    fontSize: 7,
+  tableHeader: {
+    flexDirection: 'row',
+    backgroundColor: RED,
+    paddingVertical: 3,
+    paddingHorizontal: 3,
+  },
+  tableHeaderText: {
+    fontSize: 6,
+    fontWeight: 'bold',
+    fontFamily: 'Helvetica-Bold',
+    color: '#ffffff',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    paddingVertical: 2,
+    paddingHorizontal: 3,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    minHeight: 12,
+  },
+  colNo: {
+    width: 16,
+    fontSize: 6,
+    textAlign: 'center',
+  },
+  colService: {
+    flex: 1,
+    fontSize: 6,
+  },
+  colHarga: {
+    width: 55,
+    fontSize: 6,
+    textAlign: 'right',
+    fontFamily: 'Courier',
+  },
+  colKeterangan: {
+    width: 60,
+    fontSize: 5.5,
+    color: '#555',
+    paddingLeft: 2,
+  },
+  // Summary
+  summaryContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: 4,
+  },
+  summaryBox: {
+    width: 160,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    marginBottom: 0,
+  },
+  summaryLabel: {
+    width: 60,
+    fontSize: 6,
     fontWeight: 'bold',
     fontFamily: 'Helvetica-Bold',
     backgroundColor: RED,
     color: '#fff',
-    paddingHorizontal: 4,
-    paddingVertical: 3,
+    paddingHorizontal: 3,
+    paddingVertical: 2,
+  },
+  summaryValue: {
+    width: 100,
+    fontSize: 6,
+    textAlign: 'right',
+    fontFamily: 'Courier',
+    paddingHorizontal: 3,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  // Info rows
+  infoRow: {
+    flexDirection: 'row',
+    marginBottom: 3,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  infoLabel: {
+    width: 110,
+    fontSize: 6,
+    fontWeight: 'bold',
+    fontFamily: 'Helvetica-Bold',
+    backgroundColor: RED,
+    color: '#fff',
+    paddingHorizontal: 3,
+    paddingVertical: 2,
   },
   infoValue: {
     flex: 1,
-    fontSize: 7,
-    paddingHorizontal: 4,
-    paddingVertical: 3,
+    fontSize: 6,
+    paddingHorizontal: 3,
+    paddingVertical: 2,
   },
   // Syarat
   syaratContainer: {
-    marginTop: 6,
-    marginBottom: 8,
-    padding: 4,
+    marginTop: 4,
+    marginBottom: 4,
+    padding: 3,
     backgroundColor: '#f9f9f9',
     borderWidth: 1,
     borderColor: '#eee',
   },
   syaratTitle: {
-    fontSize: 7,
+    fontSize: 6,
     fontWeight: 'bold',
     fontFamily: 'Helvetica-Bold',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   syaratText: {
-    fontSize: 6,
+    fontSize: 5.5,
     color: '#444',
-    lineHeight: 1.3,
+    lineHeight: 1.2,
   },
   // Tanda tangan
   ttdContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 12,
+    marginTop: 8,
   },
   ttdBox: {
-    width: 120,
+    width: 100,
     alignItems: 'center',
   },
   ttdLine: {
     width: '100%',
     borderBottomWidth: 1,
     borderBottomColor: '#000',
-    height: 30,
-    marginBottom: 4,
+    height: 24,
+    marginBottom: 2,
   },
   ttdLabel: {
-    fontSize: 7,
+    fontSize: 6,
     fontWeight: 'bold',
     fontFamily: 'Helvetica-Bold',
   },
@@ -310,7 +308,7 @@ export function NotaServisPDF({
 
   return (
     <Document>
-      <Page size={[297, 210]} style={styles.page} orientation="landscape">
+      <Page size="A5" style={styles.page} orientation="portrait">
         {/* HEADER */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
@@ -321,7 +319,7 @@ export function NotaServisPDF({
           </View>
           <View style={styles.headerRight}>
             <View style={styles.headerRightRow}>
-              <Text style={styles.headerRightLabel}>Tanggal Masuk</Text>
+              <Text style={styles.headerRightLabel}>Tgl Masuk</Text>
               <Text style={styles.headerRightValue}>: {formatDate(service.date_in)}</Text>
             </View>
             <View style={styles.headerRightRow}>
@@ -329,7 +327,7 @@ export function NotaServisPDF({
               <Text style={styles.headerRightValue}>: {service.customer_name}</Text>
             </View>
             <View style={styles.headerRightRow}>
-              <Text style={styles.headerRightLabel}>Nomor WA</Text>
+              <Text style={styles.headerRightLabel}>No. WA</Text>
               <Text style={styles.headerRightValue}>: {service.customer_phone}</Text>
             </View>
           </View>
@@ -343,17 +341,15 @@ export function NotaServisPDF({
 
         {/* TABEL UTAMA */}
         <View style={styles.table}>
-          {/* Table Header */}
           <View style={styles.tableHeader}>
-            <Text style={{ ...styles.tableHeaderText, width: 20, textAlign: 'center' }}>No.</Text>
+            <Text style={{ ...styles.tableHeaderText, width: 16, textAlign: 'center' }}>No</Text>
             <Text style={{ ...styles.tableHeaderText, flex: 1 }}>Service / Kerusakan / Upgrade</Text>
-            <Text style={{ ...styles.tableHeaderText, width: 70, textAlign: 'right' }}>Harga</Text>
-            <Text style={{ ...styles.tableHeaderText, width: 80, paddingLeft: 4 }}>Keterangan</Text>
+            <Text style={{ ...styles.tableHeaderText, width: 55, textAlign: 'right' }}>Harga</Text>
+            <Text style={{ ...styles.tableHeaderText, width: 60, paddingLeft: 2 }}>Keterangan</Text>
           </View>
 
-          {/* Table Rows */}
           {tableRows.map((row, i) => (
-            <View key={i} style={[styles.tableRow, i % 2 === 1 ? styles.tableRowAlt : {}]}>
+            <View key={i} style={styles.tableRow}>
               <Text style={styles.colNo}>{row.no}</Text>
               <Text style={styles.colService}>{row.service}</Text>
               <Text style={styles.colHarga}>{row.harga > 0 ? formatRupiah(row.harga) : ''}</Text>
@@ -390,7 +386,7 @@ export function NotaServisPDF({
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Garansi Service / Upgrade :</Text>
           <Text style={styles.infoValue}>
-            {garansiText ? `${garansiText}${garansiEndDate ? ` (berlaku s/d ${garansiEndDate})` : ''}` : 'Tanpa Garansi'}
+            {garansiText ? `${garansiText}${garansiEndDate ? ` (s/d ${garansiEndDate})` : ''}` : 'Tanpa Garansi'}
           </Text>
         </View>
 
