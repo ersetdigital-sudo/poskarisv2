@@ -173,7 +173,7 @@ export default function ServisPage() {
         },
         selesai: {
           intro: 'Kabar baik! Perangkat Anda telah selesai diservis dan siap diambil.',
-          closing: 'Silakan ambil perangkat Anda di toko kami.',
+          closing: 'Silakan ambil perangkat Anda di toko kami.\n\nTerima kasih telah mempercayakan servis perangkat Anda kepada kami. 🙏',
         },
         menunggu: {
           intro: 'Perangkat Anda sedang menunggu konfirmasi dari Anda.',
