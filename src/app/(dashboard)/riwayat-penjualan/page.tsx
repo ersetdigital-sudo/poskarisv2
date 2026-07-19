@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { supabase, Sale, Product } from '@/lib/supabase'
-import { Search, Eye, Download, ShoppingCart, Laptop, Package, DollarSign } from 'lucide-react'
+import { Search, Eye, Download, ShoppingCart, Laptop, Package, DollarSign, Trash2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -25,6 +25,8 @@ export default function RiwayatPenjualanPage() {
   })
   const [currentPage, setCurrentPage] = useState(1)
   const [detailSale, setDetailSale] = useState<(Sale & { products?: Product }) | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<(Sale & { products?: Product }) | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [pdfLoading, setPdfLoading] = useState<string | null>(null)
   const [storeInfo, setStoreInfo] = useState({ storeName: 'Kasir POS', storeAddress: '', storePhone: '' })
   const itemsPerPage = 10
@@ -59,6 +61,38 @@ export default function RiwayatPenjualanPage() {
       data?.forEach(row => { map[row.key] = row.value })
       setStoreInfo({ storeName: map.store_name || 'Kasir POS', storeAddress: map.store_address || '', storePhone: map.store_phone || '' })
     } catch (e) { console.error(e) }
+  }
+
+  async function handleDelete(sale: Sale & { products?: Product }) {
+    setDeleting(true)
+    try {
+      // Hapus stock_movements terkait
+      await supabase.from('stock_movements').delete().eq('reference_id', sale.id).eq('reference_type', 'penjualan_unit')
+      
+      // Hapus sale
+      const { error } = await supabase.from('sales').delete().eq('id', sale.id)
+      if (error) throw error
+
+      // Jika unit, kembalikan status produk ke ready
+      if (sale.item_type === 'unit' && sale.product_id) {
+        await supabase.from('products').update({ status: 'ready' }).eq('id', sale.product_id)
+      }
+      // Jika sparepart, tambah kembali stok
+      if (sale.item_type === 'sparepart' && sale.product_id) {
+        const { data: product } = await supabase.from('products').select('quantity').eq('id', sale.product_id).single()
+        if (product) {
+          await supabase.from('products').update({ quantity: product.quantity + sale.quantity }).eq('id', sale.product_id)
+        }
+      }
+
+      setDeleteConfirm(null)
+      fetchSales()
+    } catch (e) {
+      console.error(e)
+      alert('Gagal menghapus transaksi: ' + (e instanceof Error ? e.message : 'Unknown error'))
+    } finally {
+      setDeleting(false)
+    }
   }
 
   const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
@@ -185,7 +219,15 @@ export default function RiwayatPenjualanPage() {
                 </div>
                 <div className="flex items-center justify-between pt-1">
                   <p className="text-[10px] text-stone">{new Date(s.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                  <p className="text-[10px] text-muted-foreground">{s.payment_method}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-[10px] text-muted-foreground">{s.payment_method}</p>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setDeleteConfirm(s) }}
+                      className="h-6 w-6 flex items-center justify-center rounded text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -230,6 +272,9 @@ export default function RiwayatPenjualanPage() {
                           </Button>
                           <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleDownloadPDF(s)} disabled={pdfLoading === s.id}>
                             {pdfLoading === s.id ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-foreground" /> : <Download size={13} />}
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setDeleteConfirm(s)}>
+                            <Trash2 size={13} />
                           </Button>
                         </div>
                       </td>
@@ -311,6 +356,30 @@ export default function RiwayatPenjualanPage() {
                 Download PDF
               </Button>
               <Button onClick={() => setDetailSale(null)} variant="secondary" className="flex-1">Tutup</Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <Modal title="Hapus Transaksi" onClose={() => setDeleteConfirm(null)} maxWidth="sm">
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Yakin ingin menghapus transaksi <span className="font-semibold text-foreground">{deleteConfirm.invoice_number}</span>?
+            </p>
+            <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3">
+              <p className="text-xs text-destructive">
+                {deleteConfirm.item_type === 'unit' 
+                  ? 'Status produk akan dikembalikan ke "Ready".' 
+                  : `Stok ${deleteConfirm.item_name} akan ditambah kembali sebanyak ${deleteConfirm.quantity}.`}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="secondary" className="flex-1 h-10" onClick={() => setDeleteConfirm(null)}>Batal</Button>
+              <Button variant="destructive" className="flex-1 h-10" onClick={() => handleDelete(deleteConfirm)} disabled={deleting}>
+                {deleting ? 'Menghapus...' : 'Hapus'}
+              </Button>
             </div>
           </div>
         </Modal>
