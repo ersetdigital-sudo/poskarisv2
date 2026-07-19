@@ -224,16 +224,16 @@ export function NotaServisPDF({
           <View style={styles.tableHeader}>
             <Text style={{ ...styles.tableHeaderText, width: 16, textAlign: 'center' }}>No</Text>
             <Text style={{ ...styles.tableHeaderText, flex: 1 }}>Service / Kerusakan / Upgrade</Text>
+            <Text style={{ ...styles.tableHeaderText, width: 60, textAlign: 'center' }}>Keterangan</Text>
             <Text style={{ ...styles.tableHeaderText, width: 55, textAlign: 'right' }}>Harga</Text>
-            <Text style={{ ...styles.tableHeaderText, width: 70, textAlign: 'center' }}>Keterangan</Text>
           </View>
 
           {tableRows.map((row, i) => (
             <View key={i} style={styles.tableRow}>
               <Text style={styles.colNo}>{row.no}</Text>
               <Text style={styles.colService}>{row.service}</Text>
-              <Text style={styles.colHarga}>{row.harga > 0 ? formatRupiah(row.harga) : ''}</Text>
               <Text style={{ ...styles.colKeterangan, textAlign: 'center' }}>{row.keterangan}</Text>
+              <Text style={styles.colHarga}>{row.harga > 0 ? formatRupiah(row.harga) : ''}</Text>
             </View>
           ))}
         </View>
