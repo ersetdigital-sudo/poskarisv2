@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase, Product, PaymentMethod } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
-import { ArrowLeft, Download, Send, Laptop, Package } from 'lucide-react'
+import { ArrowLeft, Download, Send, Laptop, Package, Pencil, Check } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -39,6 +39,7 @@ export default function JualBarangPage() {
   // Sparepart state
   const [spareparts, setSpareparts] = useState<Product[]>([])
   const [selectedSparepart, setSelectedSparepart] = useState<Product | null>(null)
+  const [isPriceEditable, setIsPriceEditable] = useState(false)
 
   const bonusOptions = ['Mouse', 'Keyboard', 'Tas', 'Mousepad']
   const [form, setForm] = useState({
@@ -133,6 +134,7 @@ export default function JualBarangPage() {
     setForm({ buyer_name: '', buyer_phone: '', sell_price: 0, quantity: 1, dp_amount: 0, bonus: [], bonus_lainnya: '', payment_method: paymentMethods[0]?.name || '', garansi: 'Tanpa Garansi', notes: '' })
     setSelectedUnit(null)
     setSelectedSparepart(null)
+    setIsPriceEditable(false)
   }
 
   function handleTabChange(newTab: TabType) {
@@ -289,7 +291,7 @@ export default function JualBarangPage() {
               {tab === 'unit' ? (
                 <div>
                   <label className={labelClass}>Pilih Unit *</label>
-                  <select value={selectedUnit?.id || ''} onChange={e => { const u = units.find(u => u.id === e.target.value); setSelectedUnit(u || null); if (u) setForm(f => ({ ...f, sell_price: u.sell_price || 0 })) }} className={selectClass}>
+                  <select value={selectedUnit?.id || ''} onChange={e => { const u = units.find(u => u.id === e.target.value); setSelectedUnit(u || null); if (u) { setForm(f => ({ ...f, sell_price: u.sell_price || 0 })); setIsPriceEditable(false) } }} className={selectClass}>
                     <option value="">Pilih unit...</option>
                     {units.map(u => <option key={u.id} value={u.id}>{u.brand} {u.model} - {u.specs} (Jual: {formatRupiah(u.sell_price)})</option>)}
                   </select>
@@ -349,7 +351,49 @@ export default function JualBarangPage() {
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div>
                   <label className={labelClass}>Harga Jual (Rp) *</label>
-                  <RupiahInput value={form.sell_price} onChange={v => setForm({ ...form, sell_price: v })} className="h-10 w-full font-mono" />
+                  <div className="relative">
+                    {tab === 'unit' && !isPriceEditable ? (
+                      <>
+                        <input
+                          type="text"
+                          value={formatRupiah(form.sell_price)}
+                          readOnly
+                          className="h-10 w-full rounded-lg border border-input bg-muted px-3 pr-10 text-sm font-mono text-foreground cursor-default"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setIsPriceEditable(true)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                          title="Edit harga"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                      </>
+                    ) : (
+                      <div className="relative">
+                        <RupiahInput
+                          value={form.sell_price}
+                          onChange={v => setForm({ ...form, sell_price: v })}
+                          className="h-10 w-full font-mono pr-10"
+                        />
+                        {tab === 'unit' && (
+                          <button
+                            type="button"
+                            onClick={() => setIsPriceEditable(false)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center rounded bg-badge-success/20 text-badge-success hover:bg-badge-success/30 transition-colors"
+                            title="Konfirmasi harga"
+                          >
+                            <Check size={14} />
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {tab === 'unit' && selectedUnit && form.sell_price !== selectedUnit.sell_price && (
+                    <p className="mt-1 text-[10px] text-muted-foreground">
+                      Harga awal: {formatRupiah(selectedUnit.sell_price)} • Selisih: <span className={form.sell_price < selectedUnit.sell_price ? 'text-destructive' : 'text-badge-success'}>{formatRupiah(form.sell_price - selectedUnit.sell_price)}</span>
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className={labelClass}>DP / Uang Muka (Rp)</label>
