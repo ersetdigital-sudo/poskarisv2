@@ -631,50 +631,52 @@ function ServisForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
 
           <div className="space-y-2">
             {items.map((item, i) => (
-              <div key={i} className="flex items-start gap-2 rounded-lg border border-border bg-card p-3">
-                <div className="min-w-0 flex-1 space-y-2 sm:flex sm:items-center sm:gap-2 sm:space-y-0">
-                  {/* Select sparepart */}
-                  <select
-                    value={item.product_id}
-                    onChange={e => updateItem(i, 'product_id', e.target.value)}
-                    className="h-9 w-full rounded-md border border-input bg-surface px-2 text-xs sm:min-w-[180px] sm:flex-1"
-                  >
-                    <option value="">Pilih sparepart...</option>
-                    {spareparts.map(p => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} (stok: {p.quantity}) — {formatRupiah(p.sell_price || p.buy_price)}
-                      </option>
-                    ))}
-                  </select>
-                  {/* Qty */}
-                  <div className="flex items-center gap-1">
-                    <label className="text-[10px] text-muted-foreground">Qty:</label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={item.max_qty || 999}
-                      value={item.quantity}
-                      onChange={e => updateItem(i, 'quantity', Math.min(Number(e.target.value), item.max_qty || 999))}
-                      className="h-9 w-16 rounded-md border border-input bg-surface px-2 text-xs text-center"
-                    />
+              <div key={i} className="rounded-lg border border-border bg-card p-3">
+                <div className="flex flex-col gap-2">
+                  {/* Baris 1: Select sparepart (full width) */}
+                  <div className="flex items-start gap-2">
+                    <select
+                      value={item.product_id}
+                      onChange={e => updateItem(i, 'product_id', e.target.value)}
+                      className="h-9 min-w-0 flex-1 rounded-md border border-input bg-surface px-2 text-xs"
+                    >
+                      <option value="">Pilih sparepart...</option>
+                      {spareparts.map(p => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} (stok: {p.quantity}) — {formatRupiah(p.sell_price || p.buy_price)}
+                        </option>
+                      ))}
+                    </select>
+                    <button type="button" onClick={() => removeItem(i)} className="h-9 w-9 shrink-0 flex items-center justify-center rounded-md border border-destructive/30 text-destructive hover:bg-destructive/10">
+                      <Trash2 size={14} />
+                    </button>
                   </div>
-                  {/* Harga per item */}
-                  <div className="flex items-center gap-1">
-                    <label className="text-[10px] text-muted-foreground">Harga:</label>
-                    <RupiahInput
-                      value={item.price}
-                      onChange={v => updateItem(i, 'price', v)}
-                      className="h-9 w-28 text-xs"
-                    />
-                  </div>
-                  {/* Subtotal */}
-                  <div className="hidden text-xs font-mono font-medium text-foreground sm:block">
-                    = {formatRupiah(item.price * item.quantity)}
+                  {/* Baris 2: Qty + Harga + Total */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-[10px] text-muted-foreground">Qty:</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={item.max_qty || 999}
+                        value={item.quantity}
+                        onChange={e => updateItem(i, 'quantity', Math.min(Number(e.target.value), item.max_qty || 999))}
+                        className="h-9 w-16 rounded-md border border-input bg-surface px-2 text-xs text-center"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-1 min-w-[120px]">
+                      <label className="text-[10px] text-muted-foreground shrink-0">Harga:</label>
+                      <RupiahInput
+                        value={item.price}
+                        onChange={v => updateItem(i, 'price', v)}
+                        className="h-9 min-w-0 flex-1 text-xs"
+                      />
+                    </div>
+                    <div className="text-xs font-mono font-medium text-foreground shrink-0">
+                      = {formatRupiah(item.price * item.quantity)}
+                    </div>
                   </div>
                 </div>
-                <button type="button" onClick={() => removeItem(i)} className="mt-0.5 shrink-0 text-muted-foreground hover:text-destructive">
-                  <Trash2 size={14} />
-                </button>
               </div>
             ))}
           </div>
