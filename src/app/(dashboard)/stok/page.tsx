@@ -180,7 +180,9 @@ export default function StokPage() {
         ) : filtered.map(p => {
           const catName = (p as Product & { categories?: { name: string } }).categories?.name || '-'
           const isLow = p.quantity <= p.min_quantity && p.min_quantity > 0
-          const statusVariant = p.status === 'ready' ? 'success' : p.status === 'sold' ? 'secondary' : 'default'
+          // Status berdasarkan quantity, bukan field status statis
+          const displayStatus = p.quantity > 0 ? 'ready' : 'sold'
+          const statusVariant = displayStatus === 'ready' ? 'success' : 'secondary'
           
           return (
             <Card key={p.id} className={`shadow-card overflow-hidden ${isLow ? 'border-l-4 border-l-badge-warning' : ''}`}>
@@ -193,7 +195,7 @@ export default function StokPage() {
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Badge variant={statusVariant as any} className="text-[10px] px-1.5 py-0.5 capitalize">
-                        {p.status}
+                        {displayStatus}
                       </Badge>
                       {isLow && <AlertTriangle size={14} className="text-badge-warning" />}
                     </div>
@@ -256,7 +258,9 @@ export default function StokPage() {
                   ) : filtered.map(p => {
                     const catName = (p as Product & { categories?: { name: string } }).categories?.name || '-'
                     const isLow = p.quantity <= p.min_quantity && p.min_quantity > 0
-                    const statusVariant = p.status === 'ready' ? 'success' : p.status === 'sold' ? 'secondary' : 'default'
+                    // Status berdasarkan quantity, bukan field status statis
+                    const displayStatus = p.quantity > 0 ? 'ready' : 'sold'
+                    const statusVariant = displayStatus === 'ready' ? 'success' : 'secondary'
                     
                     return (
                       <tr 
@@ -286,7 +290,7 @@ export default function StokPage() {
                         </td>
                         <td className="p-4">
                           <Badge variant={statusVariant as any} className="text-[10px] px-2 py-0.5 capitalize">
-                            {p.status}
+                            {displayStatus}
                           </Badge>
                         </td>
                         <td className="p-4">
