@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     fontSize: 7,
     flex: 1,
   },
-  // Table
+  // Table (tanpa kolom keterangan)
   table: {
     marginBottom: 4,
     borderWidth: 1,
@@ -122,32 +122,47 @@ const styles = StyleSheet.create({
     fontSize: 6,
   },
   colHarga: {
-    width: 55,
+    width: 60,
     fontSize: 6,
     textAlign: 'right',
     fontFamily: 'Courier',
   },
-  colKeterangan: {
-    width: 60,
-    fontSize: 5.5,
-    color: '#555',
-    paddingLeft: 2,
-  },
-  // Summary
-  summaryContainer: {
+  // Bottom section: Keterangan kiri + Summary kanan
+  bottomSection: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
     marginBottom: 4,
+    gap: 4,
   },
+  // Keterangan (kiri)
+  keteranganBox: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    padding: 3,
+    backgroundColor: '#f9f9f9',
+  },
+  keteranganTitle: {
+    fontSize: 6,
+    fontWeight: 'bold',
+    fontFamily: 'Helvetica-Bold',
+    marginBottom: 2,
+    color: '#333',
+  },
+  keteranganText: {
+    fontSize: 5.5,
+    color: '#444',
+    lineHeight: 1.2,
+  },
+  // Summary (kanan)
   summaryBox: {
-    width: 160,
+    width: 140,
   },
   summaryRow: {
     flexDirection: 'row',
     marginBottom: 0,
   },
   summaryLabel: {
-    width: 60,
+    width: 50,
     fontSize: 6,
     fontWeight: 'bold',
     fontFamily: 'Helvetica-Bold',
@@ -157,7 +172,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   summaryValue: {
-    width: 100,
+    width: 90,
     fontSize: 6,
     textAlign: 'right',
     fontFamily: 'Courier',
@@ -283,7 +298,7 @@ export function NotaServisPDF({
   storePhone = '0812-3456-7890',
 }: NotaServisProps) {
   // Build table rows
-  const tableRows: { no: number; service: string; harga: number; keterangan: string }[] = []
+  const tableRows: { no: number; service: string; harga: number }[] = []
 
   // Sparepart rows
   parts.forEach((part) => {
@@ -291,7 +306,6 @@ export function NotaServisPDF({
       no: tableRows.length + 1,
       service: `${part.name} (Qty: ${part.quantity})`,
       harga: part.price * part.quantity,
-      keterangan: '',
     })
   })
 
@@ -301,13 +315,7 @@ export function NotaServisPDF({
       no: tableRows.length + 1,
       service: 'Jasa Servis',
       harga: service.service_fee,
-      keterangan: '',
     })
-  }
-
-  // Fill keterangan di baris pertama saja
-  if (tableRows.length > 0 && service.notes) {
-    tableRows[0].keterangan = service.notes
   }
 
   // Pad to minimum 5 rows
@@ -316,7 +324,6 @@ export function NotaServisPDF({
       no: tableRows.length + 1,
       service: '',
       harga: 0,
-      keterangan: '',
     })
   }
 
@@ -364,13 +371,12 @@ export function NotaServisPDF({
           <Text style={styles.tipeValue}>{tipePerangkat || '-'}</Text>
         </View>
 
-        {/* TABEL UTAMA */}
+        {/* TABEL UTAMA (tanpa kolom keterangan) */}
         <View style={styles.table}>
           <View style={styles.tableHeader}>
             <Text style={{ ...styles.tableHeaderText, width: 16, textAlign: 'center' }}>No</Text>
             <Text style={{ ...styles.tableHeaderText, flex: 1 }}>Service / Kerusakan / Upgrade</Text>
-            <Text style={{ ...styles.tableHeaderText, width: 55, textAlign: 'right' }}>Harga</Text>
-            <Text style={{ ...styles.tableHeaderText, width: 60, paddingLeft: 2 }}>Keterangan</Text>
+            <Text style={{ ...styles.tableHeaderText, width: 60, textAlign: 'right' }}>Harga</Text>
           </View>
 
           {tableRows.map((row, i) => (
@@ -378,13 +384,19 @@ export function NotaServisPDF({
               <Text style={styles.colNo}>{row.no}</Text>
               <Text style={styles.colService}>{row.service}</Text>
               <Text style={styles.colHarga}>{row.harga > 0 ? formatRupiah(row.harga) : ''}</Text>
-              <Text style={styles.colKeterangan}>{row.keterangan}</Text>
             </View>
           ))}
         </View>
 
-        {/* RINGKASAN BIAYA */}
-        <View style={styles.summaryContainer}>
+        {/* KETERANGAN + RINGKASAN BIAYA (sejajar) */}
+        <View style={styles.bottomSection}>
+          {/* Keterangan (kiri) */}
+          <View style={styles.keteranganBox}>
+            <Text style={styles.keteranganTitle}>Keterangan / Tindakan :</Text>
+            <Text style={styles.keteranganText}>{service.notes || '-'}</Text>
+          </View>
+
+          {/* Summary (kanan) */}
           <View style={styles.summaryBox}>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Total</Text>
