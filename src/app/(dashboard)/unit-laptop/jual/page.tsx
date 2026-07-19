@@ -69,7 +69,7 @@ export default function JualBarangPage() {
 
   async function fetchUnits() {
     try {
-      // Filter: hanya kategori "Unit Laptop", stok > 0, belum terjual
+      // Filter: hanya kategori "Unit Laptop", stok > 0
       const { data: cat } = await supabase.from('categories').select('id').eq('name', 'Unit Laptop').maybeSingle()
       if (!cat) return
       const { data, error } = await supabase
@@ -77,7 +77,6 @@ export default function JualBarangPage() {
         .select('*')
         .eq('category_id', cat.id)
         .gt('quantity', 0)
-        .neq('status', 'sold')
         .order('created_at', { ascending: false })
       if (error) throw error
       setUnits(data || [])

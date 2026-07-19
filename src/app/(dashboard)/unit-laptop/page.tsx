@@ -34,7 +34,9 @@ export default function UnitLaptopPage() {
                         (p.brand || '').toLowerCase().includes(search.toLowerCase()) || 
                         (p.model || '').toLowerCase().includes(search.toLowerCase()) || 
                         (p.sku || '').toLowerCase().includes(search.toLowerCase())
-    const matchStatus = filterStatus === 'all' || p.status === filterStatus
+    // Filter status berdasarkan quantity, bukan field status statis
+    const displayStatus = p.quantity > 0 ? 'ready' : 'sold'
+    const matchStatus = filterStatus === 'all' || displayStatus === filterStatus
     return matchSearch && matchStatus
   })
 
@@ -122,8 +124,8 @@ export default function UnitLaptopPage() {
                     <p className="text-sm font-semibold text-ink">{p.brand} {p.model}</p>
                     <p className="text-[10px] text-stone font-mono">{p.sku || '-'}</p>
                   </div>
-                  <Badge variant={statusVariant(p.status)} className="text-[10px] px-1.5 py-0.5 capitalize shrink-0">
-                    {p.status}
+                  <Badge variant={statusVariant(p.quantity > 0 ? 'ready' : 'sold')} className="text-[10px] px-1.5 py-0.5 capitalize shrink-0">
+                    {p.quantity > 0 ? 'ready' : 'sold'}
                   </Badge>
                 </div>
                 
@@ -188,8 +190,8 @@ export default function UnitLaptopPage() {
                         <p className="text-xs font-bold text-ink font-mono">{formatRupiah(p.sell_price)}</p>
                       </td>
                       <td className="p-4">
-                        <Badge variant={statusVariant(p.status)} className="text-[10px] px-2 py-0.5 capitalize">
-                          {p.status}
+                        <Badge variant={statusVariant(p.quantity > 0 ? 'ready' : 'sold')} className="text-[10px] px-2 py-0.5 capitalize">
+                          {p.quantity > 0 ? 'ready' : 'sold'}
                         </Badge>
                       </td>
                     </tr>
