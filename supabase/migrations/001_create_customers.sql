@@ -14,12 +14,9 @@ CREATE TABLE IF NOT EXISTS customers (
 -- Create unique index on no_wa for dedup
 CREATE UNIQUE INDEX IF NOT EXISTS customers_no_wa_unique ON customers (no_wa);
 
--- Create index for search
-CREATE INDEX IF NOT EXISTS customers_nama_idx ON customers USING gin (nama gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS customers_no_wa_idx ON customers USING gin (no_wa gin_trgm_ops);
-
--- Enable trgm extension if not exists (for fuzzy search)
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
+-- Create index for search (using btree, works without extensions)
+CREATE INDEX IF NOT EXISTS customers_nama_idx ON customers (nama);
+CREATE INDEX IF NOT EXISTS customers_no_wa_idx ON customers (no_wa);
 
 -- 2. Add customer_id column to sales table
 ALTER TABLE sales ADD COLUMN IF NOT EXISTS customer_id UUID REFERENCES customers(id);
