@@ -1,9 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase, Product, PaymentMethod } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
+import { CustomerAutocomplete } from '@/components/ui/customer-autocomplete'
+import { findOrCreateCustomer } from '@/lib/customers'
 import { ArrowLeft, Download, Send, Laptop, Package, Pencil, Check } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -22,6 +24,7 @@ type TabType = 'unit' | 'sparepart'
 
 export default function JualBarangPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -31,6 +34,7 @@ export default function JualBarangPage() {
   const [pdfLoading, setPdfLoading] = useState(false)
   const [waLoading, setWaLoading] = useState(false)
   const [storeInfo, setStoreInfo] = useState({ storeName: 'Kasir POS', storeAddress: '', storePhone: '' })
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(searchParams.get('customer_id') || null)
 
   // Unit state
   const [units, setUnits] = useState<Product[]>([])
@@ -41,9 +45,13 @@ export default function JualBarangPage() {
   const [selectedSparepart, setSelectedSparepart] = useState<Product | null>(null)
   const [isPriceEditable, setIsPriceEditable] = useState(false)
 
+  // Prefill from URL params (when coming from customer detail page)
+  const prefillNama = searchParams.get('nama') || ''
+  const prefillPhone = searchParams.get('phone') || ''
+
   const bonusOptions = ['Mouse', 'Keyboard', 'Tas', 'Mousepad']
   const [form, setForm] = useState({
-    buyer_name: '', buyer_phone: '', sell_price: 0, quantity: 1,
+    buyer_name: prefillNama, buyer_phone: prefillPhone, sell_price: 0, quantity: 1,
     dp_amount: 0, bonus: [] as string[], bonus_lainnya: '',
     payment_method: '', garansi: 'Tanpa Garansi', notes: '',
   })
@@ -154,8 +162,16 @@ export default function JualBarangPage() {
 
     setLoading(true)
     try {
+      // Find or create customer
+      let customerId = selectedCustomerId
+      if (!customerId && form.buyer_phone) {
+        const customer = await findOrCreateCustomer(form.buyer_name, form.buyer_phone)
+        customerId = customer?.id || null
+      }
+
       if (tab === 'unit' && selectedUnit) {
         const { data: sale, error: saleError } = await supabase.from('sales').insert({
+          customer_id: customerId,
           product_id: selectedUnit.id, item_type: 'unit',
           item_name: `${selectedUnit.brand} ${selectedUnit.model}`,
           quantity: 1, buyer_name: form.buyer_name, buyer_phone: form.buyer_phone || null,
@@ -174,6 +190,7 @@ export default function JualBarangPage() {
         setSavedSale(sale)
       } else if (tab === 'sparepart' && selectedSparepart) {
         const { data: sale, error: saleError } = await supabase.from('sales').insert({
+          customer_id: customerId,
           product_id: selectedSparepart.id, item_type: 'sparepart',
           item_name: selectedSparepart.name,
           quantity: form.quantity, buyer_name: form.buyer_name, buyer_phone: form.buyer_phone || null,
@@ -335,16 +352,16 @@ export default function JualBarangPage() {
               {/* Data Pembeli */}
               <div className="border-t border-border pt-4">
                 <h3 className="mb-3 text-sm font-bold text-foreground">Data Pembeli</h3>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div>
-                    <label className={labelClass}>Nama Pembeli *</label>
-                    <Input type="text" required value={form.buyer_name} onChange={e => setForm({ ...form, buyer_name: e.target.value })} className="h-10 w-full" />
-                  </div>
-                  <div>
-                    <label className={labelClass}>No. HP</label>
-                    <Input type="text" value={form.buyer_phone} onChange={e => setForm({ ...form, buyer_phone: e.target.value })} className="h-10 w-full" />
-                  </div>
-                </div>
+                <CustomerAutocomplete
+                  nama={form.buyer_name}
+                  noWa={form.buyer_phone}
+                  onNamaChange={val => setForm({ ...form, buyer_name: val })}
+                  onNoWaChange={val => setForm({ ...form, buyer_phone: val })}
+                  onCustomerSelect={customer => {
+                    setSelectedCustomerId(customer.id)
+                    setForm({ ...form, buyer_name: customer.nama, buyer_phone: customer.no_wa })
+                  }}
+                />
               </div>
 
               {/* Harga, DP & Metode Bayar */}

@@ -1,8 +1,11 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { supabase, Service, Product } from '@/lib/supabase'
+import { useSearchParams } from 'next/navigation'
+import { supabase, Service, Product, Customer } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
+import { CustomerAutocomplete } from '@/components/ui/customer-autocomplete'
+import { findOrCreateCustomer } from '@/lib/customers'
 import { Plus, Search, Eye, FileText, Send, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
@@ -17,6 +20,7 @@ import { sendWhatsAppPDF } from '@/components/pdf/utils'
 
 export default function ServisPage() {
   const { isAdmin } = useAuth()
+  const searchParams = useSearchParams()
   const [services, setServices] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -33,6 +37,18 @@ export default function ServisPage() {
   const [waResult, setWaResult] = useState<{ id: string; ok: boolean; msg: string } | null>(null)
   const [storeInfo, setStoreInfo] = useState({ storeName: 'Kasir POS', storeAddress: '', storePhone: '' })
   const itemsPerPage = 10
+
+  // Prefill from URL params (when coming from customer detail page)
+  const prefillCustomerId = searchParams.get('customer_id') || undefined
+  const prefillNama = searchParams.get('nama') || undefined
+  const prefillPhone = searchParams.get('phone') || undefined
+
+  // Auto-open form if prefill params exist
+  useEffect(() => {
+    if (prefillCustomerId || prefillNama) {
+      setShowForm(true)
+    }
+  }, [prefillCustomerId, prefillNama])
 
   useEffect(() => { 
     fetchServices()
@@ -614,7 +630,7 @@ export default function ServisPage() {
         </div>
       )}
 
-      {showForm && <ServisForm onClose={() => setShowForm(false)} onSaved={fetchServices} />}
+      {showForm && <ServisForm onClose={() => setShowForm(false)} onSaved={fetchServices} prefillCustomerId={prefillCustomerId} prefillNama={prefillNama} prefillPhone={prefillPhone} />}
     </div>
   )
 }
@@ -627,14 +643,15 @@ interface SparepartItem {
   max_qty: number
 }
 
-function ServisForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+function ServisForm({ onClose, onSaved, prefillCustomerId, prefillNama, prefillPhone }: { onClose: () => void; onSaved: () => void; prefillCustomerId?: string; prefillNama?: string; prefillPhone?: string }) {
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [spareparts, setSpareparts] = useState<Product[]>([])
   const [items, setItems] = useState<SparepartItem[]>([])
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(prefillCustomerId || null)
   const [form, setForm] = useState({
-    customer_name: '', customer_phone: '', device_type: 'Laptop',
+    customer_name: prefillNama || '', customer_phone: prefillPhone || '', device_type: 'Laptop',
     device_brand: '', device_model: '', complaint: '', kelengkapan: '',
     service_fee: 0, dp_amount: 0, notes: '', garansi: 'Tanpa Garansi',
   })
@@ -718,8 +735,16 @@ function ServisForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
     setError('')
 
     try {
+      // Find or create customer
+      let customerId = selectedCustomerId
+      if (!customerId && form.customer_phone) {
+        const customer = await findOrCreateCustomer(form.customer_name, form.customer_phone)
+        customerId = customer?.id || null
+      }
+
       // 1. Insert servis
       const { data: service, error: serviceError } = await supabase.from('services').insert({
+        customer_id: customerId,
         customer_name: form.customer_name, customer_phone: form.customer_phone,
         device_type: form.device_type, device_brand: form.device_brand || null,
         device_model: form.device_model || null, complaint: form.complaint || null,
@@ -772,20 +797,16 @@ function ServisForm({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Customer Info */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              Nama Customer <span className="text-destructive">*</span>
-            </label>
-            <Input type="text" required value={form.customer_name} onChange={e => setForm({ ...form, customer_name: e.target.value })} className="h-10 w-full" placeholder="Masukkan nama customer" />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              No. WhatsApp <span className="text-destructive">*</span>
-            </label>
-            <Input type="text" required value={form.customer_phone} onChange={e => setForm({ ...form, customer_phone: e.target.value })} placeholder="08xxxxxxxxxx" className="h-10 w-full" />
-          </div>
-        </div>
+        <CustomerAutocomplete
+          nama={form.customer_name}
+          noWa={form.customer_phone}
+          onNamaChange={val => setForm({ ...form, customer_name: val })}
+          onNoWaChange={val => setForm({ ...form, customer_phone: val })}
+          onCustomerSelect={customer => {
+            setSelectedCustomerId(customer.id)
+            setForm({ ...form, customer_name: customer.nama, customer_phone: customer.no_wa })
+          }}
+        />
 
         {/* Device Info */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

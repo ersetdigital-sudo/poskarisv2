@@ -18,6 +18,15 @@ export interface Profile {
   updated_at: string
 }
 
+export interface Customer {
+  id: string
+  nama: string
+  no_wa: string
+  alamat: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface Product {
   id: string
   category_id: string
@@ -41,6 +50,7 @@ export interface Product {
 export interface Service {
   id: string
   nota_number: string
+  customer_id: string | null
   customer_name: string
   customer_phone: string
   device_type: string
@@ -89,6 +99,7 @@ export interface Purchase {
 export interface Sale {
   id: string
   invoice_number: string
+  customer_id: string | null
   product_id: string | null
   item_type: 'unit' | 'sparepart'
   item_name: string | null
