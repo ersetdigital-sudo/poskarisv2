@@ -34,7 +34,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Helvetica-Bold',
     marginBottom: 1,
   },
-  storeInfo: { fontSize: 6, color: '#555', marginBottom: 1 },
+  storeTagline: { fontSize: 6, color: '#555', marginBottom: 1 },
+  storePhone: { fontSize: 6, color: '#555' },
   headerRight: { width: 140, borderWidth: 1, borderColor: '#ccc', padding: 4 },
   headerRightRow: { flexDirection: 'row', marginBottom: 1 },
   headerRightLabel: { fontSize: 6, color: '#666', width: 45 },
@@ -124,12 +125,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#000',
     marginRight: 3,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  checkmark: {
-    fontSize: 6,
-    fontWeight: 'bold',
+  checkboxChecked: {
+    backgroundColor: '#000',
   },
   bonusText: {
     fontSize: 5.5,
@@ -234,9 +232,7 @@ function formatDate(d: string | null): string {
 // Checkbox component
 function CheckBox({ checked }: { checked: boolean }) {
   return (
-    <View style={styles.checkbox}>
-      {checked && <Text style={styles.checkmark}>✓</Text>}
-    </View>
+    <View style={[styles.checkbox, checked && styles.checkboxChecked]} />
   )
 }
 
@@ -285,8 +281,8 @@ export function NotaUnitPDF({
           <View style={styles.headerLeft}>
             <Text style={styles.notaTitle}>KWITANSI</Text>
             <Text style={styles.storeName}>{storeName}</Text>
-            <Text style={styles.storeInfo}>{storeAddress}</Text>
-            <Text style={styles.storeInfo}>WA: {storePhone}</Text>
+            <Text style={styles.storeTagline}>Service Laptop, Komputer, Software, Upgrade</Text>
+            <Text style={styles.storePhone}>WA: {storePhone}</Text>
           </View>
           <View style={styles.headerRight}>
             <View style={styles.headerRightRow}>
