@@ -232,7 +232,7 @@ function formatDate(d: string | null): string {
 // Checkbox component
 function CheckBox({ checked }: { checked: boolean }) {
   return (
-    <View style={[styles.checkbox, checked && styles.checkboxChecked]} />
+    <View style={checked ? [styles.checkbox, styles.checkboxChecked] : styles.checkbox} />
   )
 }
 
