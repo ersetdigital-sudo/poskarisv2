@@ -18,7 +18,6 @@ const getNavItems = (role: string) => {
     { href: '/servis',     label: 'Servis',      icon: Wrench,          roles: ['admin', 'karyawan'] },
   ]
   const admin = [
-    { href: '/unit-laptop', label: 'Unit Laptop', icon: Laptop,   roles: ['admin'] },
     { href: '/stok',        label: 'Stok Barang', icon: Package,  roles: ['admin'] },
     { href: '/riwayat-penjualan', label: 'Riwayat Penjualan', icon: ShoppingCart, roles: ['admin'] },
     { href: '/customers',   label: 'Customer',    icon: Contact,  roles: ['admin'] },

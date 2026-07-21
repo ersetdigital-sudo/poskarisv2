@@ -53,7 +53,7 @@ export default function BeliUnitPage() {
         product_id: product.id, type: 'masuk', quantity: 1, reference_type: 'pembelian_unit',
         reference_id: product.id, notes: `Pembelian unit ${form.brand} ${form.model}`, created_by: user?.id,
       })
-      router.push('/unit-laptop')
+      router.push('/stok')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Gagal menyimpan data')
     } finally { setLoading(false) }

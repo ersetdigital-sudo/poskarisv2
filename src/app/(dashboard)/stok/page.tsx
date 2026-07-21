@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { supabase, Product, StockMovement } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
-import { Search, ArrowDown, ArrowUp, AlertTriangle, Plus, Package, X, Cpu, Wrench, Pencil, Trash2 } from 'lucide-react'
+import Link from 'next/link'
+import { Search, ArrowDown, ArrowUp, AlertTriangle, Plus, Package, X, Cpu, Wrench, Pencil, Trash2, ShoppingCart, ArrowDownToLine } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -108,6 +109,18 @@ export default function StokPage() {
         subtitle={activeTab === 'sparepart' ? 'Kelola stok sparepart untuk servis' : 'Kelola stok unit laptop untuk dijual'}
       >
         <div className="flex gap-2">
+          <Link href="/unit-laptop/beli">
+            <Button variant="secondary" className="gap-2">
+              <ArrowDownToLine size={16} strokeWidth={2} />
+              Beli Unit
+            </Button>
+          </Link>
+          <Link href="/unit-laptop/jual">
+            <Button variant="secondary" className="gap-2">
+              <ShoppingCart size={16} strokeWidth={2} />
+              Jual
+            </Button>
+          </Link>
           <Button variant="secondary" onClick={() => setShowAddCategoryForm(true)} className="gap-2">
             <Plus size={16} strokeWidth={2} />
             Kategori
