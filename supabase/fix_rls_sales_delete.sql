@@ -74,4 +74,26 @@ TO authenticated
 USING (true)
 WITH CHECK (true);
 
+-- Fix RLS Policy untuk purchases (supaya bisa cek sebelum hapus produk)
+ALTER TABLE purchases ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow all for authenticated users" ON purchases;
+CREATE POLICY "Allow all for authenticated users"
+ON purchases
+FOR ALL
+TO authenticated
+USING (true)
+WITH CHECK (true);
+
+-- Fix RLS Policy untuk categories (supaya bisa manage kategori)
+ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow all for authenticated users" ON categories;
+CREATE POLICY "Allow all for authenticated users"
+ON categories
+FOR ALL
+TO authenticated
+USING (true)
+WITH CHECK (true);
+
 -- Done! Sekarang admin bisa hapus transaksi penjualan & produk

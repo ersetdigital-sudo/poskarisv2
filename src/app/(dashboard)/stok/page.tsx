@@ -56,18 +56,37 @@ export default function StokPage() {
   async function handleDeleteProduct(product: Product) {
     setDeleting(true)
     try {
-      // Check if product has sales
-      const { count, error: countError } = await supabase
-        .from('sales')
-        .select('*', { count: 'exact', head: true })
-        .eq('product_id', product.id)
+      // Check if product is referenced in sales, service_parts, or purchases
+      const [salesRes, servicePartsRes, purchasesRes] = await Promise.all([
+        supabase.from('sales').select('*', { count: 'exact', head: true }).eq('product_id', product.id),
+        supabase.from('service_parts').select('*', { count: 'exact', head: true }).eq('product_id', product.id),
+        supabase.from('purchases').select('*', { count: 'exact', head: true }).eq('product_id', product.id),
+      ])
 
-      if (countError) throw countError
+      if (salesRes.error) throw salesRes.error
+      if (servicePartsRes.error) throw servicePartsRes.error
+      if (purchasesRes.error) throw purchasesRes.error
 
-      if (count && count > 0) {
-        showToast(`Produk "${product.name}" masih memiliki ${count} transaksi penjualan, tidak bisa dihapus.`, 'error')
-        setDeleting(false)
+      const salesCount = salesRes.count || 0
+      const spCount = servicePartsRes.count || 0
+      const purchasesCount = purchasesRes.count || 0
+
+      if (salesCount > 0) {
+        showToast(`Produk "${product.name}" masih punya ${salesCount} transaksi penjualan, tidak bisa dihapus.`, 'error')
         setDeleteConfirm(null)
+        setDeleting(false)
+        return
+      }
+      if (spCount > 0) {
+        showToast(`Produk "${product.name}" masih dipakai di ${spCount} data servis, tidak bisa dihapus.`, 'error')
+        setDeleteConfirm(null)
+        setDeleting(false)
+        return
+      }
+      if (purchasesCount > 0) {
+        showToast(`Produk "${product.name}" masih punya ${purchasesCount} data pembelian, tidak bisa dihapus.`, 'error')
+        setDeleteConfirm(null)
+        setDeleting(false)
         return
       }
 
