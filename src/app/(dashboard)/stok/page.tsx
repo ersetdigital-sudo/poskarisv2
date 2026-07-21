@@ -56,45 +56,12 @@ export default function StokPage() {
   async function handleDeleteProduct(product: Product) {
     setDeleting(true)
     try {
-      // Check if product is referenced in sales, service_parts, or purchases
-      const [salesRes, servicePartsRes, purchasesRes] = await Promise.all([
-        supabase.from('sales').select('*', { count: 'exact', head: true }).eq('product_id', product.id),
-        supabase.from('service_parts').select('*', { count: 'exact', head: true }).eq('product_id', product.id),
-        supabase.from('purchases').select('*', { count: 'exact', head: true }).eq('product_id', product.id),
-      ])
+      // Hapus semua data terkait dulu, baru hapus produk
+      await supabase.from('service_parts').delete().eq('product_id', product.id)
+      await supabase.from('purchases').delete().eq('product_id', product.id)
+      await supabase.from('stock_movements').delete().eq('product_id', product.id)
+      await supabase.from('sales').delete().eq('product_id', product.id)
 
-      if (salesRes.error) throw salesRes.error
-      if (servicePartsRes.error) throw servicePartsRes.error
-      if (purchasesRes.error) throw purchasesRes.error
-
-      const salesCount = salesRes.count || 0
-      const spCount = servicePartsRes.count || 0
-      const purchasesCount = purchasesRes.count || 0
-
-      if (salesCount > 0) {
-        showToast(`Produk "${product.name}" masih punya ${salesCount} transaksi penjualan, tidak bisa dihapus.`, 'error')
-        setDeleteConfirm(null)
-        setDeleting(false)
-        return
-      }
-      if (spCount > 0) {
-        showToast(`Produk "${product.name}" masih dipakai di ${spCount} data servis, tidak bisa dihapus.`, 'error')
-        setDeleteConfirm(null)
-        setDeleting(false)
-        return
-      }
-      if (purchasesCount > 0) {
-        showToast(`Produk "${product.name}" masih punya ${purchasesCount} data pembelian, tidak bisa dihapus.`, 'error')
-        setDeleteConfirm(null)
-        setDeleting(false)
-        return
-      }
-
-      // Delete stock movements
-      const { error: smError } = await supabase.from('stock_movements').delete().eq('product_id', product.id)
-      if (smError) throw smError
-
-      // Delete product
       const { error } = await supabase.from('products').delete().eq('id', product.id)
       if (error) throw error
 
