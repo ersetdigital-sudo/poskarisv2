@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { RupiahInput } from '@/components/ui/rupiah-input'
 import PageHeader from '@/components/dashboard/PageHeader'
+import { showToast } from '@/components/ui/toast'
 
 type TabType = 'sparepart' | 'unit'
 
@@ -27,6 +28,8 @@ export default function StokPage() {
   const [showAddCategoryForm, setShowAddCategoryForm] = useState(false)
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
   const [showMutasiLog, setShowMutasiLog] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<Product | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => { fetchData(); fetchCategories() }, [])
 
@@ -49,6 +52,43 @@ export default function StokPage() {
   }
 
   // Filter products by tab
+
+  async function handleDeleteProduct(product: Product) {
+    setDeleting(true)
+    try {
+      // Check if product has sales
+      const { count, error: countError } = await supabase
+        .from('sales')
+        .select('*', { count: 'exact', head: true })
+        .eq('product_id', product.id)
+
+      if (countError) throw countError
+
+      if (count && count > 0) {
+        showToast(`Produk "${product.name}" masih memiliki ${count} transaksi penjualan, tidak bisa dihapus.`, 'error')
+        setDeleting(false)
+        setDeleteConfirm(null)
+        return
+      }
+
+      // Delete stock movements
+      const { error: smError } = await supabase.from('stock_movements').delete().eq('product_id', product.id)
+      if (smError) throw smError
+
+      // Delete product
+      const { error } = await supabase.from('products').delete().eq('id', product.id)
+      if (error) throw error
+
+      setDeleteConfirm(null)
+      showToast(`Produk "${product.name}" berhasil dihapus`, 'success')
+      fetchData()
+    } catch (e) {
+      console.error(e)
+      showToast('Gagal menghapus: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')
+    } finally {
+      setDeleting(false)
+    }
+  }
   const filteredByTab = products.filter(p => {
     const catName = (p as Product & { categories?: { name: string } }).categories?.name || ''
     if (activeTab === 'sparepart') return catName === 'Sparepart'
@@ -214,14 +254,22 @@ export default function StokPage() {
                       <span className="text-muted-foreground">Beli: <span className="font-mono font-medium text-ink">{formatRupiah(p.buy_price)}</span></span>
                       <span className="text-muted-foreground">Jual: <span className="font-mono font-medium text-ink">{formatRupiah(p.sell_price)}</span></span>
                     </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => setAdjustProduct(p)}
-                      className="h-7 px-2 text-[11px] gap-1"
-                    >
-                      <Plus size={12} /> Stok
-                    </Button>
+                    <div className="flex items-center gap-1.5">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setAdjustProduct(p)}
+                        className="h-7 px-2 text-[11px] gap-1"
+                      >
+                        <Plus size={12} /> Stok
+                      </Button>
+                      <button
+                        onClick={() => setDeleteConfirm(p)}
+                        className="h-7 w-7 flex items-center justify-center rounded text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -303,17 +351,25 @@ export default function StokPage() {
                             >
                               <Plus size={12} />
                               <span className="text-[11px]">Stok</span>
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => setSelectedProduct(p)}
-                            className="h-7 px-2"
-                          >
-                            <span className="text-[11px]">Mutasi</span>
-                          </Button>
-                        </div>
-                      </td>
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => setSelectedProduct(p)}
+                              className="h-7 px-2"
+                            >
+                              <span className="text-[11px]">Mutasi</span>
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => setDeleteConfirm(p)}
+                              className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 size={13} />
+                            </Button>
+                          </div>
+                        </td>
                     </tr>
                   )
                 })}
@@ -418,6 +474,28 @@ export default function StokPage() {
                 </div>
               )
             })}
+          </div>
+        </Modal>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <Modal title="Hapus Produk" onClose={() => setDeleteConfirm(null)} maxWidth="sm">
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Yakin ingin menghapus produk <span className="font-semibold text-foreground">{deleteConfirm.name}</span>?
+            </p>
+            <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3">
+              <p className="text-xs text-destructive">
+                Semua data mutasi stok terkait juga akan dihapus. Tindakan ini tidak dapat dibatalkan.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="secondary" className="flex-1 h-10" onClick={() => setDeleteConfirm(null)}>Batal</Button>
+              <Button variant="destructive" className="flex-1 h-10" onClick={() => handleDeleteProduct(deleteConfirm)} disabled={deleting}>
+                {deleting ? 'Menghapus...' : 'Hapus'}
+              </Button>
+            </div>
           </div>
         </Modal>
       )}

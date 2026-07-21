@@ -39,4 +39,39 @@ TO authenticated
 USING (true)
 WITH CHECK (true);
 
--- Done! Sekarang admin bisa hapus transaksi penjualan
+-- Fix RLS Policy untuk DELETE di tabel products
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow delete for authenticated users" ON products;
+DROP POLICY IF EXISTS "Enable delete for authenticated users" ON products;
+
+CREATE POLICY "Allow delete for authenticated users"
+ON products
+FOR DELETE
+TO authenticated
+USING (true);
+
+DROP POLICY IF EXISTS "Allow select for authenticated users" ON products;
+DROP POLICY IF EXISTS "Allow insert for authenticated users" ON products;
+DROP POLICY IF EXISTS "Allow update for authenticated users" ON products;
+
+CREATE POLICY "Allow select for authenticated users"
+ON products
+FOR SELECT
+TO authenticated
+USING (true);
+
+CREATE POLICY "Allow insert for authenticated users"
+ON products
+FOR INSERT
+TO authenticated
+WITH CHECK (true);
+
+CREATE POLICY "Allow update for authenticated users"
+ON products
+FOR UPDATE
+TO authenticated
+USING (true)
+WITH CHECK (true);
+
+-- Done! Sekarang admin bisa hapus transaksi penjualan & produk
