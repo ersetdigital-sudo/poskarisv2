@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
+import { ToastContainer } from '@/components/ui/toast'
 
 const getNavItems = (role: string) => {
   const base = [
@@ -184,6 +185,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </main>
       </div>
+      <ToastContainer />
     </div>
   )
 }

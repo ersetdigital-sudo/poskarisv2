@@ -13,6 +13,7 @@ import { NotaSparepartPDF } from '@/components/pdf/nota-sparepart'
 import { downloadPDF } from '@/components/pdf/utils'
 import PageHeader from '@/components/dashboard/PageHeader'
 import StatCard from '@/components/dashboard/StatCard'
+import { showToast } from '@/components/ui/toast'
 
 export default function RiwayatPenjualanPage() {
   const [sales, setSales] = useState<(Sale & { products?: Product })[]>([])
@@ -67,8 +68,9 @@ export default function RiwayatPenjualanPage() {
     setDeleting(true)
     try {
       // Hapus stock_movements terkait
-      await supabase.from('stock_movements').delete().eq('reference_id', sale.id).eq('reference_type', 'penjualan_unit')
-      
+      const { error: smError } = await supabase.from('stock_movements').delete().eq('reference_id', sale.id).eq('reference_type', 'penjualan_unit')
+      if (smError) throw smError
+
       // Hapus sale
       const { error } = await supabase.from('sales').delete().eq('id', sale.id)
       if (error) throw error
@@ -86,10 +88,11 @@ export default function RiwayatPenjualanPage() {
       }
 
       setDeleteConfirm(null)
+      showToast('Transaksi berhasil dihapus', 'success')
       fetchSales()
     } catch (e) {
       console.error(e)
-      alert('Gagal menghapus transaksi: ' + (e instanceof Error ? e.message : 'Unknown error'))
+      showToast('Gagal menghapus: ' + (e instanceof Error ? e.message : 'Unknown error'), 'error')
     } finally {
       setDeleting(false)
     }
