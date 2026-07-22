@@ -33,7 +33,6 @@ export default function TambahStokPage() {
 
   async function loadCategories() {
     const { data } = await supabase.from('categories').select('id, name').order('name')
-    // Deduplicate by name
     const unique = (data || []).reduce((acc, cat) => {
       const key = cat.name.toLowerCase().trim()
       if (!acc.has(key)) acc.set(key, cat)
@@ -87,7 +86,7 @@ export default function TambahStokPage() {
 
   return (
     <div className="space-y-3">
-      {/* Back + header */}
+      {/* Back + header - SAMA PERSIS kaya Beli Unit */}
       <div className="flex items-center gap-3">
         <Button onClick={() => router.back()} variant="secondary" className="h-9 w-9 shrink-0 p-0">
           <ArrowLeft size={16} />
@@ -108,7 +107,7 @@ export default function TambahStokPage() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Kategori */}
+              {/* Kategori - field khusus Tambah Stok */}
               <div>
                 <label className={labelClass}>Kategori *</label>
                 <div className="flex gap-2">
@@ -122,52 +121,40 @@ export default function TambahStokPage() {
                 </div>
               </div>
 
-              {/* Nama & SKU */}
+              {/* Merk & Model - SAMA PERSIS kaya Beli Unit */}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <label className={labelClass}>Nama Barang *</label>
-                  <Input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="RAM 8GB DDR4" className="h-10 w-full" />
+                  <label className={labelClass}>Merk *</label>
+                  <Input type="text" required value={form.brand} onChange={e => setForm({ ...form, brand: e.target.value })} placeholder="Kingston, Samsung" className="h-10 w-full" />
                 </div>
                 <div>
-                  <label className={labelClass}>SKU</label>
-                  <Input type="text" value={form.sku} onChange={e => setForm({ ...form, sku: e.target.value })} placeholder="SKU-001" className="h-10 w-full font-mono" />
+                  <label className={labelClass}>Tipe/Model *</label>
+                  <Input type="text" required value={form.model} onChange={e => setForm({ ...form, model: e.target.value })} className="h-10 w-full" />
                 </div>
               </div>
 
-              {/* Merk & Model */}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div>
-                  <label className={labelClass}>Merk</label>
-                  <Input type="text" value={form.brand} onChange={e => setForm({ ...form, brand: e.target.value })} placeholder="Kingston, Samsung" className="h-10 w-full" />
-                </div>
-                <div>
-                  <label className={labelClass}>Model</label>
-                  <Input type="text" value={form.model} onChange={e => setForm({ ...form, model: e.target.value })} className="h-10 w-full" />
-                </div>
-              </div>
-
-              {/* Spesifikasi */}
+              {/* Spesifikasi - SAMA PERSIS kaya Beli Unit */}
               <div>
                 <label className={labelClass}>Spesifikasi</label>
-                <textarea value={form.specs} onChange={e => setForm({ ...form, specs: e.target.value })} rows={2} placeholder="DDR4 3200MHz, SODIMM" className={textareaClass} />
+                <textarea value={form.specs} onChange={e => setForm({ ...form, specs: e.target.value })} placeholder="RAM 8GB, SSD 256GB, DDR4 3200MHz" rows={2} className={textareaClass} />
               </div>
 
-              {/* Kondisi & Stok Awal */}
+              {/* Kondisi & Nama Barang - SAMA PERSIS kaya Beli Unit (Kondisi & IMEI/SN) */}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <label className={labelClass}>Kondisi</label>
+                  <label className={labelClass}>Kondisi *</label>
                   <select value={form.condition} onChange={e => setForm({ ...form, condition: e.target.value as 'baru' | 'bekas' | 'refurbished' })} className={selectClass}>
                     <option value="baru">Baru</option><option value="bekas">Bekas</option><option value="refurbished">Refurbished</option>
                   </select>
                 </div>
                 <div>
-                  <label className={labelClass}>Stok Awal *</label>
-                  <Input type="number" required min={0} value={form.quantity} onChange={e => setForm({ ...form, quantity: Number(e.target.value) })} className="h-10 w-full" />
+                  <label className={labelClass}>Nama Barang *</label>
+                  <Input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="RAM 8GB DDR4 SODIMM" className="h-10 w-full" />
                 </div>
               </div>
 
-              {/* Harga */}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {/* Harga Beli & Harga Jual - SAMA PERSIS kaya Beli Unit */}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className={labelClass}>Harga Beli (Rp) *</label>
                   <RupiahInput value={form.buy_price} onChange={v => setForm({ ...form, buy_price: v })} className="h-10 w-full font-mono" />
@@ -176,19 +163,34 @@ export default function TambahStokPage() {
                   <label className={labelClass}>Harga Jual (Rp)</label>
                   <RupiahInput value={form.sell_price} onChange={v => setForm({ ...form, sell_price: v })} className="h-10 w-full font-mono" />
                 </div>
-                <div>
-                  <label className={labelClass}>Min. Stok</label>
-                  <Input type="number" min={0} value={form.min_quantity} onChange={e => setForm({ ...form, min_quantity: Number(e.target.value) })} className="h-10 w-full" />
-                </div>
               </div>
 
-              {/* Potensi Margin */}
+              {/* Potensi Margin - SAMA PERSIS kaya Beli Unit */}
               <div className="flex items-center justify-between rounded-lg border border-border bg-secondary/50 p-3">
                 <span className="text-sm text-muted-foreground">Potensi Margin</span>
                 <span className="font-mono text-base font-bold text-badge-success">{formatRupiah(form.sell_price - form.buy_price)}</span>
               </div>
 
-              {/* Submit */}
+              {/* Stok & SKU - section tambahan untuk Tambah Stok */}
+              <div className="border-t border-border pt-4">
+                <h3 className="mb-3 text-sm font-bold text-foreground">Informasi Stok</h3>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div>
+                    <label className={labelClass}>SKU</label>
+                    <Input type="text" value={form.sku} onChange={e => setForm({ ...form, sku: e.target.value })} placeholder="SKU-001" className="h-10 w-full font-mono" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Stok Awal *</label>
+                    <Input type="number" required min={0} value={form.quantity} onChange={e => setForm({ ...form, quantity: Number(e.target.value) })} className="h-10 w-full" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Min. Stok</label>
+                    <Input type="number" min={0} value={form.min_quantity} onChange={e => setForm({ ...form, min_quantity: Number(e.target.value) })} className="h-10 w-full" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Submit - SAMA PERSIS kaya Beli Unit */}
               <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row">
                 <Button type="button" onClick={() => router.back()} variant="secondary" className="h-11 w-full sm:flex-1">Batal</Button>
                 <Button type="submit" disabled={loading} className="h-11 w-full sm:flex-1">{loading ? 'Menyimpan...' : 'Simpan Barang'}</Button>
