@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase, Profile, PaymentMethod } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
-import { Plus, UserCheck, UserX, Store, Save, Eye, EyeOff, CheckCircle, Wifi, Lock, Trash2, GripVertical } from 'lucide-react'
+import { Plus, UserCheck, UserX, Store, Save, Eye, EyeOff, CheckCircle, Wifi, Lock, Trash2, GripVertical, DollarSign } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -25,38 +25,42 @@ export default function PengaturanPage() {
       <PageHeader title="Pengaturan" subtitle="Kelola user dan pengaturan sistem" />
 
       {/* Tab switcher */}
-      <div className="flex gap-1 rounded-lg border border-border bg-secondary/50 p-1">
+      <div className="grid grid-cols-2 sm:flex gap-1.5 sm:gap-1 rounded-xl border border-border bg-secondary/50 p-1.5 sm:p-1">
         <button
           onClick={() => setTab('users')}
-          className={`flex-1 rounded-md px-3 py-2 text-xs sm:text-sm font-medium transition-colors ${
+          className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 sm:py-2 text-xs sm:text-sm font-medium transition-colors ${
             tab === 'users' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
+          <UserCheck size={14} className="sm:w-4 sm:h-4" />
           User
         </button>
         <button
           onClick={() => setTab('settings')}
-          className={`flex-1 rounded-md px-3 py-2 text-xs sm:text-sm font-medium transition-colors ${
+          className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 sm:py-2 text-xs sm:text-sm font-medium transition-colors ${
             tab === 'settings' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          Toko & Integrasi
+          <Store size={14} className="sm:w-4 sm:h-4" />
+          Toko & WA
         </button>
         <button
           onClick={() => setTab('payment')}
-          className={`flex-1 rounded-md px-3 py-2 text-xs sm:text-sm font-medium transition-colors ${
+          className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 sm:py-2 text-xs sm:text-sm font-medium transition-colors ${
             tab === 'payment' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
+          <DollarSign size={14} className="sm:w-4 sm:h-4" />
           Pembayaran
         </button>
         <button
           onClick={() => setTab('password')}
-          className={`flex-1 rounded-md px-3 py-2 text-xs sm:text-sm font-medium transition-colors ${
+          className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 sm:py-2 text-xs sm:text-sm font-medium transition-colors ${
             tab === 'password' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          Ubah Password
+          <Lock size={14} className="sm:w-4 sm:h-4" />
+          Password
         </button>
       </div>
 

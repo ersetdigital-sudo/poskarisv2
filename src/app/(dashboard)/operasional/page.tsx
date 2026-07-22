@@ -91,44 +91,84 @@ export default function OperasionalPage() {
         </CardContent>
       </Card>
 
-      {/* Table */}
-      <Card className="shadow-card">
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="p-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Nama Biaya</th>
-                  <th className="p-3 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">Jumlah</th>
-                  <th className="p-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Catatan</th>
-                  <th className="p-3 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {costs.length === 0 ? (
-                  <tr><td colSpan={4} className="p-8 text-center text-xs text-muted-foreground">Belum ada biaya operasional bulan ini</td></tr>
-                ) : costs.map(c => (
-                  <tr key={c.id} className="border-b border-border transition-colors hover:bg-secondary/30">
-                    <td className="p-3 text-sm font-medium text-foreground">{c.name}</td>
-                    <td className="p-3 text-right text-sm font-semibold text-destructive">{formatRupiah(c.amount)}</td>
-                    <td className="p-3 text-xs text-muted-foreground">{c.notes || '-'}</td>
-                    <td className="p-3">
-                      <div className="flex justify-center gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => { setEditingCost(c); setShowForm(true) }} className="h-7 w-7 p-0">
-                          <Edit size={13} />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => deleteCost(c.id)} className="h-7 w-7 p-0">
-                          <Trash2 size={13} />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {/* List */}
+      {costs.length === 0 ? (
+        <Card className="shadow-card">
+          <CardContent className="p-8 text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-secondary">
+              <span className="text-2xl">💰</span>
+            </div>
+            <p className="text-sm font-medium text-foreground">Belum ada biaya</p>
+            <p className="text-xs text-muted-foreground mt-1">Tambah biaya operasional bulan ini</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Mobile Card View */}
+          <div className="block lg:hidden space-y-2">
+            {costs.map(c => (
+              <Card key={c.id} className="shadow-card">
+                <CardContent className="p-0">
+                  <div className="flex items-start justify-between px-3.5 pt-3 pb-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13px] font-semibold text-foreground">{c.name}</p>
+                      {c.notes && <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{c.notes}</p>}
+                    </div>
+                    <p className="text-sm font-bold font-mono text-destructive shrink-0 ml-3">{formatRupiah(c.amount)}</p>
+                  </div>
+                  <div className="flex items-center justify-end gap-1 border-t border-border px-3.5 py-2 bg-secondary/30">
+                    <Button variant="ghost" size="sm" onClick={() => { setEditingCost(c); setShowForm(true) }} className="h-7 px-2.5 text-[10px] gap-1 text-muted-foreground hover:text-foreground">
+                      <Edit size={12} /> Edit
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => deleteCost(c.id)} className="h-7 px-2.5 text-[10px] gap-1 text-muted-foreground hover:text-destructive">
+                      <Trash2 size={12} /> Hapus
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Desktop Table View */}
+          <div className="hidden lg:block">
+            <Card className="shadow-card">
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="p-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Nama Biaya</th>
+                        <th className="p-3 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">Jumlah</th>
+                        <th className="p-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Catatan</th>
+                        <th className="p-3 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {costs.map(c => (
+                        <tr key={c.id} className="border-b border-border transition-colors hover:bg-secondary/30">
+                          <td className="p-3 text-sm font-medium text-foreground">{c.name}</td>
+                          <td className="p-3 text-right text-sm font-semibold text-destructive">{formatRupiah(c.amount)}</td>
+                          <td className="p-3 text-xs text-muted-foreground">{c.notes || '-'}</td>
+                          <td className="p-3">
+                            <div className="flex justify-center gap-1">
+                              <Button variant="ghost" size="sm" onClick={() => { setEditingCost(c); setShowForm(true) }} className="h-7 w-7 p-0">
+                                <Edit size={13} />
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => deleteCost(c.id)} className="h-7 w-7 p-0">
+                                <Trash2 size={13} />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </>
+      )}
 
       {showForm && (
         <OperasionalForm
