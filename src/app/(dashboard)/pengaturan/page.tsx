@@ -471,19 +471,17 @@ function SettingsTab() {
           </div>
 
           <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div>
-                <label className={labelClass}>Nama Bank</label>
-                <Input type="text" value={settings.bank_name} onChange={e => setSettings({ ...settings, bank_name: e.target.value })} placeholder="BCA, BNI, Mandiri" className="h-10 w-full" />
-              </div>
-              <div>
-                <label className={labelClass}>Nomor Rekening</label>
-                <Input type="text" value={settings.bank_account_number} onChange={e => setSettings({ ...settings, bank_account_number: e.target.value })} placeholder="0670493041" className="h-10 w-full font-mono" />
-              </div>
-              <div>
-                <label className={labelClass}>Atas Nama</label>
-                <Input type="text" value={settings.bank_account_holder} onChange={e => setSettings({ ...settings, bank_account_holder: e.target.value })} placeholder="Nama pemilik rekening" className="h-10 w-full" />
-              </div>
+            <div>
+              <label className={labelClass}>Nama Bank</label>
+              <Input type="text" value={settings.bank_name} onChange={e => setSettings({ ...settings, bank_name: e.target.value })} placeholder="BCA, BNI, Mandiri" className="h-10 w-full" />
+            </div>
+            <div>
+              <label className={labelClass}>Nomor Rekening</label>
+              <Input type="text" value={settings.bank_account_number} onChange={e => setSettings({ ...settings, bank_account_number: e.target.value })} placeholder="0670493041" className="h-10 w-full font-mono" />
+            </div>
+            <div>
+              <label className={labelClass}>Atas Nama</label>
+              <Input type="text" value={settings.bank_account_holder} onChange={e => setSettings({ ...settings, bank_account_holder: e.target.value })} placeholder="Nama pemilik rekening" className="h-10 w-full" />
             </div>
           </div>
         </CardContent>
