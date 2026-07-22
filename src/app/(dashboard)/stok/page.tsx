@@ -109,25 +109,25 @@ export default function StokPage() {
         title="Stok Barang"
         subtitle={activeTab === 'sparepart' ? 'Kelola stok sparepart untuk servis' : 'Kelola stok unit laptop untuk dijual'}
       >
-        <div className="flex gap-2">
-          <Link href="/unit-laptop/beli">
-            <Button variant="secondary" className="gap-2">
-              <ArrowDownToLine size={16} strokeWidth={2} />
+        <div className="grid grid-cols-2 sm:flex gap-2 w-full sm:w-auto">
+          <Link href="/unit-laptop/beli" className="sm:flex-none">
+            <Button variant="secondary" className="w-full sm:w-auto gap-1.5 sm:gap-2 h-9 sm:h-10 text-xs sm:text-sm">
+              <ArrowDownToLine size={14} strokeWidth={2} className="sm:w-4 sm:h-4" />
               Beli Unit
             </Button>
           </Link>
-          <Link href="/unit-laptop/jual">
-            <Button variant="secondary" className="gap-2">
-              <ShoppingCart size={16} strokeWidth={2} />
+          <Link href="/unit-laptop/jual" className="sm:flex-none">
+            <Button variant="secondary" className="w-full sm:w-auto gap-1.5 sm:gap-2 h-9 sm:h-10 text-xs sm:text-sm">
+              <ShoppingCart size={14} strokeWidth={2} className="sm:w-4 sm:h-4" />
               Jual
             </Button>
           </Link>
-          <Button variant="secondary" onClick={() => setShowAddCategoryForm(true)} className="gap-2">
-            <Plus size={16} strokeWidth={2} />
+          <Button variant="secondary" onClick={() => setShowAddCategoryForm(true)} className="gap-1.5 sm:gap-2 h-9 sm:h-10 text-xs sm:text-sm">
+            <Plus size={14} strokeWidth={2} className="sm:w-4 sm:h-4" />
             Kategori
           </Button>
-          <Button onClick={() => setShowAddForm(true)} className="gap-2">
-            <Plus size={16} strokeWidth={2} />
+          <Button onClick={() => setShowAddForm(true)} className="gap-1.5 sm:gap-2 h-9 sm:h-10 text-xs sm:text-sm">
+            <Plus size={14} strokeWidth={2} className="sm:w-4 sm:h-4" />
             Tambah Stok
           </Button>
         </div>
