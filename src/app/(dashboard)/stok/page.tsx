@@ -24,7 +24,6 @@ export default function StokPage() {
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState<TabType>('sparepart')
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
-  const [showAddForm, setShowAddForm] = useState(false)
   const [adjustProduct, setAdjustProduct] = useState<Product | null>(null)
   const [showAddCategoryForm, setShowAddCategoryForm] = useState(false)
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
@@ -126,10 +125,12 @@ export default function StokPage() {
             <Plus size={14} strokeWidth={2} className="sm:w-4 sm:h-4" />
             Kategori
           </Button>
-          <Button onClick={() => setShowAddForm(true)} className="gap-1.5 sm:gap-2 h-9 sm:h-10 text-xs sm:text-sm">
-            <Plus size={14} strokeWidth={2} className="sm:w-4 sm:h-4" />
-            Tambah Stok
-          </Button>
+          <Link href="/stok/tambah">
+            <Button className="w-full sm:w-auto gap-1.5 sm:gap-2 h-9 sm:h-10 text-xs sm:text-sm">
+              <Plus size={14} strokeWidth={2} className="sm:w-4 sm:h-4" />
+              Tambah Stok
+            </Button>
+          </Link>
         </div>
       </PageHeader>
 
@@ -212,72 +213,87 @@ export default function StokPage() {
       <div className="block lg:hidden space-y-2">
         {filtered.length === 0 ? (
           <Card className="shadow-card">
-            <CardContent className="p-6 text-center">
-              <Package size={24} className="text-stone mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">Belum ada data stok</p>
+            <CardContent className="p-8 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-secondary">
+                <Package size={24} className="text-muted-foreground" />
+              </div>
+              <p className="text-sm font-medium text-foreground">Belum ada data stok</p>
+              <p className="text-xs text-muted-foreground mt-1">Tambah barang pertama Anda</p>
             </CardContent>
           </Card>
         ) : filtered.map(p => {
           const catName = (p as Product & { categories?: { name: string } }).categories?.name || '-'
           const isLow = p.quantity <= p.min_quantity && p.min_quantity > 0
-          // Status berdasarkan quantity, bukan field status statis
           const displayStatus = p.quantity > 0 ? 'ready' : 'sold'
           const statusVariant = displayStatus === 'ready' ? 'success' : 'secondary'
           
           return (
-            <Card key={p.id} className={`shadow-card overflow-hidden ${isLow ? 'border-l-4 border-l-badge-warning' : ''}`}>
+            <Card key={p.id} className={`shadow-card overflow-hidden ${isLow ? 'border-l-[3px] border-l-badge-warning' : ''}`}>
               <CardContent className="p-0">
-                <div className="px-3 py-2.5">
-                  <div className="flex items-start justify-between gap-2 mb-1.5">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-ink truncate">{p.name}</p>
-                      <p className="text-[10px] text-stone font-mono">{p.sku || '-'}</p>
+                {/* Header: Name + Status */}
+                <div className="flex items-start justify-between gap-2 px-3.5 pt-3 pb-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-semibold text-foreground leading-tight truncate">{p.name}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{p.sku || catName}</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {isLow && (
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-badge-warning/10">
+                        <AlertTriangle size={11} className="text-badge-warning" />
+                      </span>
+                    )}
+                    <Badge variant={statusVariant as any} className="text-[9px] px-1.5 py-0 h-4 capitalize">
+                      {displayStatus}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Info Row */}
+                <div className="flex items-center gap-2 px-3.5 pb-2">
+                  <span className="inline-flex items-center rounded-md bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    {catName}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">·</span>
+                  <span className={`text-xs font-bold ${isLow ? 'text-badge-warning' : 'text-foreground'}`}>
+                    Stok: {p.quantity}
+                  </span>
+                </div>
+
+                {/* Price + Actions */}
+                <div className="flex items-center justify-between border-t border-border px-3.5 py-2.5 bg-secondary/30">
+                  <div className="flex gap-4">
+                    <div>
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Beli</p>
+                      <p className="text-xs font-semibold font-mono text-foreground">{formatRupiah(p.buy_price)}</p>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <Badge variant={statusVariant as any} className="text-[10px] px-1.5 py-0.5 capitalize">
-                        {displayStatus}
-                      </Badge>
-                      {isLow && <AlertTriangle size={14} className="text-badge-warning" />}
+                    <div>
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Jual</p>
+                      <p className="text-xs font-bold font-mono text-foreground">{formatRupiah(p.sell_price)}</p>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center gap-3 text-xs mb-2">
-                    <span className="text-muted-foreground">{catName}</span>
-                    <span className="text-muted-foreground">·</span>
-                    <span className={`font-bold ${isLow ? 'text-badge-warning' : 'text-ink'}`}>
-                      Stok: {p.quantity}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex gap-3 text-xs">
-                      <span className="text-muted-foreground">Beli: <span className="font-mono font-medium text-ink">{formatRupiah(p.buy_price)}</span></span>
-                      <span className="text-muted-foreground">Jual: <span className="font-mono font-medium text-ink">{formatRupiah(p.sell_price)}</span></span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => setEditProduct(p)}
-                        className="h-7 px-2 text-[11px] gap-1"
-                      >
-                        <Pencil size={12} /> Edit
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => setAdjustProduct(p)}
-                        className="h-7 px-2 text-[11px] gap-1"
-                      >
-                        <Plus size={12} /> Stok
-                      </Button>
-                      <button
-                        onClick={() => setDeleteConfirm(p)}
-                        className="h-7 w-7 flex items-center justify-center rounded text-destructive hover:bg-destructive/10"
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
+                  <div className="flex items-center gap-1">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setEditProduct(p)}
+                      className="h-7 px-2 text-[10px] gap-1 text-muted-foreground hover:text-foreground"
+                    >
+                      <Pencil size={11} /> Edit
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setAdjustProduct(p)}
+                      className="h-7 px-2 text-[10px] gap-1 text-muted-foreground hover:text-foreground"
+                    >
+                      <Plus size={11} /> Stok
+                    </Button>
+                    <button
+                      onClick={() => setDeleteConfirm(p)}
+                      className="h-7 w-7 flex items-center justify-center rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                    >
+                      <Trash2 size={12} />
+                    </button>
                   </div>
                 </div>
               </CardContent>
@@ -517,7 +533,6 @@ export default function StokPage() {
         </Modal>
       )}
 
-      {showAddForm && <AddStokForm onClose={() => setShowAddForm(false)} onSaved={fetchData} userId={user?.id} onCategoryAdded={fetchCategories} defaultCategory={activeTab === 'sparepart' ? 'Sparepart' : 'Unit Laptop'} />}
       {editProduct && <EditStokForm product={editProduct} onClose={() => setEditProduct(null)} onSaved={fetchData} onCategoryAdded={fetchCategories} defaultCategory={activeTab === 'sparepart' ? 'Sparepart' : 'Unit Laptop'} />}
       {adjustProduct && <AdjustStokForm product={adjustProduct} onClose={() => setAdjustProduct(null)} onSaved={fetchData} userId={user?.id} />}
       {showAddCategoryForm && (
@@ -534,207 +549,6 @@ export default function StokPage() {
 const labelClass = 'mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground'
 const selectClass = 'h-10 w-full rounded-lg border border-input bg-surface px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20'
 const textareaClass = 'w-full resize-none rounded-lg border border-input bg-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20'
-
-/* ── Add Product Form ─────────────────────────── */
-function AddStokForm({ onClose, onSaved, userId, onCategoryAdded, defaultCategory }: { 
-  onClose: () => void; onSaved: () => void; userId?: string; onCategoryAdded?: () => void;
-  defaultCategory?: string;
-}) {
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
-  const [showCatForm, setShowCatForm] = useState(false)
-  const [form, setForm] = useState({
-    category_id: '', name: '', sku: '', brand: '', model: '', specs: '',
-    condition: 'baru' as 'baru' | 'bekas' | 'refurbished',
-    buy_price: 0, sell_price: 0, quantity: 1, min_quantity: 0,
-  })
-
-  async function loadCategories() {
-    const { data } = await supabase.from('categories').select('id, name').order('name')
-    // Deduplicate by name (case-insensitive)
-    const unique = (data || []).reduce((acc, cat) => {
-      const key = cat.name.toLowerCase().trim()
-      if (!acc.has(key)) acc.set(key, cat)
-      return acc
-    }, new Map<string, { id: string; name: string }>())
-    const deduped = Array.from(unique.values())
-    setCategories(deduped)
-    // Auto-select category based on active tab
-    if (defaultCategory && deduped.length > 0) {
-      const cat = deduped.find(c => c.name === defaultCategory)
-      if (cat) setForm(f => ({ ...f, category_id: cat.id }))
-    }
-  }
-
-  useEffect(() => { loadCategories() }, [])
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    try {
-      const { error } = await supabase.from('products').insert({
-        category_id: form.category_id || null, name: form.name, sku: form.sku || null,
-        brand: form.brand || null, model: form.model || null, specs: form.specs || null,
-        condition: form.condition, buy_price: form.buy_price, sell_price: form.sell_price,
-        quantity: form.quantity, min_quantity: form.min_quantity, status: 'ready',
-      })
-      if (error) throw error
-      if (form.quantity > 0) {
-        const { data: prod } = await supabase.from('products').select('id').eq('name', form.name).order('created_at', { ascending: false }).limit(1).single()
-        if (prod) await supabase.from('stock_movements').insert({ product_id: prod.id, type: 'masuk', quantity: form.quantity, reference_type: 'adjustment', notes: `Stok awal ${form.name}`, created_by: userId })
-      }
-      onSaved(); onClose()
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Gagal menyimpan')
-    } finally { setLoading(false) }
-  }
-
-  return (
-    <>
-      <Modal title="Tambah Stok Barang" onClose={onClose} maxWidth="xl">
-        {error && (
-          <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 p-3">
-            <p className="text-xs text-destructive">{error}</p>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className={labelClass}>Kategori *</label>
-            <div className="flex gap-2">
-              <select required value={form.category_id} onChange={e => setForm({ ...form, category_id: e.target.value })} className={selectClass}>
-                <option value="">Pilih kategori...</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-              <Button type="button" variant="secondary" onClick={() => setShowCatForm(true)} title="Tambah kategori baru" className="h-10 w-10 shrink-0 p-0">
-                <Plus size={14} />
-              </Button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <label className={labelClass}>Nama Barang *</label>
-              <Input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="RAM 8GB DDR4" className="h-10 w-full" />
-            </div>
-            <div>
-              <label className={labelClass}>SKU</label>
-              <Input type="text" value={form.sku} onChange={e => setForm({ ...form, sku: e.target.value })} placeholder="SKU-001" className="h-10 w-full font-mono" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <label className={labelClass}>Merk</label>
-              <Input type="text" value={form.brand} onChange={e => setForm({ ...form, brand: e.target.value })} className="h-10 w-full" />
-            </div>
-            <div>
-              <label className={labelClass}>Model</label>
-              <Input type="text" value={form.model} onChange={e => setForm({ ...form, model: e.target.value })} className="h-10 w-full" />
-            </div>
-          </div>
-
-          <div>
-            <label className={labelClass}>Spesifikasi</label>
-            <textarea value={form.specs} onChange={e => setForm({ ...form, specs: e.target.value })} rows={2} placeholder="DDR4 3200MHz, SODIMM" className={textareaClass} />
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <label className={labelClass}>Kondisi</label>
-              <select value={form.condition} onChange={e => setForm({ ...form, condition: e.target.value as 'baru' | 'bekas' | 'refurbished' })} className={selectClass}>
-                <option value="baru">Baru</option><option value="bekas">Bekas</option><option value="refurbished">Refurbished</option>
-              </select>
-            </div>
-            <div>
-              <label className={labelClass}>Stok Awal *</label>
-              <Input type="number" required min={0} value={form.quantity} onChange={e => setForm({ ...form, quantity: Number(e.target.value) })} className="h-10 w-full" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div>
-              <label className={labelClass}>Harga Beli (Rp) *</label>
-              <RupiahInput value={form.buy_price} onChange={v => setForm({ ...form, buy_price: v })} className="h-10 w-full font-mono" />
-            </div>
-            <div>
-              <label className={labelClass}>Harga Jual (Rp)</label>
-              <RupiahInput value={form.sell_price} onChange={v => setForm({ ...form, sell_price: v })} className="h-10 w-full font-mono" />
-            </div>
-            <div>
-              <label className={labelClass}>Min. Stok</label>
-              <Input type="number" min={0} value={form.min_quantity} onChange={e => setForm({ ...form, min_quantity: Number(e.target.value) })} className="h-10 w-full" />
-            </div>
-          </div>
-
-          <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row">
-            <Button type="button" onClick={onClose} variant="secondary" className="h-11 w-full sm:flex-1">Batal</Button>
-            <Button type="submit" disabled={loading} className="h-11 w-full sm:flex-1">{loading ? 'Menyimpan...' : 'Simpan Barang'}</Button>
-          </div>
-        </form>
-      </Modal>
-
-      {showCatForm && (
-        <InlineAddCategory
-          onClose={() => setShowCatForm(false)}
-          onSaved={() => { loadCategories(); onCategoryAdded?.() }}
-        />
-      )}
-    </>
-  )
-}
-
-/* ── Inline Add Category (inside AddStokForm) ──── */
-function InlineAddCategory({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [form, setForm] = useState({ name: '', description: '' })
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    try {
-      const { error } = await supabase.from('categories').insert({ name: form.name, description: form.description || null })
-      if (error) throw error
-      onSaved(); onClose()
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Gagal menyimpan kategori')
-    } finally { setLoading(false) }
-  }
-
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-      <div className="w-full max-w-sm rounded-2xl bg-card p-5 shadow-elevated" onClick={e => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-foreground">Tambah Kategori Baru</h2>
-          <Button onClick={onClose} variant="ghost" size="sm" aria-label="Tutup" className="h-7 w-7 p-0"><X size={14} /></Button>
-        </div>
-        {error && (
-          <div className="mb-3 rounded-lg border border-destructive/20 bg-destructive/10 p-2.5">
-            <p className="text-xs text-destructive">{error}</p>
-          </div>
-        )}
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div>
-            <label className={labelClass}>Nama Kategori *</label>
-            <Input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Aksesoris, Adapter, dll" className="h-10 w-full" />
-          </div>
-          <div>
-            <label className={labelClass}>Deskripsi</label>
-            <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={2} className={textareaClass} />
-          </div>
-          <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row">
-            <Button type="button" onClick={onClose} variant="secondary" className="h-10 w-full sm:flex-1">Batal</Button>
-            <Button type="submit" disabled={loading} className="h-10 w-full sm:flex-1">{loading ? 'Menyimpan...' : 'Simpan'}</Button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
 
 /* ── Edit Product Form ─────────────────────────── */
 function EditStokForm({ product, onClose, onSaved, onCategoryAdded, defaultCategory }: { 
