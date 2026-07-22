@@ -102,7 +102,7 @@ export interface Sale {
   invoice_number: string
   customer_id: string | null
   product_id: string | null
-  item_type: 'unit' | 'sparepart'
+  item_type: 'unit' | 'sparepart' | 'mixed'
   item_name: string | null
   quantity: number
   buyer_name: string
@@ -120,6 +120,20 @@ export interface Sale {
   date: string
   notes: string | null
   created_by: string | null
+  is_multi_item: boolean
+  created_at: string
+}
+
+export interface SaleItem {
+  id: string
+  sale_id: string
+  product_id: string | null
+  item_type: 'unit' | 'sparepart'
+  item_name: string
+  quantity: number
+  buy_price: number
+  sell_price: number
+  subtotal: number
   created_at: string
 }
 

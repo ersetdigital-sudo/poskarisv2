@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { supabase, Sale, Product } from '@/lib/supabase'
+import { supabase, Sale, Product, SaleItem } from '@/lib/supabase'
 import { Search, Eye, Download, ShoppingCart, Laptop, Package, DollarSign, Trash2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -10,13 +10,16 @@ import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { NotaUnitPDF } from '@/components/pdf/nota-unit'
 import { NotaSparepartPDF } from '@/components/pdf/nota-sparepart'
+import { NotaMultiPDF } from '@/components/pdf/nota-multi'
 import { downloadPDF } from '@/components/pdf/utils'
 import PageHeader from '@/components/dashboard/PageHeader'
 import StatCard from '@/components/dashboard/StatCard'
 import { showToast } from '@/components/ui/toast'
 
+type SaleWithItems = Sale & { products?: Product; sale_items?: SaleItem[] }
+
 export default function RiwayatPenjualanPage() {
-  const [sales, setSales] = useState<(Sale & { products?: Product })[]>([])
+  const [sales, setSales] = useState<SaleWithItems[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState<string>('all')
@@ -25,8 +28,8 @@ export default function RiwayatPenjualanPage() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   })
   const [currentPage, setCurrentPage] = useState(1)
-  const [detailSale, setDetailSale] = useState<(Sale & { products?: Product }) | null>(null)
-  const [deleteConfirm, setDeleteConfirm] = useState<(Sale & { products?: Product }) | null>(null)
+  const [detailSale, setDetailSale] = useState<SaleWithItems | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<SaleWithItems | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [pdfLoading, setPdfLoading] = useState<string | null>(null)
   const [storeInfo, setStoreInfo] = useState({ storeName: 'Kasir POS', storeAddress: '', storePhone: '' })
@@ -40,7 +43,7 @@ export default function RiwayatPenjualanPage() {
 
       const { data, error } = await supabase
         .from('sales')
-        .select('*, products(*)')
+        .select('*, products(*), sale_items(*)')
         .gte('date', startDate)
         .lte('date', endDate)
         .order('created_at', { ascending: false })
@@ -64,26 +67,40 @@ export default function RiwayatPenjualanPage() {
     } catch (e) { console.error(e) }
   }
 
-  async function handleDelete(sale: Sale & { products?: Product }) {
+  async function handleDelete(sale: SaleWithItems) {
     setDeleting(true)
     try {
       // Hapus stock_movements terkait
       const { error: smError } = await supabase.from('stock_movements').delete().eq('reference_id', sale.id).eq('reference_type', 'penjualan_unit')
       if (smError) throw smError
 
-      // Hapus sale
+      // Hapus sale (sale_items akan terhapus otomatis karena ON DELETE CASCADE)
       const { error } = await supabase.from('sales').delete().eq('id', sale.id)
       if (error) throw error
 
-      // Jika unit, kembalikan status produk ke ready
-      if (sale.item_type === 'unit' && sale.product_id) {
-        await supabase.from('products').update({ status: 'ready' }).eq('id', sale.product_id)
-      }
-      // Jika sparepart, tambah kembali stok
-      if (sale.item_type === 'sparepart' && sale.product_id) {
-        const { data: product } = await supabase.from('products').select('quantity').eq('id', sale.product_id).single()
-        if (product) {
-          await supabase.from('products').update({ quantity: product.quantity + sale.quantity }).eq('id', sale.product_id)
+      // Kembalikan stok untuk setiap item
+      if (sale.sale_items && sale.sale_items.length > 0) {
+        // Multi-item sale
+        for (const item of sale.sale_items) {
+          if (item.item_type === 'unit' && item.product_id) {
+            await supabase.from('products').update({ status: 'ready' }).eq('id', item.product_id)
+          } else if (item.item_type === 'sparepart' && item.product_id) {
+            const { data: product } = await supabase.from('products').select('quantity').eq('id', item.product_id).single()
+            if (product) {
+              await supabase.from('products').update({ quantity: product.quantity + item.quantity }).eq('id', item.product_id)
+            }
+          }
+        }
+      } else {
+        // Legacy single-item sale
+        if (sale.item_type === 'unit' && sale.product_id) {
+          await supabase.from('products').update({ status: 'ready' }).eq('id', sale.product_id)
+        }
+        if (sale.item_type === 'sparepart' && sale.product_id) {
+          const { data: product } = await supabase.from('products').select('quantity').eq('id', sale.product_id).single()
+          if (product) {
+            await supabase.from('products').update({ quantity: product.quantity + sale.quantity }).eq('id', sale.product_id)
+          }
         }
       }
 
@@ -105,7 +122,10 @@ export default function RiwayatPenjualanPage() {
     const matchSearch = s.buyer_name.toLowerCase().includes(search.toLowerCase()) ||
       (s.item_name || '').toLowerCase().includes(search.toLowerCase()) ||
       s.invoice_number.toLowerCase().includes(search.toLowerCase())
-    const matchType = filterType === 'all' || s.item_type === filterType
+    const isMulti = s.sale_items && s.sale_items.length > 0
+    const matchType = filterType === 'all' || 
+      (filterType === 'multi' && isMulti) ||
+      (filterType !== 'multi' && s.item_type === filterType && !isMulti)
     return matchSearch && matchType
   })
 
@@ -116,18 +136,32 @@ export default function RiwayatPenjualanPage() {
   // Summary stats
   const totalPenjualan = filtered.reduce((sum, s) => sum + s.sell_price, 0)
   const totalTransaksi = filtered.length
-  const unitSales = filtered.filter(s => s.item_type === 'unit')
-  const sparepartSales = filtered.filter(s => s.item_type === 'sparepart')
+  const unitSales = filtered.filter(s => s.item_type === 'unit' && !(s.sale_items && s.sale_items.length > 0))
+  const sparepartSales = filtered.filter(s => s.item_type === 'sparepart' && !(s.sale_items && s.sale_items.length > 0))
+  const multiSales = filtered.filter(s => s.sale_items && s.sale_items.length > 0)
   const totalUnit = unitSales.length
   const totalUnitRp = unitSales.reduce((sum, s) => sum + s.sell_price, 0)
   const totalSparepart = sparepartSales.reduce((sum, s) => sum + s.quantity, 0)
   const totalSparepartRp = sparepartSales.reduce((sum, s) => sum + s.sell_price, 0)
 
-  async function handleDownloadPDF(sale: Sale & { products?: Product }) {
+  async function handleDownloadPDF(sale: SaleWithItems) {
     setPdfLoading(sale.id)
     try {
       let doc
-      if (sale.item_type === 'unit' && sale.products) {
+      if (sale.sale_items && sale.sale_items.length > 0) {
+        // Multi-item sale
+        doc = NotaMultiPDF({
+          sale: { ...sale, warranty_end_date: sale.warranty_end_date || null },
+          items: sale.sale_items.map(item => ({
+            name: item.item_name,
+            type: item.item_type,
+            quantity: item.quantity,
+            sell_price: item.sell_price,
+            buy_price: item.buy_price,
+          })),
+          ...storeInfo,
+        })
+      } else if (sale.item_type === 'unit' && sale.products) {
         doc = NotaUnitPDF({
           sale: { ...sale, warranty_end_date: sale.warranty_end_date || null },
           product: sale.products, ...storeInfo,
@@ -193,6 +227,7 @@ export default function RiwayatPenjualanPage() {
                 <option value="all">Semua Tipe</option>
                 <option value="unit">Unit Laptop</option>
                 <option value="sparepart">Sparepart</option>
+                <option value="multi">Multi-Item</option>
               </select>
             </div>
           </div>
@@ -208,8 +243,8 @@ export default function RiwayatPenjualanPage() {
             <CardContent className="p-0">
               <div className="flex items-center justify-between px-3 py-2 bg-secondary/30 border-b border-hairline">
                 <p className="text-[11px] font-mono font-semibold text-ink">{s.invoice_number}</p>
-                <Badge variant={s.item_type === 'unit' ? 'default' : 'secondary'} className="text-[10px] px-2 py-0.5">
-                  {s.item_type === 'unit' ? 'Unit' : 'Sparepart'}
+                <Badge variant={s.sale_items && s.sale_items.length > 0 ? 'info' : s.item_type === 'unit' ? 'default' : 'secondary'} className="text-[10px] px-2 py-0.5">
+                  {s.sale_items && s.sale_items.length > 0 ? `${s.sale_items.length} Barang` : s.item_type === 'unit' ? 'Unit' : 'Sparepart'}
                 </Badge>
               </div>
               <div className="px-3 py-2.5 space-y-1.5">
@@ -263,7 +298,7 @@ export default function RiwayatPenjualanPage() {
                     <tr key={s.id} className="border-b border-hairline hover:bg-secondary/30 transition-colors">
                       <td className="p-3"><p className="text-xs font-mono font-semibold text-ink">{s.invoice_number}</p></td>
                       <td className="p-3"><p className="text-xs text-stone">{new Date(s.date).toLocaleDateString('id-ID')}</p></td>
-                      <td className="p-3"><Badge variant={s.item_type === 'unit' ? 'default' : 'secondary'} className="text-[10px] px-2 py-0.5">{s.item_type === 'unit' ? 'Unit' : 'Sparepart'}</Badge></td>
+                      <td className="p-3"><Badge variant={s.sale_items && s.sale_items.length > 0 ? 'info' : s.item_type === 'unit' ? 'default' : 'secondary'} className="text-[10px] px-2 py-0.5">{s.sale_items && s.sale_items.length > 0 ? `${s.sale_items.length} Barang` : s.item_type === 'unit' ? 'Unit' : 'Sparepart'}</Badge></td>
                       <td className="p-3"><p className="text-xs font-semibold text-ink">{s.item_name || '-'}</p></td>
                       <td className="p-3"><p className="text-xs text-ink">{s.buyer_name}</p></td>
                       <td className="p-3 text-right"><p className="text-xs font-bold text-ink font-mono">{formatRupiah(s.sell_price)}</p></td>
@@ -320,16 +355,30 @@ export default function RiwayatPenjualanPage() {
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div><p className="text-[10px] uppercase tracking-wide text-muted-foreground">No. Invoice</p><p className="font-semibold text-foreground font-mono">{detailSale.invoice_number}</p></div>
               <div><p className="text-[10px] uppercase tracking-wide text-muted-foreground">Tanggal</p><p className="font-semibold text-foreground">{new Date(detailSale.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p></div>
-              <div><p className="text-[10px] uppercase tracking-wide text-muted-foreground">Tipe</p><Badge variant={detailSale.item_type === 'unit' ? 'default' : 'secondary'} className="text-[10px]">{detailSale.item_type === 'unit' ? 'Unit Laptop' : 'Sparepart'}</Badge></div>
+              <div><p className="text-[10px] uppercase tracking-wide text-muted-foreground">Tipe</p><Badge variant={detailSale.sale_items && detailSale.sale_items.length > 0 ? 'info' : detailSale.item_type === 'unit' ? 'default' : 'secondary'} className="text-[10px]">{detailSale.sale_items && detailSale.sale_items.length > 0 ? 'Multi-Item' : detailSale.item_type === 'unit' ? 'Unit Laptop' : 'Sparepart'}</Badge></div>
               <div><p className="text-[10px] uppercase tracking-wide text-muted-foreground">Metode Bayar</p><p className="font-semibold text-foreground">{detailSale.payment_method}</p></div>
             </div>
 
             <div className="border-t border-border pt-3">
               <h4 className="text-xs font-bold text-foreground mb-2">Detail Barang</h4>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div><p className="text-[10px] text-muted-foreground">Nama</p><p className="font-medium text-foreground">{detailSale.item_name || '-'}</p></div>
-                {detailSale.item_type === 'sparepart' && <div><p className="text-[10px] text-muted-foreground">Qty</p><p className="font-medium text-foreground">{detailSale.quantity}</p></div>}
-              </div>
+              {detailSale.sale_items && detailSale.sale_items.length > 0 ? (
+                <div className="space-y-2">
+                  {detailSale.sale_items.map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-center text-sm p-2 rounded bg-secondary/50">
+                      <div>
+                        <p className="font-medium text-foreground">{item.item_name}</p>
+                        <p className="text-[10px] text-muted-foreground">{item.item_type === 'unit' ? 'Unit' : 'Sparepart'} x{item.quantity}</p>
+                      </div>
+                      <p className="font-mono font-semibold text-foreground">{formatRupiah(item.sell_price * item.quantity)}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div><p className="text-[10px] text-muted-foreground">Nama</p><p className="font-medium text-foreground">{detailSale.item_name || '-'}</p></div>
+                  {detailSale.item_type === 'sparepart' && <div><p className="text-[10px] text-muted-foreground">Qty</p><p className="font-medium text-foreground">{detailSale.quantity}</p></div>}
+                </div>
+              )}
             </div>
 
             <div className="border-t border-border pt-3">
