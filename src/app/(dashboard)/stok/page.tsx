@@ -550,6 +550,56 @@ const labelClass = 'mb-1.5 block text-[11px] font-medium uppercase tracking-wide
 const selectClass = 'h-10 w-full rounded-lg border border-input bg-surface px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20'
 const textareaClass = 'w-full resize-none rounded-lg border border-input bg-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20'
 
+/* ── Inline Add Category ──── */
+function InlineAddCategory({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [form, setForm] = useState({ name: '', description: '' })
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    try {
+      const { error } = await supabase.from('categories').insert({ name: form.name, description: form.description || null })
+      if (error) throw error
+      onSaved(); onClose()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Gagal menyimpan kategori')
+    } finally { setLoading(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div className="w-full max-w-sm rounded-2xl bg-card p-5 shadow-elevated" onClick={e => e.stopPropagation()}>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-sm font-bold text-foreground">Tambah Kategori Baru</h2>
+          <Button onClick={onClose} variant="ghost" size="sm" aria-label="Tutup" className="h-7 w-7 p-0"><X size={14} /></Button>
+        </div>
+        {error && (
+          <div className="mb-3 rounded-lg border border-destructive/20 bg-destructive/10 p-2.5">
+            <p className="text-xs text-destructive">{error}</p>
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <label className={labelClass}>Nama Kategori *</label>
+            <Input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Aksesoris, Adapter, dll" className="h-10 w-full" />
+          </div>
+          <div>
+            <label className={labelClass}>Deskripsi</label>
+            <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={2} className={textareaClass} />
+          </div>
+          <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row">
+            <Button type="button" onClick={onClose} variant="secondary" className="h-10 w-full sm:flex-1">Batal</Button>
+            <Button type="submit" disabled={loading} className="h-10 w-full sm:flex-1">{loading ? 'Menyimpan...' : 'Simpan'}</Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 /* ── Edit Product Form ─────────────────────────── */
 function EditStokForm({ product, onClose, onSaved, onCategoryAdded, defaultCategory }: { 
   product: Product; onClose: () => void; onSaved: () => void; onCategoryAdded?: () => void;
