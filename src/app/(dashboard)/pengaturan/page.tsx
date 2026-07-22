@@ -333,9 +333,6 @@ function SettingsTab() {
     store_phone: '',
     fonnte_api_key: '',
     admin_phone: '',
-    bank_name: '',
-    bank_account_number: '',
-    bank_account_holder: '',
   })
 
   const fetchSettings = useCallback(async () => {
@@ -350,9 +347,6 @@ function SettingsTab() {
         store_phone: map.store_phone || '',
         fonnte_api_key: map.fonnte_api_key || '',
         admin_phone: map.admin_phone || '',
-        bank_name: map.bank_name || '',
-        bank_account_number: map.bank_account_number || '',
-        bank_account_holder: map.bank_account_holder || '',
       })
     } catch (e) { console.error(e) } finally { setLoading(false) }
   }, [])
@@ -452,36 +446,6 @@ function SettingsTab() {
               <label className={labelClass}>Nomor HP Admin</label>
               <Input type="text" value={settings.admin_phone} onChange={e => setSettings({ ...settings, admin_phone: e.target.value })} placeholder="08123456789" className="h-10 w-full" />
               <p className="mt-1.5 text-[10px] text-muted-foreground">Nomor ini untuk notifikasi ke admin (opsional)</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Rekening Bank */}
-      <Card className="shadow-card">
-        <CardContent className="p-4 sm:p-6">
-          <div className="mb-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-              <DollarSign size={20} className="text-primary" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-foreground">Rekening Bank</h3>
-              <p className="text-xs text-muted-foreground">Info rekening tampil di nota PDF untuk transfer</p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <label className={labelClass}>Nama Bank</label>
-              <Input type="text" value={settings.bank_name} onChange={e => setSettings({ ...settings, bank_name: e.target.value })} placeholder="BCA, BNI, Mandiri" className="h-10 w-full" />
-            </div>
-            <div>
-              <label className={labelClass}>Nomor Rekening</label>
-              <Input type="text" value={settings.bank_account_number} onChange={e => setSettings({ ...settings, bank_account_number: e.target.value })} placeholder="0670493041" className="h-10 w-full font-mono" />
-            </div>
-            <div>
-              <label className={labelClass}>Atas Nama</label>
-              <Input type="text" value={settings.bank_account_holder} onChange={e => setSettings({ ...settings, bank_account_holder: e.target.value })} placeholder="Nama pemilik rekening" className="h-10 w-full" />
             </div>
           </div>
         </CardContent>
@@ -676,8 +640,46 @@ function PaymentMethodsTab() {
   const [deleteConfirm, setDeleteConfirm] = useState<PaymentMethod | null>(null)
   const [form, setForm] = useState({ name: '', description: '' })
   const [saving, setSaving] = useState(false)
+  const [bankSettings, setBankSettings] = useState({
+    bank_name: '',
+    bank_account_number: '',
+    bank_account_holder: '',
+  })
+  const [bankSaving, setBankSaving] = useState(false)
+  const [bankSaved, setBankSaved] = useState(false)
 
-  useEffect(() => { fetchMethods() }, [])
+  useEffect(() => { fetchMethods(); fetchBankSettings() }, [])
+
+  async function fetchBankSettings() {
+    try {
+      const { data } = await supabase.from('settings').select('key, value').in('key', ['bank_name', 'bank_account_number', 'bank_account_holder'])
+      const map: Record<string, string> = {}
+      data?.forEach(row => { map[row.key] = row.value })
+      setBankSettings({
+        bank_name: map.bank_name || '',
+        bank_account_number: map.bank_account_number || '',
+        bank_account_holder: map.bank_account_holder || '',
+      })
+    } catch (e) { console.error(e) }
+  }
+
+  async function handleSaveBank(e: React.FormEvent) {
+    e.preventDefault()
+    setBankSaving(true)
+    setBankSaved(false)
+    try {
+      const entries = Object.entries(bankSettings).map(([key, value]) => ({ key, value }))
+      for (const entry of entries) {
+        const { error } = await supabase.from('settings').upsert(entry, { onConflict: 'key' })
+        if (error) throw error
+      }
+      setBankSaved(true)
+      setTimeout(() => setBankSaved(false), 3000)
+    } catch (e) {
+      console.error(e)
+      alert('Gagal menyimpan rekening')
+    } finally { setBankSaving(false) }
+  }
 
   async function fetchMethods() {
     try {
@@ -816,6 +818,49 @@ function PaymentMethodsTab() {
             </div>
           </Modal>
         )}
+      </CardContent>
+    </Card>
+
+    {/* Rekening Bank */}
+    <Card className="shadow-card">
+      <CardContent className="p-4 sm:p-6">
+        <div className="mb-4 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+            <DollarSign size={20} className="text-primary" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-foreground">Rekening Bank</h3>
+            <p className="text-xs text-muted-foreground">Info rekening tampil di nota PDF untuk transfer</p>
+          </div>
+        </div>
+
+        <form onSubmit={handleSaveBank} className="space-y-4">
+          <div>
+            <label className={labelClass}>Nama Bank</label>
+            <Input type="text" value={bankSettings.bank_name} onChange={e => setBankSettings({ ...bankSettings, bank_name: e.target.value })} placeholder="BCA, BNI, Mandiri" className="h-10 w-full" />
+          </div>
+          <div>
+            <label className={labelClass}>Nomor Rekening</label>
+            <Input type="text" value={bankSettings.bank_account_number} onChange={e => setBankSettings({ ...bankSettings, bank_account_number: e.target.value })} placeholder="0670493041" className="h-10 w-full font-mono" />
+          </div>
+          <div>
+            <label className={labelClass}>Atas Nama</label>
+            <Input type="text" value={bankSettings.bank_account_holder} onChange={e => setBankSettings({ ...bankSettings, bank_account_holder: e.target.value })} placeholder="Nama pemilik rekening" className="h-10 w-full" />
+          </div>
+          <div className="flex items-center gap-3 pt-2">
+            <Button type="submit" disabled={bankSaving} className="h-10 gap-2 px-6">
+              {bankSaving ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              ) : bankSaved ? (
+                <CheckCircle size={16} />
+              ) : (
+                <Save size={16} />
+              )}
+              {bankSaving ? 'Menyimpan...' : bankSaved ? 'Tersimpan!' : 'Simpan Rekening'}
+            </Button>
+            {bankSaved && <span className="text-xs text-badge-success">Rekening berhasil disimpan</span>}
+          </div>
+        </form>
       </CardContent>
     </Card>
   )
