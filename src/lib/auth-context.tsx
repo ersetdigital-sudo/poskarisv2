@@ -8,6 +8,7 @@ interface AuthContextType {
   user: User | null
   profile: Profile | null
   loading: boolean
+  profileError: string | null
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>
   signOut: () => Promise<void>
   isAdmin: boolean
@@ -20,6 +21,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [profileError, setProfileError] = useState<string | null>(null)
 
   useEffect(() => {
     // Get initial session
@@ -40,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await fetchProfile(session.user.id)
         } else {
           setProfile(null)
+          setProfileError(null)
           setLoading(false)
         }
       }
@@ -50,16 +53,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function fetchProfile(userId: string) {
     try {
+      setProfileError(null)
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle()
 
-      if (error) throw error
-      setProfile(data)
+      if (error) {
+        console.error('Profile fetch error:', error)
+        setProfileError(error.message)
+        setProfile(null)
+      } else if (!data) {
+        // Profile doesn't exist - might need to be created
+        setProfileError('Profil tidak ditemukan. Hubungi admin.')
+        setProfile(null)
+      } else {
+        setProfile(data)
+      }
     } catch (error) {
       console.error('Error fetching profile:', error)
+      setProfileError('Gagal memuat profil')
       setProfile(null)
     } finally {
       setLoading(false)
@@ -88,6 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     profile,
     loading,
+    profileError,
     signIn,
     signOut,
     isAdmin: profile?.role === 'admin',

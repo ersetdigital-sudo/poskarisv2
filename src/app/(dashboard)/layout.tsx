@@ -29,7 +29,7 @@ const getNavItems = (role: string) => {
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, profile, loading, signOut } = useAuth()
+  const { user, profile, loading, profileError, signOut } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
@@ -54,8 +54,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!user) return null
   if (!profile) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="text-muted-foreground">Memuat profil...</p>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background p-4">
+        <p className="text-muted-foreground text-sm">{profileError || 'Memuat profil...'}</p>
+        {profileError && (
+          <Button variant="secondary" onClick={() => { signOut(); router.push('/login') }}>
+            Keluar & Login Ulang
+          </Button>
+        )}
       </div>
     )
   }
