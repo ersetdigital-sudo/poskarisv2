@@ -18,6 +18,7 @@ export default function ServisDetailPage() {
   const params = useParams()
   const router = useRouter()
   const [service, setService] = useState<Service | null>(null)
+  const [parts, setParts] = useState<{ name: string; quantity: number; price: number }[]>([])
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
   const [pdfLoading, setPdfLoading] = useState(false)
@@ -46,9 +47,16 @@ export default function ServisDetailPage() {
 
   async function fetchService(id: string) {
     try {
-      const { data, error } = await supabase.from('services').select('*').eq('id', id).single()
+      const { data, error } = await supabase.from('services').select('*, service_parts(*, products(name))').eq('id', id).single()
       if (error) throw error
       setService(data)
+      // Extract parts
+      const serviceParts = (data as any).service_parts || []
+      setParts(serviceParts.map((p: any) => ({
+        name: p.products?.name || 'Sparepart',
+        quantity: p.quantity,
+        price: p.price,
+      })))
     } catch (e) { console.error(e) } finally { setLoading(false) }
   }
 
@@ -66,7 +74,7 @@ export default function ServisDetailPage() {
     if (!service) return
     setPdfLoading(true)
     try {
-      const doc = NotaServisPDF({ service, ...storeInfo })
+      const doc = NotaServisPDF({ service, parts, ...storeInfo })
       await downloadPDF(doc, `nota-${service.nota_number}.pdf`)
     } catch (e) {
       console.error('Gagal generate PDF:', e)
@@ -117,8 +125,8 @@ export default function ServisDetailPage() {
       `* Tanggal Masuk: ${tglMasuk}`,
       `━━━━━━━━━━━━━━`,
       `💰 RINCIAN BIAYA`,
-      `* Biaya Jasa: ${formatRupiah(service.service_fee)}`,
-      `* Biaya Sparepart: ${formatRupiah(service.parts_fee)}`,
+      ...parts.map(p => `* ${p.name} (x${p.quantity}): ${formatRupiah(p.price * p.quantity)}`),
+      service.service_fee > 0 ? `* Jasa Servis: ${formatRupiah(service.service_fee)}` : null,
       `────────────────`,
       `Total Pembayaran: ${formatRupiah(service.total_fee)}`,
       service.dp_amount > 0 ? `DP/Uang Muka: ${formatRupiah(service.dp_amount)}` : null,
@@ -137,7 +145,7 @@ export default function ServisDetailPage() {
     setWaLoading(true)
     setWaResult(null)
     try {
-      const doc = NotaServisPDF({ service, ...storeInfo })
+      const doc = NotaServisPDF({ service, parts, ...storeInfo })
       const lines = getWhatsAppMessage()
 
       const result = await sendWhatsAppPDF({
@@ -288,6 +296,26 @@ export default function ServisDetailPage() {
               <CardContent className="p-4 sm:p-5">
                 <h3 className="mb-2 text-sm font-bold text-foreground">Keterangan atau Tindakan</h3>
                 <p className="text-sm text-muted-foreground">{service.notes}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Sparepart yang Dipakai */}
+          {parts.length > 0 && (
+            <Card className="shadow-card">
+              <CardContent className="p-4 sm:p-5">
+                <h3 className="mb-3 text-sm font-bold text-foreground">Sparepart yang Dipakai</h3>
+                <div className="space-y-2">
+                  {parts.map((part, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-sm p-2 rounded-lg bg-secondary/50">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-foreground truncate">{part.name}</p>
+                        <p className="text-[11px] text-muted-foreground">Qty: {part.quantity} x {formatRupiah(part.price)}</p>
+                      </div>
+                      <p className="font-mono font-semibold text-foreground shrink-0">{formatRupiah(part.price * part.quantity)}</p>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           )}
