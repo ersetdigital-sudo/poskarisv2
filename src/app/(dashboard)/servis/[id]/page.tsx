@@ -25,6 +25,7 @@ export default function ServisDetailPage() {
   const [waLoading, setWaLoading] = useState(false)
   const [waResult, setWaResult] = useState<{ ok: boolean; msg: string } | null>(null)
   const [storeInfo, setStoreInfo] = useState({ storeName: 'Kasir POS', storeAddress: '', storePhone: '' })
+  const [bankInfo, setBankInfo] = useState({ bankName: '', bankAccountNumber: '', bankAccountHolder: '' })
   const [showEditForm, setShowEditForm] = useState(false)
 
   useEffect(() => {
@@ -34,13 +35,18 @@ export default function ServisDetailPage() {
 
   async function fetchStoreSettings() {
     try {
-      const { data } = await supabase.from('settings').select('key, value').in('key', ['store_name', 'store_address', 'store_phone'])
+      const { data } = await supabase.from('settings').select('key, value').in('key', ['store_name', 'store_address', 'store_phone', 'bank_name', 'bank_account_number', 'bank_account_holder'])
       const map: Record<string, string> = {}
       data?.forEach(row => { map[row.key] = row.value })
       setStoreInfo({
         storeName: map.store_name || 'Kasir POS',
         storeAddress: map.store_address || '',
         storePhone: map.store_phone || '',
+      })
+      setBankInfo({
+        bankName: map.bank_name || '',
+        bankAccountNumber: map.bank_account_number || '',
+        bankAccountHolder: map.bank_account_holder || '',
       })
     } catch (e) { console.error(e) }
   }
@@ -74,7 +80,7 @@ export default function ServisDetailPage() {
     if (!service) return
     setPdfLoading(true)
     try {
-      const doc = NotaServisPDF({ service, parts, ...storeInfo })
+      const doc = NotaServisPDF({ service, parts, ...storeInfo, ...bankInfo })
       await downloadPDF(doc, `nota-${service.nota_number}.pdf`)
     } catch (e) {
       console.error('Gagal generate PDF:', e)
@@ -145,7 +151,7 @@ export default function ServisDetailPage() {
     setWaLoading(true)
     setWaResult(null)
     try {
-      const doc = NotaServisPDF({ service, parts, ...storeInfo })
+      const doc = NotaServisPDF({ service, parts, ...storeInfo, ...bankInfo })
       const lines = getWhatsAppMessage()
 
       const result = await sendWhatsAppPDF({

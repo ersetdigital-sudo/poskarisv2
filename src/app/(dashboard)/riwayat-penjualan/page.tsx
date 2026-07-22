@@ -33,6 +33,7 @@ export default function RiwayatPenjualanPage() {
   const [deleting, setDeleting] = useState(false)
   const [pdfLoading, setPdfLoading] = useState<string | null>(null)
   const [storeInfo, setStoreInfo] = useState({ storeName: 'Kasir POS', storeAddress: '', storePhone: '' })
+  const [bankInfo, setBankInfo] = useState({ bankName: '', bankAccountNumber: '', bankAccountHolder: '' })
   const itemsPerPage = 10
 
   const fetchSales = useCallback(async () => {
@@ -60,10 +61,11 @@ export default function RiwayatPenjualanPage() {
 
   async function fetchStoreSettings() {
     try {
-      const { data } = await supabase.from('settings').select('key, value').in('key', ['store_name', 'store_address', 'store_phone'])
+      const { data } = await supabase.from('settings').select('key, value').in('key', ['store_name', 'store_address', 'store_phone', 'bank_name', 'bank_account_number', 'bank_account_holder'])
       const map: Record<string, string> = {}
       data?.forEach(row => { map[row.key] = row.value })
       setStoreInfo({ storeName: map.store_name || 'Kasir POS', storeAddress: map.store_address || '', storePhone: map.store_phone || '' })
+      setBankInfo({ bankName: map.bank_name || '', bankAccountNumber: map.bank_account_number || '', bankAccountHolder: map.bank_account_holder || '' })
     } catch (e) { console.error(e) }
   }
 
@@ -160,11 +162,12 @@ export default function RiwayatPenjualanPage() {
             buy_price: item.buy_price,
           })),
           ...storeInfo,
+          ...bankInfo,
         })
       } else if (sale.item_type === 'unit' && sale.products) {
         doc = NotaUnitPDF({
           sale: { ...sale, warranty_end_date: sale.warranty_end_date || null },
-          product: sale.products, ...storeInfo,
+          product: sale.products, ...storeInfo, ...bankInfo,
         })
       } else if (sale.item_type === 'sparepart' && sale.products) {
         doc = NotaSparepartPDF({

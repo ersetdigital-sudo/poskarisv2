@@ -128,6 +128,9 @@ interface NotaServisProps {
   storeName?: string
   storeAddress?: string
   storePhone?: string
+  bankName?: string
+  bankAccountNumber?: string
+  bankAccountHolder?: string
 }
 
 export function NotaServisPDF({
@@ -136,6 +139,9 @@ export function NotaServisPDF({
   storeName = 'CENTRAL LAPTOP COMPUTER',
   storeAddress = '',
   storePhone = '0812-3456-7890',
+  bankName = 'BCA',
+  bankAccountNumber = '1234567890',
+  bankAccountHolder = 'Toko',
 }: NotaServisProps) {
   // Build table rows
   const tableRows: { no: number; service: string; harga: number; keterangan: string }[] = []
@@ -282,17 +288,19 @@ export function NotaServisPDF({
         </View>
 
         {/* INFO REKENING */}
-        <View style={styles.rekeningContainer}>
-          <Text style={styles.rekeningTitle}>Info Rekening Transfer :</Text>
-          <Text style={styles.rekeningText}>
-            Transfer ke: <Text style={styles.rekeningBold}>BCA</Text>
-          </Text>
-          <Text style={styles.rekeningBold}>0670493041</Text>
-          <Text style={styles.rekeningBold}>A/N Prawira Lambang Budi</Text>
-          <Text style={styles.rekeningText}>
-            Kirimkan bukti jika sudah transfer
-          </Text>
-        </View>
+        {bankAccountNumber && (
+          <View style={styles.rekeningContainer}>
+            <Text style={styles.rekeningTitle}>Info Rekening Transfer :</Text>
+            <Text style={styles.rekeningText}>
+              Transfer ke: <Text style={styles.rekeningBold}>{bankName}</Text>
+            </Text>
+            <Text style={styles.rekeningBold}>{bankAccountNumber}</Text>
+            <Text style={styles.rekeningBold}>A/N {bankAccountHolder}</Text>
+            <Text style={styles.rekeningText}>
+              Kirimkan bukti jika sudah transfer
+            </Text>
+          </View>
+        )}
 
         {/* TANDA TANGAN */}
         <View style={styles.ttdContainer}>

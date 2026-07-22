@@ -44,6 +44,7 @@ export default function JualBarangPage() {
   const [savedSale, setSavedSale] = useState<{ id: string; invoice_number: string; items: CartItem[] } | null>(null)
   const [pdfLoading, setPdfLoading] = useState(false)
   const [storeInfo, setStoreInfo] = useState({ storeName: 'Kasir POS', storeAddress: '', storePhone: '' })
+  const [bankInfo, setBankInfo] = useState({ bankName: 'BCA', bankAccountNumber: '1234567890', bankAccountHolder: 'Toko' })
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(searchParams.get('customer_id') || null)
 
   // Product lists
@@ -80,10 +81,11 @@ export default function JualBarangPage() {
 
   async function fetchStoreSettings() {
     try {
-      const { data } = await supabase.from('settings').select('key, value').in('key', ['store_name', 'store_address', 'store_phone'])
+      const { data } = await supabase.from('settings').select('key, value').in('key', ['store_name', 'store_address', 'store_phone', 'bank_name', 'bank_account_number', 'bank_account_holder'])
       const map: Record<string, string> = {}
       data?.forEach(row => { map[row.key] = row.value })
       setStoreInfo({ storeName: map.store_name || 'Kasir POS', storeAddress: map.store_address || '', storePhone: map.store_phone || '' })
+      setBankInfo({ bankName: map.bank_name || '', bankAccountNumber: map.bank_account_number || '', bankAccountHolder: map.bank_account_holder || '' })
     } catch (e) { console.error(e) }
   }
 
@@ -296,6 +298,7 @@ export default function JualBarangPage() {
           buy_price: item.product.buy_price,
         })),
         ...storeInfo,
+        ...bankInfo,
       })
       await downloadPDF(doc, `Invoice-${savedSale.invoice_number}.pdf`)
     } catch (e) { console.error('Gagal generate PDF:', e) }

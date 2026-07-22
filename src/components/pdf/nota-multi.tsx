@@ -252,6 +252,9 @@ interface NotaMultiProps {
   storeName?: string
   storeAddress?: string
   storePhone?: string
+  bankName?: string
+  bankAccountNumber?: string
+  bankAccountHolder?: string
 }
 
 const bonusOptions = ['Mouse', 'Keyboard', 'Tas', 'Mousepad']
@@ -262,6 +265,9 @@ export function NotaMultiPDF({
   storeName = 'CENTRAL LAPTOP COMPUTER',
   storeAddress = '',
   storePhone = '0812-3456-7890',
+  bankName = 'BCA',
+  bankAccountNumber = '1234567890',
+  bankAccountHolder = 'Toko',
 }: NotaMultiProps) {
   const selectedBonus = sale.bonus || []
   const hasBonus = selectedBonus.length > 0 || sale.bonus_lainnya
@@ -404,11 +410,13 @@ export function NotaMultiPDF({
         </View>
 
         {/* REKENING */}
-        <View style={styles.rekeningBox}>
-          <Text style={styles.rekeningText}>
-            Transfer: <Text style={styles.rekeningBold}>BCA 1234567890</Text> a/n <Text style={styles.rekeningBold}>Toko</Text>
-          </Text>
-        </View>
+        {bankAccountNumber && (
+          <View style={styles.rekeningBox}>
+            <Text style={styles.rekeningText}>
+              Transfer: <Text style={styles.rekeningBold}>{bankName} {bankAccountNumber}</Text> a/n <Text style={styles.rekeningBold}>{bankAccountHolder}</Text>
+            </Text>
+          </View>
+        )}
 
         {/* TANDA TANGAN */}
         <View style={styles.ttdContainer}>

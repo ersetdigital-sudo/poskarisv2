@@ -257,6 +257,9 @@ interface NotaUnitProps {
   storeName?: string
   storeAddress?: string
   storePhone?: string
+  bankName?: string
+  bankAccountNumber?: string
+  bankAccountHolder?: string
 }
 
 const bonusOptions = ['Mouse', 'Keyboard', 'Tas', 'Mousepad']
@@ -267,6 +270,9 @@ export function NotaUnitPDF({
   storeName = 'CENTRAL LAPTOP COMPUTER',
   storeAddress = '',
   storePhone = '0812-3456-7890',
+  bankName = 'BCA',
+  bankAccountNumber = '1234567890',
+  bankAccountHolder = 'Toko',
 }: NotaUnitProps) {
   const selectedBonus = sale.bonus || []
   const hasBonus = selectedBonus.length > 0 || sale.bonus_lainnya
@@ -401,11 +407,13 @@ export function NotaUnitPDF({
         </View>
 
         {/* INFO REKENING */}
-        <View style={styles.rekeningBox}>
-          <Text style={styles.rekeningText}>
-            No Rek BCA A.n <Text style={styles.rekeningBold}>Prawira Lambang Budi Prasetyo</Text> <Text style={styles.rekeningBold}>0670493041</Text>
-          </Text>
-        </View>
+        {bankAccountNumber && (
+          <View style={styles.rekeningBox}>
+            <Text style={styles.rekeningText}>
+              No Rek <Text style={styles.rekeningBold}>{bankName}</Text> A.n <Text style={styles.rekeningBold}>{bankAccountHolder}</Text> <Text style={styles.rekeningBold}>{bankAccountNumber}</Text>
+            </Text>
+          </View>
+        )}
 
         {/* TANDA TANGAN */}
         <View style={styles.ttdContainer}>

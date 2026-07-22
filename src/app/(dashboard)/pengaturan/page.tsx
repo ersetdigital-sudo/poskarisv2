@@ -333,6 +333,9 @@ function SettingsTab() {
     store_phone: '',
     fonnte_api_key: '',
     admin_phone: '',
+    bank_name: '',
+    bank_account_number: '',
+    bank_account_holder: '',
   })
 
   const fetchSettings = useCallback(async () => {
@@ -347,6 +350,9 @@ function SettingsTab() {
         store_phone: map.store_phone || '',
         fonnte_api_key: map.fonnte_api_key || '',
         admin_phone: map.admin_phone || '',
+        bank_name: map.bank_name || '',
+        bank_account_number: map.bank_account_number || '',
+        bank_account_holder: map.bank_account_holder || '',
       })
     } catch (e) { console.error(e) } finally { setLoading(false) }
   }, [])
@@ -446,6 +452,38 @@ function SettingsTab() {
               <label className={labelClass}>Nomor HP Admin</label>
               <Input type="text" value={settings.admin_phone} onChange={e => setSettings({ ...settings, admin_phone: e.target.value })} placeholder="08123456789" className="h-10 w-full" />
               <p className="mt-1.5 text-[10px] text-muted-foreground">Nomor ini untuk notifikasi ke admin (opsional)</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Rekening Bank */}
+      <Card className="shadow-card">
+        <CardContent className="p-4 sm:p-6">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+              <DollarSign size={20} className="text-primary" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-foreground">Rekening Bank</h3>
+              <p className="text-xs text-muted-foreground">Info rekening tampil di nota PDF untuk transfer</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div>
+                <label className={labelClass}>Nama Bank</label>
+                <Input type="text" value={settings.bank_name} onChange={e => setSettings({ ...settings, bank_name: e.target.value })} placeholder="BCA, BNI, Mandiri" className="h-10 w-full" />
+              </div>
+              <div>
+                <label className={labelClass}>Nomor Rekening</label>
+                <Input type="text" value={settings.bank_account_number} onChange={e => setSettings({ ...settings, bank_account_number: e.target.value })} placeholder="0670493041" className="h-10 w-full font-mono" />
+              </div>
+              <div>
+                <label className={labelClass}>Atas Nama</label>
+                <Input type="text" value={settings.bank_account_holder} onChange={e => setSettings({ ...settings, bank_account_holder: e.target.value })} placeholder="Nama pemilik rekening" className="h-10 w-full" />
+              </div>
             </div>
           </div>
         </CardContent>
