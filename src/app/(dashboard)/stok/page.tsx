@@ -31,6 +31,7 @@ export default function StokPage() {
   const [showMutasiLog, setShowMutasiLog] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<Product | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [editProduct, setEditProduct] = useState<Product | null>(null)
 
   useEffect(() => { fetchData(); fetchCategories() }, [])
 
@@ -257,6 +258,14 @@ export default function StokPage() {
                       <Button 
                         variant="outline" 
                         size="sm" 
+                        onClick={() => setEditProduct(p)}
+                        className="h-7 px-2 text-[11px] gap-1"
+                      >
+                        <Pencil size={12} /> Edit
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
                         onClick={() => setAdjustProduct(p)}
                         className="h-7 px-2 text-[11px] gap-1"
                       >
@@ -342,6 +351,15 @@ export default function StokPage() {
                         </td>
                         <td className="p-4">
                           <div className="flex items-center justify-center gap-2">
+                            <Button 
+                              variant="secondary" 
+                              size="sm" 
+                              onClick={() => setEditProduct(p)}
+                              className="h-7 px-2 gap-1"
+                            >
+                              <Pencil size={12} />
+                              <span className="text-[11px]">Edit</span>
+                            </Button>
                             <Button 
                               variant="secondary" 
                               size="sm" 
@@ -500,6 +518,7 @@ export default function StokPage() {
       )}
 
       {showAddForm && <AddStokForm onClose={() => setShowAddForm(false)} onSaved={fetchData} userId={user?.id} onCategoryAdded={fetchCategories} defaultCategory={activeTab === 'sparepart' ? 'Sparepart' : 'Unit Laptop'} />}
+      {editProduct && <EditStokForm product={editProduct} onClose={() => setEditProduct(null)} onSaved={fetchData} onCategoryAdded={fetchCategories} defaultCategory={activeTab === 'sparepart' ? 'Sparepart' : 'Unit Laptop'} />}
       {adjustProduct && <AdjustStokForm product={adjustProduct} onClose={() => setAdjustProduct(null)} onSaved={fetchData} userId={user?.id} />}
       {showAddCategoryForm && (
         <AddCategoryForm
@@ -707,6 +726,150 @@ function InlineAddCategory({ onClose, onSaved }: { onClose: () => void; onSaved:
         </form>
       </div>
     </div>
+  )
+}
+
+/* ── Edit Product Form ─────────────────────────── */
+function EditStokForm({ product, onClose, onSaved, onCategoryAdded, defaultCategory }: { 
+  product: Product; onClose: () => void; onSaved: () => void; onCategoryAdded?: () => void;
+  defaultCategory?: string;
+}) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
+  const [showCatForm, setShowCatForm] = useState(false)
+  const [form, setForm] = useState({
+    category_id: product.category_id || '',
+    name: product.name,
+    sku: product.sku || '',
+    brand: product.brand || '',
+    model: product.model || '',
+    specs: product.specs || '',
+    condition: (product.condition || 'baru') as 'baru' | 'bekas' | 'refurbished',
+    buy_price: product.buy_price,
+    sell_price: product.sell_price,
+    quantity: product.quantity,
+    min_quantity: product.min_quantity,
+  })
+
+  async function loadCategories() {
+    const { data } = await supabase.from('categories').select('id, name').order('name')
+    setCategories(data || [])
+  }
+
+  useEffect(() => { loadCategories() }, [])
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    try {
+      const { error } = await supabase.from('products').update({
+        category_id: form.category_id || null, name: form.name, sku: form.sku || null,
+        brand: form.brand || null, model: form.model || null, specs: form.specs || null,
+        condition: form.condition, buy_price: form.buy_price, sell_price: form.sell_price,
+        min_quantity: form.min_quantity,
+      }).eq('id', product.id)
+      if (error) throw error
+      onSaved(); onClose()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Gagal menyimpan perubahan')
+    } finally { setLoading(false) }
+  }
+
+  return (
+    <>
+      <Modal title="Edit Barang" onClose={onClose} maxWidth="xl">
+        {error && (
+          <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 p-3">
+            <p className="text-xs text-destructive">{error}</p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className={labelClass}>Kategori *</label>
+            <div className="flex gap-2">
+              <select required value={form.category_id} onChange={e => setForm({ ...form, category_id: e.target.value })} className={selectClass}>
+                <option value="">Pilih kategori...</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              <Button type="button" variant="secondary" onClick={() => setShowCatForm(true)} title="Tambah kategori baru" className="h-10 w-10 shrink-0 p-0">
+                <Plus size={14} />
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className={labelClass}>Nama Barang *</label>
+              <Input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="RAM 8GB DDR4" className="h-10 w-full" />
+            </div>
+            <div>
+              <label className={labelClass}>SKU</label>
+              <Input type="text" value={form.sku} onChange={e => setForm({ ...form, sku: e.target.value })} placeholder="SKU-001" className="h-10 w-full font-mono" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className={labelClass}>Merk</label>
+              <Input type="text" value={form.brand} onChange={e => setForm({ ...form, brand: e.target.value })} className="h-10 w-full" />
+            </div>
+            <div>
+              <label className={labelClass}>Model</label>
+              <Input type="text" value={form.model} onChange={e => setForm({ ...form, model: e.target.value })} className="h-10 w-full" />
+            </div>
+          </div>
+
+          <div>
+            <label className={labelClass}>Spesifikasi</label>
+            <textarea value={form.specs} onChange={e => setForm({ ...form, specs: e.target.value })} rows={2} placeholder="DDR4 3200MHz, SODIMM" className={textareaClass} />
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className={labelClass}>Kondisi</label>
+              <select value={form.condition} onChange={e => setForm({ ...form, condition: e.target.value as 'baru' | 'bekas' | 'refurbished' })} className={selectClass}>
+                <option value="baru">Baru</option><option value="bekas">Bekas</option><option value="refurbished">Refurbished</option>
+              </select>
+            </div>
+            <div>
+              <label className={labelClass}>Stok Saat Ini</label>
+              <Input type="number" disabled value={form.quantity} className="h-10 w-full bg-muted" />
+              <p className="mt-1 text-[10px] text-muted-foreground">Gunakan tombol &quot;+ Stok&quot; untuk mengubah jumlah stok</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div>
+              <label className={labelClass}>Harga Beli (Rp) *</label>
+              <RupiahInput value={form.buy_price} onChange={v => setForm({ ...form, buy_price: v })} className="h-10 w-full font-mono" />
+            </div>
+            <div>
+              <label className={labelClass}>Harga Jual (Rp)</label>
+              <RupiahInput value={form.sell_price} onChange={v => setForm({ ...form, sell_price: v })} className="h-10 w-full font-mono" />
+            </div>
+            <div>
+              <label className={labelClass}>Min. Stok</label>
+              <Input type="number" min={0} value={form.min_quantity} onChange={e => setForm({ ...form, min_quantity: Number(e.target.value) })} className="h-10 w-full" />
+            </div>
+          </div>
+
+          <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row">
+            <Button type="button" onClick={onClose} variant="secondary" className="h-11 w-full sm:flex-1">Batal</Button>
+            <Button type="submit" disabled={loading} className="h-11 w-full sm:flex-1">{loading ? 'Menyimpan...' : 'Simpan Perubahan'}</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {showCatForm && (
+        <InlineAddCategory
+          onClose={() => setShowCatForm(false)}
+          onSaved={() => { loadCategories(); onCategoryAdded?.() }}
+        />
+      )}
+    </>
   )
 }
 
