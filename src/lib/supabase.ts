@@ -11,6 +11,7 @@ export type UserRole = 'admin' | 'karyawan'
 export interface Profile {
   id: string
   name: string
+  email: string | null
   role: UserRole
   phone: string | null
   is_active: boolean

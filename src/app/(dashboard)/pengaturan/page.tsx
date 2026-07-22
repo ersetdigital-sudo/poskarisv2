@@ -76,6 +76,7 @@ function UsersTab({ userId }: { userId?: string }) {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [error, setError] = useState('')
+  const [creating, setCreating] = useState(false)
 
   useEffect(() => { fetchProfiles() }, [])
 
@@ -83,20 +84,7 @@ function UsersTab({ userId }: { userId?: string }) {
     try {
       const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false })
       if (error) throw error
-      
-      // Fetch emails from auth for each profile
-      const profilesWithEmail = await Promise.all(
-        (data || []).map(async (p) => {
-          try {
-            const { data: authUser } = await supabase.auth.admin.getUserById(p.id)
-            return { ...p, email: authUser?.user?.email || '' }
-          } catch {
-            return { ...p, email: '' }
-          }
-        })
-      )
-      
-      setProfiles(profilesWithEmail)
+      setProfiles(data || [])
     } catch (e) { console.error(e) } finally { setLoading(false) }
   }
 
@@ -110,17 +98,20 @@ function UsersTab({ userId }: { userId?: string }) {
   async function handleCreateUser(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+    setCreating(true)
     try {
       const { data: authData, error: authError } = await supabase.auth.signUp({ email: form.email, password: form.password })
       if (authError) throw authError
-      if (!authData.user) throw new Error('Gagal membuat user')
-      const { error: profileError } = await supabase.from('profiles').insert({ id: authData.user.id, name: form.name, role: form.role, phone: form.phone || null })
+      if (!authData.user) throw new Error('Gagal membuat user. Pastikan email confirmation dimatikan di Supabase.')
+      const { error: profileError } = await supabase.from('profiles').insert({ id: authData.user.id, name: form.name, email: form.email, role: form.role, phone: form.phone || null })
       if (profileError) throw profileError
       setShowForm(false)
       setForm({ email: '', password: '', name: '', phone: '', role: 'karyawan' })
       fetchProfiles()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Gagal membuat user')
+    } finally {
+      setCreating(false)
     }
   }
 
@@ -243,7 +234,7 @@ function UsersTab({ userId }: { userId?: string }) {
             </div>
             <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row">
               <Button type="button" onClick={() => { setShowForm(false); setError('') }} variant="secondary" className="h-11 w-full sm:flex-1">Batal</Button>
-              <Button type="submit" className="h-11 w-full sm:flex-1">Buat User</Button>
+              <Button type="submit" disabled={creating} className="h-11 w-full sm:flex-1">{creating ? 'Membuat...' : 'Buat User'}</Button>
             </div>
           </form>
         </Modal>

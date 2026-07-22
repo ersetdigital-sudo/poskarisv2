@@ -14,6 +14,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE public.profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
   name TEXT NOT NULL,
+  email TEXT,
   role TEXT NOT NULL CHECK (role IN ('admin', 'karyawan')),
   phone TEXT,
   is_active BOOLEAN DEFAULT true,
@@ -37,6 +38,9 @@ CREATE POLICY "Admin can update profiles" ON public.profiles
   FOR UPDATE USING (
     EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
   );
+
+CREATE POLICY "Authenticated users can insert profiles" ON public.profiles
+  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
 -- ============================================
 -- 2. KATEGORI STOK
