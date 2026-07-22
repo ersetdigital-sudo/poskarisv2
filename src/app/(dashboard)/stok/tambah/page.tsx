@@ -183,12 +183,10 @@ export default function TambahStokPage() {
               </div>
 
               {/* Potensi Margin */}
-              {form.sell_price > 0 && form.buy_price > 0 && (
-                <div className="flex items-center justify-between rounded-lg border border-border bg-secondary/50 p-3">
-                  <span className="text-sm text-muted-foreground">Potensi Margin</span>
-                  <span className="font-mono text-base font-bold text-badge-success">{formatRupiah(form.sell_price - form.buy_price)}</span>
-                </div>
-              )}
+              <div className="flex items-center justify-between rounded-lg border border-border bg-secondary/50 p-3">
+                <span className="text-sm text-muted-foreground">Potensi Margin</span>
+                <span className="font-mono text-base font-bold text-badge-success">{formatRupiah(form.sell_price - form.buy_price)}</span>
+              </div>
 
               {/* Submit */}
               <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row">
