@@ -193,13 +193,13 @@ export default function DashboardPage() {
     <div className="space-y-3">
       <PageHeader
         title="Dashboard POS"
-        subtitle={`Ringkasan bisnis toko laptop — ${periodLabel}`}
+        subtitle={isAdmin ? `Ringkasan bisnis toko laptop — ${periodLabel}` : 'Ringkasan aktivitas hari ini'}
       >
-        <MonthPicker month={month} year={year} />
+        {isAdmin && <MonthPicker month={month} year={year} />}
       </PageHeader>
 
       {/* KPI Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+      <div className={`grid grid-cols-1 gap-2.5 ${isAdmin ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
         <StatCard
           title="Total Servis"
           value={loading ? '...' : String(stats.totalServis)}
@@ -207,55 +207,65 @@ export default function DashboardPage() {
           icon={Wrench}
           color="primary"
         />
-        <StatCard
-          title="Total Omzet"
-          value={loading ? '...' : formatRupiah(stats.totalOmzet)}
-          sub={`${stats.unitTerjual} unit terjual`}
-          icon={DollarSign}
-          color="emerald"
-        />
-        <StatCard
-          title="Total Profit"
-          value={loading ? '...' : formatRupiah(stats.totalProfit)}
-          sub={stats.totalOmzet > 0 ? `${((stats.totalProfit / stats.totalOmzet) * 100).toFixed(1)}% margin` : 'Belum ada penjualan'}
-          icon={TrendingUp}
-          color={stats.totalProfit >= 0 ? 'emerald' : 'danger'}
-          valueClass={stats.totalProfit >= 0 ? 'text-badge-success' : 'text-danger'}
-        />
+        {isAdmin && (
+          <>
+            <StatCard
+              title="Total Omzet"
+              value={loading ? '...' : formatRupiah(stats.totalOmzet)}
+              sub={`${stats.unitTerjual} unit terjual`}
+              icon={DollarSign}
+              color="emerald"
+            />
+            <StatCard
+              title="Total Profit"
+              value={loading ? '...' : formatRupiah(stats.totalProfit)}
+              sub={stats.totalOmzet > 0 ? `${((stats.totalProfit / stats.totalOmzet) * 100).toFixed(1)}% margin` : 'Belum ada penjualan'}
+              icon={TrendingUp}
+              color={stats.totalProfit >= 0 ? 'emerald' : 'danger'}
+              valueClass={stats.totalProfit >= 0 ? 'text-badge-success' : 'text-danger'}
+            />
+          </>
+        )}
       </div>
 
-      {/* Monthly Chart */}
-      <div>
-        <RevenueChart
-          data={monthlyData}
-          title={`Tren Bulanan ${year}`}
-          subtitle="Omzet dan profit per bulan"
-        />
-      </div>
+      {/* Monthly Chart - Admin only */}
+      {isAdmin && (
+        <div>
+          <RevenueChart
+            data={monthlyData}
+            title={`Tren Bulanan ${year}`}
+            subtitle="Omzet dan profit per bulan"
+          />
+        </div>
+      )}
 
-      {/* Category & Marketplace Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <CategoryChart
-          data={categoryData}
-          title="Profit per Kategori"
-          subtitle="Servis vs Unit Laptop"
-        />
-        <CategoryChart
-          data={marketplaceData}
-          title="Profit per Channel"
-          subtitle="Walk-in vs Online"
-        />
-      </div>
+      {/* Category & Marketplace Charts - Admin only */}
+      {isAdmin && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <CategoryChart
+            data={categoryData}
+            title="Profit per Kategori"
+            subtitle="Servis vs Unit Laptop"
+          />
+          <CategoryChart
+            data={marketplaceData}
+            title="Profit per Channel"
+            subtitle="Walk-in vs Online"
+          />
+        </div>
+      )}
 
-      {/* Top Products & Customers */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <TopProducts items={topProducts} limit={5} />
-        <TopCustomers items={topCustomers} limit={5} />
-      </div>
+      {/* Top Products & Customers - Admin only */}
+      {isAdmin && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <TopProducts items={topProducts} limit={5} />
+          <TopCustomers items={topCustomers} limit={5} />
+        </div>
+      )}
 
       {/* Recent Transactions */}
       <div>
-        <RecentTransactions items={recentTransactions} limit={8} />
+        <RecentTransactions items={recentTransactions} limit={8} isAdmin={isAdmin} />
       </div>
     </div>
   )

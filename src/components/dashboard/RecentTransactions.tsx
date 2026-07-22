@@ -16,9 +16,10 @@ interface Transaction {
 interface RecentTransactionsProps {
   items: Transaction[]
   limit?: number
+  isAdmin?: boolean
 }
 
-export default function RecentTransactions({ items, limit = 5 }: RecentTransactionsProps) {
+export default function RecentTransactions({ items, limit = 5, isAdmin = true }: RecentTransactionsProps) {
   const displayItems = items.slice(0, limit)
   
   const formatRupiah = (value: number) => {
@@ -97,9 +98,15 @@ export default function RecentTransactions({ items, limit = 5 }: RecentTransacti
                   <p className="text-[9px] text-stone mt-0.5">{formatDate(item.date)}</p>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-xs font-bold text-ink font-mono">
-                    {formatRupiah(item.amount)}
-                  </p>
+                  {isAdmin ? (
+                    <p className="text-xs font-bold text-ink font-mono">
+                      {formatRupiah(item.amount)}
+                    </p>
+                  ) : (
+                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4">
+                      {item.status || 'Selesai'}
+                    </Badge>
+                  )}
                 </div>
               </div>
             ))}
