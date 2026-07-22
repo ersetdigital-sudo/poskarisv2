@@ -77,6 +77,8 @@ function UsersTab({ userId }: { userId?: string }) {
   const [showForm, setShowForm] = useState(false)
   const [error, setError] = useState('')
   const [creating, setCreating] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => { fetchProfiles() }, [])
 
@@ -91,6 +93,26 @@ function UsersTab({ userId }: { userId?: string }) {
   async function toggleActive(id: string, current: boolean) {
     await supabase.from('profiles').update({ is_active: !current }).eq('id', id)
     fetchProfiles()
+  }
+
+  async function handleDeleteUser() {
+    if (!deleteConfirm) return
+    setDeleting(true)
+    try {
+      const res = await fetch('/api/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: deleteConfirm.id }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Gagal menghapus user')
+      setDeleteConfirm(null)
+      fetchProfiles()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Gagal menghapus user')
+    } finally {
+      setDeleting(false)
+    }
   }
 
   const [form, setForm] = useState({ email: '', password: '', name: '', phone: '', role: 'karyawan' as 'admin' | 'karyawan' })
@@ -155,15 +177,25 @@ function UsersTab({ userId }: { userId?: string }) {
                   {p.phone && <span className="text-[10px] text-muted-foreground">{p.phone}</span>}
                 </div>
                 {p.id !== userId && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => toggleActive(p.id, p.is_active)} 
-                    className="h-8 px-2 text-[11px] gap-1"
-                  >
-                    {p.is_active ? <UserX size={14} /> : <UserCheck size={14} />}
-                    {p.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => toggleActive(p.id, p.is_active)} 
+                      className="h-8 px-2 text-[11px] gap-1"
+                    >
+                      {p.is_active ? <UserX size={14} /> : <UserCheck size={14} />}
+                      {p.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setDeleteConfirm({ id: p.id, name: p.name })} 
+                      className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 size={14} />
+                    </Button>
+                  </div>
                 )}
               </div>
             </CardContent>
@@ -205,11 +237,16 @@ function UsersTab({ userId }: { userId?: string }) {
                         <Badge variant={p.is_active ? 'success' : 'destructive'} className="text-[10px]">{p.is_active ? 'Aktif' : 'Nonaktif'}</Badge>
                       </td>
                       <td className="p-3">
-                        <div className="flex justify-center">
+                        <div className="flex justify-center gap-1">
                           {p.id !== userId && (
-                            <Button variant="ghost" size="sm" onClick={() => toggleActive(p.id, p.is_active)} className="h-7 w-7 p-0" title={p.is_active ? 'Nonaktifkan' : 'Aktifkan'}>
-                              {p.is_active ? <UserX size={13} /> : <UserCheck size={13} />}
-                            </Button>
+                            <>
+                              <Button variant="ghost" size="sm" onClick={() => toggleActive(p.id, p.is_active)} className="h-7 w-7 p-0" title={p.is_active ? 'Nonaktifkan' : 'Aktifkan'}>
+                                {p.is_active ? <UserX size={13} /> : <UserCheck size={13} />}
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => setDeleteConfirm({ id: p.id, name: p.name })} className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10" title="Hapus user">
+                                <Trash2 size={13} />
+                              </Button>
+                            </>
                           )}
                         </div>
                       </td>
@@ -245,6 +282,33 @@ function UsersTab({ userId }: { userId?: string }) {
               <Button type="submit" disabled={creating} className="h-11 w-full sm:flex-1">{creating ? 'Membuat...' : 'Buat User'}</Button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <Modal title="Hapus User" onClose={() => { setDeleteConfirm(null); setError('') }} maxWidth="sm">
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Yakin ingin menghapus user <span className="font-semibold text-foreground">{deleteConfirm.name}</span>?
+            </p>
+            <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3">
+              <p className="text-xs text-destructive">
+                User akan dihapus permanen dari sistem. Tindakan ini tidak dapat dibatalkan.
+              </p>
+            </div>
+            {error && (
+              <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3">
+                <p className="text-xs text-destructive">{error}</p>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Button variant="secondary" className="flex-1 h-10" onClick={() => { setDeleteConfirm(null); setError('') }}>Batal</Button>
+              <Button variant="destructive" className="flex-1 h-10" onClick={handleDeleteUser} disabled={deleting}>
+                {deleting ? 'Menghapus...' : 'Hapus'}
+              </Button>
+            </div>
+          </div>
         </Modal>
       )}
     </>
