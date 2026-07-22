@@ -100,11 +100,19 @@ function UsersTab({ userId }: { userId?: string }) {
     setError('')
     setCreating(true)
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({ email: form.email, password: form.password })
-      if (authError) throw authError
-      if (!authData.user) throw new Error('Gagal membuat user. Pastikan email confirmation dimatikan di Supabase.')
-      const { error: profileError } = await supabase.from('profiles').insert({ id: authData.user.id, name: form.name, email: form.email, role: form.role, phone: form.phone || null })
-      if (profileError) throw profileError
+      const res = await fetch('/api/create-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: form.email,
+          password: form.password,
+          name: form.name,
+          phone: form.phone,
+          role: form.role,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Gagal membuat user')
       setShowForm(false)
       setForm({ email: '', password: '', name: '', phone: '', role: 'karyawan' })
       fetchProfiles()
