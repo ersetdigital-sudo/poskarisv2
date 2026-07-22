@@ -552,10 +552,17 @@ function AddStokForm({ onClose, onSaved, userId, onCategoryAdded, defaultCategor
 
   async function loadCategories() {
     const { data } = await supabase.from('categories').select('id, name').order('name')
-    setCategories(data || [])
+    // Deduplicate by name (case-insensitive)
+    const unique = (data || []).reduce((acc, cat) => {
+      const key = cat.name.toLowerCase().trim()
+      if (!acc.has(key)) acc.set(key, cat)
+      return acc
+    }, new Map<string, { id: string; name: string }>())
+    const deduped = Array.from(unique.values())
+    setCategories(deduped)
     // Auto-select category based on active tab
-    if (defaultCategory && data) {
-      const cat = data.find(c => c.name === defaultCategory)
+    if (defaultCategory && deduped.length > 0) {
+      const cat = deduped.find(c => c.name === defaultCategory)
       if (cat) setForm(f => ({ ...f, category_id: cat.id }))
     }
   }
@@ -754,7 +761,13 @@ function EditStokForm({ product, onClose, onSaved, onCategoryAdded, defaultCateg
 
   async function loadCategories() {
     const { data } = await supabase.from('categories').select('id, name').order('name')
-    setCategories(data || [])
+    // Deduplicate by name (case-insensitive)
+    const unique = (data || []).reduce((acc, cat) => {
+      const key = cat.name.toLowerCase().trim()
+      if (!acc.has(key)) acc.set(key, cat)
+      return acc
+    }, new Map<string, { id: string; name: string }>())
+    setCategories(Array.from(unique.values()))
   }
 
   useEffect(() => { loadCategories() }, [])
