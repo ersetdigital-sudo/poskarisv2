@@ -422,6 +422,9 @@ export default function JualBarangPage() {
                     <div className="grid grid-cols-2 gap-2 text-sm mb-3">
                       <div><span className="text-muted-foreground">Nama: </span><span className="font-medium text-foreground">{selectedProduct.name}</span></div>
                       <div><span className="text-muted-foreground">Stok: </span><span className="font-medium text-foreground">{selectedProduct.quantity}</span></div>
+                      {selectedProduct.specs && (
+                        <div className="col-span-2"><span className="text-muted-foreground">Spesifikasi: </span><span className="font-medium text-foreground">{selectedProduct.specs}</span></div>
+                      )}
                       <div><span className="text-muted-foreground">Harga Beli: </span><span className="font-medium text-foreground">{formatRupiah(selectedProduct.buy_price)}</span></div>
                       <div><span className="text-muted-foreground">Harga Jual: </span><span className="font-medium text-foreground">{formatRupiah(selectedProduct.sell_price)}</span></div>
                     </div>
@@ -471,6 +474,7 @@ export default function JualBarangPage() {
                         </Badge>
                         <div className="min-w-0 flex-1">
                           <p className="text-xs font-semibold text-foreground truncate">{item.product.name}</p>
+                          {item.product.specs && <p className="text-[10px] text-muted-foreground truncate">{item.product.specs}</p>}
                           <p className="text-[10px] text-muted-foreground">x{item.quantity} @ {formatRupiah(item.sell_price)}</p>
                         </div>
                         <p className="text-xs font-bold font-mono text-foreground shrink-0">{formatRupiah(item.sell_price * item.quantity)}</p>
