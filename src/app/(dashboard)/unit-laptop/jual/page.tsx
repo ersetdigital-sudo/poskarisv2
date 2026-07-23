@@ -296,6 +296,7 @@ export default function JualBarangPage() {
           quantity: item.quantity,
           sell_price: item.sell_price,
           buy_price: item.product.buy_price,
+          specs: item.product.specs || '',
         })),
         ...storeInfo,
         ...bankInfo,

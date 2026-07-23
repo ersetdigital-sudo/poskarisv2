@@ -160,6 +160,7 @@ export default function RiwayatPenjualanPage() {
             quantity: item.quantity,
             sell_price: item.sell_price,
             buy_price: item.buy_price,
+            specs: '',
           })),
           ...storeInfo,
           ...bankInfo,

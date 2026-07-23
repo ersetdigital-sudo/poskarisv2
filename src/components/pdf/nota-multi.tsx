@@ -248,6 +248,7 @@ interface NotaMultiProps {
     quantity: number
     sell_price: number
     buy_price: number
+    specs?: string
   }[]
   storeName?: string
   storeAddress?: string
@@ -323,7 +324,10 @@ export function NotaMultiPDF({
           {items.map((item, idx) => (
             <View key={idx} style={styles.tableRow}>
               <Text style={styles.colNo}>{idx + 1}</Text>
-              <Text style={styles.colName}>{item.name}</Text>
+              <View style={styles.colName}>
+                <Text>{item.name}</Text>
+                {item.specs && <Text style={{ fontSize: 5, color: '#666' }}>{item.specs}</Text>}
+              </View>
               <Text style={styles.colType}>{item.type === 'unit' ? 'Unit' : 'Sparepart'}</Text>
               <Text style={styles.colQty}>{item.quantity}</Text>
               <Text style={styles.colHarga}>{formatRupiah(item.sell_price)}</Text>
