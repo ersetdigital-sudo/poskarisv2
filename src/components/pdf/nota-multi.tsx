@@ -276,6 +276,10 @@ export function NotaMultiPDF({
   const sisa = sale.sell_price - (sale.dp_amount ?? 0)
   const hasUnit = items.some(i => i.type === 'unit')
 
+  // Garansi end date
+  const garansiText = sale.garansi && sale.garansi.toLowerCase() !== 'tanpa garansi' ? sale.garansi : ''
+  const garansiEndDate = sale.warranty_end_date ? formatDate(sale.warranty_end_date) : ''
+
   return (
     <Document>
       <Page size="A5" style={styles.page} orientation="portrait">
@@ -378,6 +382,21 @@ export function NotaMultiPDF({
                 </View>
                 <View style={styles.catatanBody}>
                   <Text style={styles.catatanText}>{sale.notes}</Text>
+                </View>
+              </View>
+            )}
+
+            {/* GARANSI */}
+            {sale.garansi && sale.garansi.toLowerCase() !== 'tanpa garansi' && (
+              <View style={styles.catatanBox}>
+                <View style={styles.catatanHeader}>
+                  <Text style={styles.catatanHeaderText}>GARANSI</Text>
+                </View>
+                <View style={styles.catatanBody}>
+                  <Text style={styles.catatanText}>{sale.garansi}</Text>
+                  {garansiEndDate && (
+                    <Text style={styles.catatanText}>Berlaku hingga: {garansiEndDate}</Text>
+                  )}
                 </View>
               </View>
             )}

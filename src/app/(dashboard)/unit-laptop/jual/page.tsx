@@ -539,18 +539,16 @@ export default function JualBarangPage() {
                 </div>
               </div>
 
-              {/* Garansi (jika ada unit) */}
-              {hasUnit && (
-                <div>
-                  <label className={labelClass}>Garansi</label>
-                  <Input type="text" value={form.garansi} onChange={e => setForm({ ...form, garansi: e.target.value })} className="h-10 w-full" placeholder="Contoh: 7 Hari, 1 Bulan, Tanpa Garansi" />
-                  {form.garansi && form.garansi.toLowerCase() !== 'tanpa garansi' && hitungWarrantyEnd() && (
-                    <p className="mt-1.5 text-[10px] text-muted-foreground">
-                      Garansi berlaku hingga: {new Date(hitungWarrantyEnd() || '').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                    </p>
-                  )}
-                </div>
-              )}
+              {/* Garansi */}
+              <div>
+                <label className={labelClass}>Garansi</label>
+                <Input type="text" value={form.garansi} onChange={e => setForm({ ...form, garansi: e.target.value })} className="h-10 w-full" placeholder="Contoh: 7 Hari, 1 Bulan, Tanpa Garansi" />
+                {form.garansi && form.garansi.toLowerCase() !== 'tanpa garansi' && hitungWarrantyEnd() && (
+                  <p className="mt-1.5 text-[10px] text-muted-foreground">
+                    Garansi berlaku hingga: {new Date(hitungWarrantyEnd() || '').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                  </p>
+                )}
+              </div>
 
               {/* Bonus (jika ada unit) */}
               {hasUnit && (
