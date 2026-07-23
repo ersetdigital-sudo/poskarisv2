@@ -743,6 +743,7 @@ function PaymentMethodsTab() {
   if (loading) return <div className="flex items-center justify-center p-12"><div className="spinner" /></div>
 
   return (
+    <div className="space-y-4">
     <Card className="shadow-card">
       <CardContent className="p-4 sm:p-5">
         <div className="mb-4 flex items-center justify-between">
@@ -863,5 +864,6 @@ function PaymentMethodsTab() {
         </form>
       </CardContent>
     </Card>
+    </div>
   )
 }
