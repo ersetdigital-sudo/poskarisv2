@@ -70,23 +70,32 @@ export default function DashboardPage() {
         salesQuery = salesQuery.gte('created_at', monthStart).lt('created_at', monthEnd)
       }
       
-      const [servicesRes, salesRes, productsRes, stockRes] = await Promise.all([
+      // Fetch operational costs for the period
+      let costsQuery = supabase.from('operational_costs').select('amount, period_month, period_year')
+      costsQuery = costsQuery.eq('period_year', yearNum)
+      if (monthNum !== null) costsQuery = costsQuery.eq('period_month', monthNum)
+      
+      const [servicesRes, salesRes, productsRes, stockRes, costsRes] = await Promise.all([
         servicesQuery,
         salesQuery,
         supabase.from('products').select('*, categories(name)'),
-        supabase.from('stock_movements').select('*, products(name)').order('created_at', { ascending: false }).limit(50)
+        supabase.from('stock_movements').select('*, products(name)').order('created_at', { ascending: false }).limit(50),
+        costsQuery
       ])
       
       const services = servicesRes.data || []
       const sales = salesRes.data || []
+      const costs = costsRes.data || []
       const products = productsRes.data || []
       
       // Calculate stats
       const totalServis = services.length
       const totalOmzet = services.reduce((sum, s) => sum + (s.total_fee || 0), 0) + 
                          sales.reduce((sum, s) => sum + (s.sell_price || 0), 0)
-      const totalProfit = services.reduce((sum, s) => sum + (s.total_fee - (s.sparepart_cost || 0)), 0) +
-                         sales.reduce((sum, s) => sum + ((s.sell_price || 0) - (s.buy_price || 0)), 0)
+      const totalBiayaOperasional = costs.reduce((sum, c) => sum + (c.amount || 0), 0)
+      const grossProfit = services.reduce((sum, s) => sum + (s.total_fee - (s.sparepart_cost || 0)), 0) +
+                          sales.reduce((sum, s) => sum + ((s.sell_price || 0) - (s.buy_price || 0)), 0)
+      const totalProfit = grossProfit - totalBiayaOperasional
       const totalBiaya = services.reduce((sum, s) => sum + (s.sparepart_cost || 0), 0)
       const unitTerjual = sales.filter(s => s.status === 'completed').length
       const sparepartDigunakan = services.reduce((sum, s) => sum + (s.sparepart_used?.length || 0), 0)
@@ -97,11 +106,14 @@ export default function DashboardPage() {
       const monthly = MONTHS.map((name, idx) => {
         const monthServices = services.filter(s => new Date(s.created_at).getMonth() === idx)
         const monthSales = sales.filter(s => new Date(s.created_at).getMonth() === idx)
+        const biaya = costs
+          .filter(c => c.period_month === idx + 1)
+          .reduce((sum, c) => sum + (c.amount || 0), 0)
         const omzet = monthServices.reduce((sum, s) => sum + (s.total_fee || 0), 0) +
                       monthSales.reduce((sum, s) => sum + (s.sell_price || 0), 0)
         const profit = monthServices.reduce((sum, s) => sum + (s.total_fee - (s.sparepart_cost || 0)), 0) +
-                       monthSales.reduce((sum, s) => sum + ((s.sell_price || 0) - (s.buy_price || 0)), 0)
-        return { name: name.slice(0, 3), omzet, profit }
+                       monthSales.reduce((sum, s) => sum + ((s.sell_price || 0) - (s.buy_price || 0)), 0) - biaya
+        return { name: name.slice(0, 3), omzet, profit, biaya }
       })
       setMonthlyData(monthly)
       
@@ -109,8 +121,8 @@ export default function DashboardPage() {
       const servisProfit = services.reduce((sum, s) => sum + (s.total_fee - (s.sparepart_cost || 0)), 0)
       const unitProfit = sales.reduce((sum, s) => sum + ((s.sell_price || 0) - (s.buy_price || 0)), 0)
       setCategoryData([
-        { name: 'Servis', value: Math.round(servisProfit), pct: Math.round((servisProfit / totalProfit) * 100) || 0 },
-        { name: 'Unit Laptop', value: Math.round(unitProfit), pct: Math.round((unitProfit / totalProfit) * 100) || 0 }
+        { name: 'Servis', value: Math.round(servisProfit), pct: Math.round((servisProfit / grossProfit) * 100) || 0 },
+        { name: 'Unit Laptop', value: Math.round(unitProfit), pct: Math.round((unitProfit / grossProfit) * 100) || 0 }
       ])
       
       // Marketplace placeholder (can be customized based on your data)
