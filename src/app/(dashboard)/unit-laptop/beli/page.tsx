@@ -42,7 +42,7 @@ export default function BeliUnitPage() {
       const { data: product, error: productError } = await supabase.from('products').insert({
         category_id: cat.id, name: `${form.brand} ${form.model}`, brand: form.brand, model: form.model,
         specs: form.specs || null, condition: form.condition, imei_serial: form.imei_serial || null,
-        buy_price: form.buy_price, sell_price: form.sell_price, quantity: 1, status: 'ready',
+        buy_price: form.buy_price, sell_price: form.sell_price, quantity: 0, status: 'ready',
       }).select().single()
       if (productError) throw productError
       await supabase.from('purchases').insert({

@@ -533,7 +533,7 @@ export default function StokPage() {
         </Modal>
       )}
 
-      {editProduct && <EditStokForm product={editProduct} onClose={() => setEditProduct(null)} onSaved={fetchData} onCategoryAdded={fetchCategories} defaultCategory={activeTab === 'sparepart' ? 'Sparepart' : 'Unit Laptop'} />}
+      {editProduct && <EditStokForm product={editProduct} onClose={() => setEditProduct(null)} onSaved={fetchData} onCategoryAdded={fetchCategories} defaultCategory={activeTab === 'sparepart' ? 'Sparepart' : 'Unit Laptop'} userId={user?.id} />}
       {adjustProduct && <AdjustStokForm product={adjustProduct} onClose={() => setAdjustProduct(null)} onSaved={fetchData} userId={user?.id} />}
       {showAddCategoryForm && (
         <AddCategoryForm
@@ -601,9 +601,9 @@ function InlineAddCategory({ onClose, onSaved }: { onClose: () => void; onSaved:
 }
 
 /* ── Edit Product Form ─────────────────────────── */
-function EditStokForm({ product, onClose, onSaved, onCategoryAdded, defaultCategory }: { 
+function EditStokForm({ product, onClose, onSaved, onCategoryAdded, defaultCategory, userId }: { 
   product: Product; onClose: () => void; onSaved: () => void; onCategoryAdded?: () => void;
-  defaultCategory?: string;
+  defaultCategory?: string; userId?: string;
 }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -641,6 +641,9 @@ function EditStokForm({ product, onClose, onSaved, onCategoryAdded, defaultCateg
     setLoading(true)
     setError('')
     try {
+      const delta = form.quantity - product.quantity
+      if (form.quantity < 0) { setError('Stok tidak boleh negatif'); setLoading(false); return }
+
       const { error } = await supabase.from('products').update({
         category_id: form.category_id || null, name: form.name, sku: form.sku || null,
         brand: form.brand || null, model: form.model || null, specs: form.specs || null,
@@ -648,6 +651,21 @@ function EditStokForm({ product, onClose, onSaved, onCategoryAdded, defaultCateg
         min_quantity: form.min_quantity,
       }).eq('id', product.id)
       if (error) throw error
+
+      // Catat perubahan stok sebagai mutasi — trigger DB (trigger_stock_movement)
+      // otomatis menerapkan selisihnya ke products.quantity.
+      if (delta !== 0) {
+        const { error: movError } = await supabase.from('stock_movements').insert({
+          product_id: product.id,
+          type: delta > 0 ? 'masuk' : 'keluar',
+          quantity: Math.abs(delta),
+          reference_type: 'adjustment',
+          notes: `Ubah stok via edit (${product.quantity} → ${form.quantity})`,
+          created_by: userId,
+        })
+        if (movError) throw movError
+      }
+
       onSaved(); onClose()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Gagal menyimpan perubahan')
@@ -713,8 +731,8 @@ function EditStokForm({ product, onClose, onSaved, onCategoryAdded, defaultCateg
             </div>
             <div>
               <label className={labelClass}>Stok Saat Ini</label>
-              <Input type="number" disabled value={form.quantity} className="h-10 w-full bg-muted" />
-              <p className="mt-1 text-[10px] text-muted-foreground">Gunakan tombol &quot;+ Stok&quot; untuk mengubah jumlah stok</p>
+              <Input type="number" min={0} value={form.quantity} onChange={e => setForm({ ...form, quantity: Number(e.target.value) })} className="h-10 w-full" />
+              <p className="mt-1 text-[10px] text-muted-foreground">Perubahan stok otomatis tercatat di mutasi stok</p>
             </div>
           </div>
 
@@ -767,8 +785,8 @@ function AdjustStokForm({ product, onClose, onSaved, userId }: {
     try {
       const newQty = type === 'masuk' ? product.quantity + quantity : product.quantity - quantity
       if (newQty < 0) { setError('Stok tidak cukup'); setLoading(false); return }
-      const { error: updateError } = await supabase.from('products').update({ quantity: newQty }).eq('id', product.id)
-      if (updateError) throw updateError
+      // Jangan update quantity manual di sini — trigger DB (trigger_stock_movement)
+      // otomatis menambah/mengurangi stok saat stock_movements di-insert.
       await supabase.from('stock_movements').insert({
         product_id: product.id, type, quantity, reference_type: 'adjustment',
         notes: notes || `Penyesuaian stok ${type}`, created_by: userId,

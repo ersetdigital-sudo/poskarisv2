@@ -54,7 +54,7 @@ export default function TambahStokPage() {
         category_id: form.category_id || null, name: form.name, sku: form.sku || null,
         brand: form.brand || null, model: form.model || null, specs: form.specs || null,
         condition: form.condition, buy_price: form.buy_price, sell_price: form.sell_price,
-        quantity: form.quantity, min_quantity: form.min_quantity, status: 'ready',
+        quantity: 0, min_quantity: form.min_quantity, status: 'ready',
       })
       if (error) throw error
       if (form.quantity > 0) {
