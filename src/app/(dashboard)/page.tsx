@@ -52,7 +52,8 @@ export default function DashboardPage() {
   async function fetchAll() {
     try {
       const yearNum = Number(year)
-      const monthNum = month === 'all' ? null : Number(month)
+      // MonthPicker mengirim index 0-based (0=Januari), helper finance.ts memakai bulan 1-based (1=Januari)
+      const monthNum = month === 'all' ? null : Number(month) + 1
 
       const { summary, services, sales } = await fetchFinanceData({ year: yearNum, month: monthNum })
 
