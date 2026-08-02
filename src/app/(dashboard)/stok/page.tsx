@@ -304,18 +304,18 @@ export default function StokPage() {
                 </div>
 
                 {/* Price + Actions */}
-                <div className="flex items-center justify-between border-t border-border px-3.5 py-2.5 bg-secondary/30">
-                  <div className="flex gap-4">
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-border px-3.5 py-2.5 bg-secondary/30">
+                  <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
                     <div>
                       <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Beli</p>
-                      <p className="text-xs font-semibold font-mono text-foreground">{formatRupiah(p.buy_price)}</p>
+                      <p className="text-xs font-semibold font-mono text-foreground whitespace-nowrap">{formatRupiah(p.buy_price)}</p>
                     </div>
                     <div>
                       <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Jual</p>
-                      <p className="text-xs font-bold font-mono text-foreground">{formatRupiah(p.sell_price)}</p>
+                      <p className="text-xs font-bold font-mono text-foreground whitespace-nowrap">{formatRupiah(p.sell_price)}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 ml-auto">
                     <Button 
                       variant="ghost" 
                       size="sm" 

@@ -51,7 +51,7 @@ export default function KpiCard({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-[10px] font-medium uppercase tracking-wide text-ash">{title}</p>
-          <p className="mt-1.5 truncate text-xl font-bold tabular-nums text-ink sm:text-2xl">{display}</p>
+          <p className="mt-1.5 truncate text-lg font-bold tabular-nums text-ink sm:text-xl lg:text-2xl">{display}</p>
           {sub && <p className="mt-0.5 truncate text-[10px] font-medium text-muted-foreground">{sub}</p>}
         </div>
         <div className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-lg transition-transform duration-300 group-hover:scale-110', TONES[tone].tile)}>
