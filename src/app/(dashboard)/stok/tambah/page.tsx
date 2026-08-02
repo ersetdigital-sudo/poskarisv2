@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { RupiahInput } from '@/components/ui/rupiah-input'
+import { BrandAutocomplete } from '@/components/ui/brand-autocomplete'
 import { showToast } from '@/components/ui/toast'
 
 const labelClass = 'mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground'
@@ -130,7 +131,7 @@ export default function TambahStokPage() {
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className={labelClass}>Merk *</label>
-                  <Input type="text" required value={form.brand} onChange={e => setForm({ ...form, brand: e.target.value })} placeholder="Kingston, Samsung" className="h-10 w-full" />
+                  <BrandAutocomplete required value={form.brand} onChange={v => setForm({ ...form, brand: v })} placeholder="Kingston, Samsung" />
                 </div>
                 <div>
                   <label className={labelClass}>Tipe/Model *</label>

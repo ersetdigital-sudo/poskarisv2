@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { RupiahInput } from '@/components/ui/rupiah-input'
+import { BrandAutocomplete } from '@/components/ui/brand-autocomplete'
 import PageHeader from '@/components/dashboard/PageHeader'
 import KpiCard from '@/components/laporan/KpiCard'
 import { showToast } from '@/components/ui/toast'
@@ -751,7 +752,7 @@ function EditStokForm({ product, onClose, onSaved, onCategoryAdded, defaultCateg
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className={labelClass}>Merk</label>
-              <Input type="text" value={form.brand} onChange={e => setForm({ ...form, brand: e.target.value })} className="h-10 w-full" />
+              <BrandAutocomplete value={form.brand} onChange={v => setForm({ ...form, brand: v })} />
             </div>
             <div>
               <label className={labelClass}>Model</label>
