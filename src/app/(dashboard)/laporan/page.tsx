@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import { fetchFinanceData } from '@/lib/finance'
-import { TrendingDown, DollarSign, ShoppingCart, Wrench, Users, Calendar } from 'lucide-react'
+import { Wrench, ShoppingCart, Laptop, TrendingDown, DollarSign, Users, Calendar } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import StatCard from '@/components/dashboard/StatCard'
 import PageHeader from '@/components/dashboard/PageHeader'
+import KpiCard from '@/components/laporan/KpiCard'
+import DailyChart from '@/components/laporan/DailyChart'
+import DailyTable, { DailyRow } from '@/components/laporan/DailyTable'
+import RincianLabaRugi from '@/components/laporan/RincianLabaRugi'
+import Reveal from '@/components/laporan/Reveal'
 
 interface LaporanData {
   omzetServis: number; omzetPenjualan: number; marginUnit: number;
@@ -25,33 +29,34 @@ interface SaleDetail {
   sell_price: number; buy_price: number; margin: number; status: string; date: string;
 }
 
-interface DailySummary {
-  date: string; omzetServis: number; omzetUnit: number; countServis: number; countUnit: number;
-}
-
 interface TopCustomer {
   name: string; total: number; count: number;
 }
 
 export default function LaporanPage() {
   const [data, setData] = useState<LaporanData>({ omzetServis: 0, omzetPenjualan: 0, marginUnit: 0, biayaOperasional: 0, modalSparepart: 0, labaBersih: 0, totalTransaksiServis: 0, totalTransaksiUnit: 0 })
+  const [deltas, setDeltas] = useState<Record<string, number | null>>({})
   const [loading, setLoading] = useState(true)
   const [filterMonth, setFilterMonth] = useState(() => { const now = new Date(); return { month: now.getMonth() + 1, year: now.getFullYear() } })
   const [services, setServices] = useState<ServiceDetail[]>([])
   const [sales, setSales] = useState<SaleDetail[]>([])
-  const [dailySummary, setDailySummary] = useState<DailySummary[]>([])
+  const [dailySummary, setDailySummary] = useState<DailyRow[]>([])
   const [topCustomers, setTopCustomers] = useState<TopCustomer[]>([])
-  const [activeTab, setActiveTab] = useState<'servis' | 'unit' | 'harian' | 'customer'>('servis')
+  const [activeTab, setActiveTab] = useState<'servis' | 'unit' | 'harian' | 'customer'>('harian')
 
   useEffect(() => { fetchLaporan() }, [filterMonth])
 
   async function fetchLaporan() {
-    setLoading(true)
     try {
-      const { summary, services: servisData, sales: salesData } = await fetchFinanceData({
-        year: filterMonth.year,
-        month: filterMonth.month,
-      })
+      const prev = filterMonth.month === 1
+        ? { month: 12, year: filterMonth.year - 1 }
+        : { month: filterMonth.month - 1, year: filterMonth.year }
+
+      const [cur, prevRes] = await Promise.all([
+        fetchFinanceData({ year: filterMonth.year, month: filterMonth.month }),
+        fetchFinanceData(prev),
+      ])
+      const { summary, services: servisData, sales: salesData, parts } = cur
 
       setData({
         omzetServis: summary.omzetServis,
@@ -64,14 +69,30 @@ export default function LaporanPage() {
         totalTransaksiUnit: summary.totalTransaksiUnit,
       })
 
+      const pctDelta = (a: number, b: number): number | null => {
+        if (b === 0) return null
+        return Math.round(((a - b) / Math.abs(b)) * 100)
+      }
+      const ps = prevRes.summary
+      setDeltas({
+        omzetServis: pctDelta(summary.omzetServis, ps.omzetServis),
+        omzetPenjualan: pctDelta(summary.omzetPenjualan, ps.omzetPenjualan),
+        unitTerjual: pctDelta(summary.totalTransaksiUnit, ps.totalTransaksiUnit),
+        biaya: pctDelta(summary.biayaOperasional, ps.biayaOperasional),
+        laba: pctDelta(summary.labaBersih, ps.labaBersih),
+      })
+
       setServices(servisData || [])
       setSales(salesData || [])
-      
-      // Calculate daily summary
-      const dailyMap: Record<string, DailySummary> = {}
+
+      // Rekap harian: omzet, margin unit, modal sparepart, dan profit per hari
+      const dailyMap: Record<string, DailyRow> = {}
+      const addDay = (day: string) => {
+        if (!dailyMap[day]) dailyMap[day] = { date: day, omzetServis: 0, omzetUnit: 0, marginUnit: 0, modalSparepart: 0, profit: 0, countServis: 0, countUnit: 0 }
+      }
       servisData?.forEach(s => {
         const day = new Date(s.date_in).toISOString().split('T')[0]
-        if (!dailyMap[day]) dailyMap[day] = { date: day, omzetServis: 0, omzetUnit: 0, countServis: 0, countUnit: 0 }
+        addDay(day)
         if (s.status === 'selesai') {
           dailyMap[day].omzetServis += s.total_fee
           dailyMap[day].countServis++
@@ -79,15 +100,23 @@ export default function LaporanPage() {
       })
       salesData?.forEach(s => {
         const day = new Date(s.date).toISOString().split('T')[0]
-        if (!dailyMap[day]) dailyMap[day] = { date: day, omzetServis: 0, omzetUnit: 0, countServis: 0, countUnit: 0 }
+        addDay(day)
         if (s.status === 'completed') {
           dailyMap[day].omzetUnit += s.sell_price
+          dailyMap[day].marginUnit += s.margin ?? (s.sell_price || 0) - (s.buy_price || 0)
           dailyMap[day].countUnit++
         }
       })
-      setDailySummary(Object.values(dailyMap).sort((a, b) => b.date.localeCompare(a.date)))
-      
-      // Calculate top customers
+      parts?.forEach(p => {
+        const day = new Date(p.date_in).toISOString().split('T')[0]
+        addDay(day)
+        dailyMap[day].modalSparepart += (p.quantity || 0) * (p.buy_price || 0)
+      })
+      const daily = Object.values(dailyMap)
+      daily.forEach(d => { d.profit = d.omzetServis + d.marginUnit - d.modalSparepart })
+      setDailySummary(daily.sort((a, b) => b.date.localeCompare(a.date)))
+
+      // Top customers
       const customerMap: Record<string, TopCustomer> = {}
       servisData?.forEach(s => {
         if (!customerMap[s.customer_name]) customerMap[s.customer_name] = { name: s.customer_name, total: 0, count: 0 }
@@ -104,7 +133,7 @@ export default function LaporanPage() {
         }
       })
       setTopCustomers(Object.values(customerMap).sort((a, b) => b.total - a.total).slice(0, 10))
-      
+
     } catch (e) { console.error(e) } finally { setLoading(false) }
   }
 
@@ -117,341 +146,336 @@ export default function LaporanPage() {
     return map[status] || 'secondary'
   }
 
-  if (loading) return <div className="flex items-center justify-center p-12"><div className="spinner" /></div>
+  const periodLabel = `${months[filterMonth.month - 1]} ${filterMonth.year}`
+  const chartData = [...dailySummary].sort((a, b) => a.date.localeCompare(b.date)).map(d => ({
+    date: d.date,
+    omzet: d.omzetServis + d.omzetUnit,
+    profit: d.profit,
+  }))
+
+  const tabClass = (active: boolean) =>
+    `flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs sm:text-sm font-medium transition-all duration-200 ${
+      active
+        ? 'bg-primary text-primary-foreground shadow-card'
+        : 'bg-card text-muted-foreground border border-border hover:bg-secondary/50 hover:text-foreground'
+    }`
+
+  if (loading) {
+    return (
+      <div className="space-y-3 sm:space-y-4">
+        <div className="h-8 w-48 animate-pulse rounded-lg bg-muted" />
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-5">
+          {[...Array(5)].map((_, i) => <div key={i} className="h-28 animate-pulse rounded-xl bg-muted" />)}
+        </div>
+        <div className="h-64 animate-pulse rounded-xl bg-muted" />
+        <div className="h-48 animate-pulse rounded-xl bg-muted" />
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        title="Laporan Keuangan"
-        subtitle="Rincian lengkap laba rugi dan transaksi"
-      >
-        <div className="flex gap-2 w-full sm:w-auto">
-          <select 
-            value={filterMonth.month} 
-            onChange={e => setFilterMonth({ ...filterMonth, month: Number(e.target.value) })} 
-            className="flex-1 sm:flex-none h-10 rounded-lg border border-hairline-strong bg-surface px-3 text-sm"
-          >
-            {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
-          </select>
-          <select 
-            value={filterMonth.year} 
-            onChange={e => setFilterMonth({ ...filterMonth, year: Number(e.target.value) })} 
-            className="flex-1 sm:flex-none h-10 rounded-lg border border-hairline-strong bg-surface px-3 text-sm"
-          >
-            {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
-          </select>
-        </div>
-      </PageHeader>
+    <div className="space-y-3 sm:space-y-4">
+      <Reveal>
+        <PageHeader
+          title="Laporan Keuangan"
+          subtitle="Rincian lengkap laba rugi dan transaksi"
+        >
+          <div className="flex gap-2 w-full sm:w-auto">
+            <select
+              value={filterMonth.month}
+              onChange={e => setFilterMonth({ ...filterMonth, month: Number(e.target.value) })}
+              className="flex-1 sm:flex-none h-10 rounded-lg border border-hairline-strong bg-surface px-3 text-sm"
+            >
+              {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+            </select>
+            <select
+              value={filterMonth.year}
+              onChange={e => setFilterMonth({ ...filterMonth, year: Number(e.target.value) })}
+              className="flex-1 sm:flex-none h-10 rounded-lg border border-hairline-strong bg-surface px-3 text-sm"
+            >
+              {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </div>
+        </PageHeader>
+      </Reveal>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-        <StatCard 
-          title="Omzet Servis" 
-          value={formatRupiah(data.omzetServis)} 
-          sub={`${data.totalTransaksiServis} transaksi`} 
-          icon={Wrench}
-          color="emerald"
-        />
-        <StatCard 
-          title="Omzet Penjualan" 
-          value={formatRupiah(data.omzetPenjualan)} 
-          sub={`${data.totalTransaksiUnit} unit terjual`} 
-          icon={ShoppingCart}
-          color="primary"
-        />
-        <StatCard 
-          title="Biaya Operasional" 
-          value={formatRupiah(data.biayaOperasional)} 
-          icon={TrendingDown}
-          color="orange"
-        />
-        <StatCard 
-          title="Laba Bersih" 
-          value={formatRupiah(data.labaBersih)} 
-          icon={DollarSign}
-          color={data.labaBersih >= 0 ? 'emerald' : 'danger'}
-          valueClass={data.labaBersih >= 0 ? 'text-badge-success' : 'text-danger'}
-        />
-      </div>
+      {/* KPI Cards */}
+      <Reveal delay={60}>
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-5">
+          <KpiCard
+            title="Omzet Servis"
+            value={data.omzetServis}
+            sub={`${data.totalTransaksiServis} transaksi`}
+            icon={Wrench}
+            tone="emerald"
+            delta={deltas.omzetServis ?? null}
+          />
+          <KpiCard
+            title="Omzet Penjualan"
+            value={data.omzetPenjualan}
+            sub={`${data.totalTransaksiUnit} unit terjual`}
+            icon={ShoppingCart}
+            tone="primary"
+            delta={deltas.omzetPenjualan ?? null}
+          />
+          <KpiCard
+            title="Unit Terjual"
+            value={data.totalTransaksiUnit}
+            format={n => Math.round(n).toLocaleString('id-ID')}
+            sub="unit laptop terjual"
+            icon={Laptop}
+            tone="sky"
+            delta={deltas.unitTerjual ?? null}
+          />
+          <KpiCard
+            title="Biaya Operasional"
+            value={data.biayaOperasional}
+            icon={TrendingDown}
+            tone="orange"
+            delta={deltas.biaya ?? null}
+          />
+          <KpiCard
+            title="Laba Bersih"
+            value={data.labaBersih}
+            icon={DollarSign}
+            tone={data.labaBersih >= 0 ? 'emerald' : 'danger'}
+            delta={deltas.laba ?? null}
+            className="col-span-2 lg:col-span-1"
+          />
+        </div>
+      </Reveal>
+
+      {/* Tren Harian */}
+      <Reveal delay={120}>
+        {chartData.length === 0 ? (
+          <Card className="shadow-card">
+            <CardContent className="flex h-56 items-center justify-center">
+              <p className="text-sm text-muted-foreground">Belum ada transaksi di {periodLabel}</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <DailyChart
+            data={chartData}
+            title="Tren Omzet & Profit Harian"
+            subtitle={`Omzet vs profit per tanggal — ${periodLabel}`}
+          />
+        )}
+      </Reveal>
 
       {/* Rincian Laba Rugi */}
-      <Card className="shadow-card">
-        <CardContent className="p-4 sm:p-5">
-          <h2 className="text-base font-bold mb-4 text-ink">
-            Rincian Laba Rugi — {months[filterMonth.month - 1]} {filterMonth.year}
-          </h2>
-          <div className="space-y-0">
-            <DetailRow label="(+) Omzet Servis" value={formatRupiah(data.omzetServis)} color="text-badge-success" />
-            <DetailRow label="(+) Margin Penjualan Unit" value={formatRupiah(data.marginUnit)} color="text-badge-success" />
-            <DetailRow label="(-) Modal Sparepart" value={data.modalSparepart > 0 ? `-${formatRupiah(data.modalSparepart)}` : formatRupiah(0)} color="text-danger" />
-            <DetailRow label="(-) Biaya Operasional" value={`-${formatRupiah(data.biayaOperasional)}`} color="text-danger" />
-            <div className="border-t border-hairline pt-3 mt-3 flex justify-between items-center">
-              <span className="text-base font-bold text-ink">= Laba Bersih</span>
-              <span className={`text-xl sm:text-2xl font-bold ${data.labaBersih >= 0 ? 'text-badge-success' : 'text-danger'}`}>
-                {formatRupiah(data.labaBersih)}
-              </span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <Reveal delay={180}>
+        <RincianLabaRugi
+          periodLabel={periodLabel}
+          labaBersih={data.labaBersih}
+          rows={[
+            { label: '(+) Omzet Servis', value: data.omzetServis, kind: 'in' },
+            { label: '(+) Margin Penjualan Unit', value: data.marginUnit, kind: 'in' },
+            { label: '(-) Modal Sparepart', value: data.modalSparepart, kind: 'out' },
+            { label: '(-) Biaya Operasional', value: data.biayaOperasional, kind: 'out' },
+          ]}
+        />
+      </Reveal>
 
       {/* Tabs Detail Transaksi */}
-      <div className="grid grid-cols-2 sm:flex gap-2">
-        <button onClick={() => setActiveTab('servis')} className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs sm:text-sm font-medium transition-colors ${activeTab === 'servis' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-secondary/50 border border-border'}`}>
-          <Wrench size={14} /> Servis ({services.length})
-        </button>
-        <button onClick={() => setActiveTab('unit')} className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs sm:text-sm font-medium transition-colors ${activeTab === 'unit' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-secondary/50 border border-border'}`}>
-          <ShoppingCart size={14} /> Unit ({sales.length})
-        </button>
-        <button onClick={() => setActiveTab('harian')} className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs sm:text-sm font-medium transition-colors ${activeTab === 'harian' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-secondary/50 border border-border'}`}>
-          <Calendar size={14} /> Harian
-        </button>
-        <button onClick={() => setActiveTab('customer')} className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs sm:text-sm font-medium transition-colors ${activeTab === 'customer' ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:bg-secondary/50 border border-border'}`}>
-          <Users size={14} /> Customer
-        </button>
-      </div>
+      <Reveal delay={240}>
+        <div className="grid grid-cols-2 gap-2 sm:flex">
+          <button onClick={() => setActiveTab('servis')} className={tabClass(activeTab === 'servis')}>
+            <Wrench size={14} /> Servis ({services.length})
+          </button>
+          <button onClick={() => setActiveTab('unit')} className={tabClass(activeTab === 'unit')}>
+            <ShoppingCart size={14} /> Unit ({sales.length})
+          </button>
+          <button onClick={() => setActiveTab('harian')} className={tabClass(activeTab === 'harian')}>
+            <Calendar size={14} /> Harian
+          </button>
+          <button onClick={() => setActiveTab('customer')} className={tabClass(activeTab === 'customer')}>
+            <Users size={14} /> Customer
+          </button>
+        </div>
+      </Reveal>
 
-      {/* Detail Servis */}
       {activeTab === 'servis' && (
-        <Card className="shadow-card">
-          <CardContent className="p-0">
-            {/* Mobile Card View */}
-            <div className="block lg:hidden divide-y divide-hairline">
+        <Reveal delay={300}>
+          <Card className="shadow-card">
+            <CardContent className="p-0 sm:p-0">
               {services.length === 0 ? (
-                <div className="p-6 text-center text-sm text-muted-foreground">Belum ada transaksi servis</div>
-              ) : services.map(s => (
-                <div key={s.id} className="p-3 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-semibold text-ink">{s.nota_number}</span>
-                    <Badge variant={statusVariant(s.status)} className="text-[10px] px-1.5 py-0.5">{s.status}</Badge>
+                <p className="p-8 text-center text-sm text-muted-foreground">Tidak ada transaksi servis di {periodLabel}</p>
+              ) : (
+                <>
+                  {/* Mobile */}
+                  <div className="divide-y divide-hairline md:hidden">
+                    {services.map((s) => (
+                      <div key={s.id} className="p-3 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium text-sm text-foreground">#{s.nota_number}</p>
+                          <Badge variant={statusVariant(s.status)}>{s.status}</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{s.customer_name} · {s.device_brand ? `${s.device_brand} - ` : ''}{s.device_type}</p>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">Jasa {formatRupiah(s.service_fee)} · Sparepart {formatRupiah(s.parts_fee)}</span>
+                          <span className="font-semibold">{formatRupiah(s.total_fee)}</span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">{new Date(s.date_in).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                      </div>
+                    ))}
                   </div>
-                  <p className="text-sm font-medium text-ink">{s.customer_name}</p>
-                  <p className="text-xs text-muted-foreground">{s.device_type} {s.device_brand}</p>
-                  <div className="flex justify-between items-center pt-1">
-                    <span className="text-[10px] text-stone">{new Date(s.date_in).toLocaleDateString('id-ID')}</span>
-                    <span className="text-sm font-bold font-mono text-ink">{formatRupiah(s.total_fee)}</span>
+                  {/* Desktop */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-hairline text-left text-xs text-ash">
+                          <th className="px-4 py-3 font-medium">Nota</th>
+                          <th className="px-4 py-3 font-medium">Customer</th>
+                          <th className="px-4 py-3 font-medium">Perangkat</th>
+                          <th className="px-4 py-3 font-medium text-right">Jasa</th>
+                          <th className="px-4 py-3 font-medium text-right">Sparepart</th>
+                          <th className="px-4 py-3 font-medium text-right">Total</th>
+                          <th className="px-4 py-3 font-medium">Status</th>
+                          <th className="px-4 py-3 font-medium">Tanggal</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-hairline">
+                        {services.map((s) => (
+                          <tr key={s.id} className="transition-colors hover:bg-secondary/40">
+                            <td className="px-4 py-3 font-medium">#{s.nota_number}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{s.customer_name}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{s.device_brand ? `${s.device_brand} - ` : ''}{s.device_type}</td>
+                            <td className="px-4 py-3 text-right">{formatRupiah(s.service_fee)}</td>
+                            <td className="px-4 py-3 text-right">{formatRupiah(s.parts_fee)}</td>
+                            <td className="px-4 py-3 text-right font-semibold">{formatRupiah(s.total_fee)}</td>
+                            <td className="px-4 py-3"><Badge variant={statusVariant(s.status)}>{s.status}</Badge></td>
+                            <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(s.date_in).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                </div>
-              ))}
-            </div>
-            {/* Desktop Table */}
-            <div className="hidden lg:block overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-hairline bg-secondary/30">
-                    <th className="text-left p-3 text-xs font-medium text-ash uppercase">Nota</th>
-                    <th className="text-left p-3 text-xs font-medium text-ash uppercase">Customer</th>
-                    <th className="text-left p-3 text-xs font-medium text-ash uppercase">Perangkat</th>
-                    <th className="text-right p-3 text-xs font-medium text-ash uppercase">Jasa</th>
-                    <th className="text-right p-3 text-xs font-medium text-ash uppercase">Sparepart</th>
-                    <th className="text-right p-3 text-xs font-medium text-ash uppercase">Total</th>
-                    <th className="text-left p-3 text-xs font-medium text-ash uppercase">Status</th>
-                    <th className="text-left p-3 text-xs font-medium text-ash uppercase">Tanggal</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {services.length === 0 ? (
-                    <tr><td colSpan={8} className="p-8 text-center text-xs text-stone">Belum ada transaksi servis</td></tr>
-                  ) : services.map(s => (
-                    <tr key={s.id} className="border-b border-hairline hover:bg-secondary/20">
-                      <td className="p-3 text-xs font-mono font-semibold text-ink">{s.nota_number}</td>
-                      <td className="p-3 text-xs font-medium text-ink">{s.customer_name}</td>
-                      <td className="p-3 text-xs text-muted-foreground">{s.device_type} {s.device_brand}</td>
-                      <td className="p-3 text-xs text-right font-mono">{formatRupiah(s.service_fee)}</td>
-                      <td className="p-3 text-xs text-right font-mono">{formatRupiah(s.parts_fee)}</td>
-                      <td className="p-3 text-xs text-right font-mono font-bold">{formatRupiah(s.total_fee)}</td>
-                      <td className="p-3"><Badge variant={statusVariant(s.status)} className="text-[10px] px-1.5 py-0.5">{s.status}</Badge></td>
-                      <td className="p-3 text-xs text-muted-foreground">{new Date(s.date_in).toLocaleDateString('id-ID')}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </Reveal>
       )}
 
-      {/* Detail Penjualan Unit */}
       {activeTab === 'unit' && (
-        <Card className="shadow-card">
-          <CardContent className="p-0">
-            {/* Mobile Card View */}
-            <div className="block lg:hidden divide-y divide-hairline">
+        <Reveal delay={300}>
+          <Card className="shadow-card">
+            <CardContent className="p-0 sm:p-0">
               {sales.length === 0 ? (
-                <div className="p-6 text-center text-sm text-muted-foreground">Belum ada transaksi penjualan</div>
-              ) : sales.map(s => (
-                <div key={s.id} className="p-3 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-semibold text-ink">{s.invoice_number || '-'}</span>
-                    <Badge variant={statusVariant(s.status)} className="text-[10px] px-1.5 py-0.5">{s.status}</Badge>
+                <p className="p-8 text-center text-sm text-muted-foreground">Tidak ada transaksi unit di {periodLabel}</p>
+              ) : (
+                <>
+                  {/* Mobile */}
+                  <div className="divide-y divide-hairline md:hidden">
+                    {sales.map((s) => (
+                      <div key={s.id} className="p-3 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium text-sm text-foreground">#{s.invoice_number}</p>
+                          <Badge variant={statusVariant(s.status)}>{s.status}</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{s.buyer_name}</p>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">Beli {formatRupiah(s.buy_price)} · Jual {formatRupiah(s.sell_price)}</span>
+                          <span className={`font-semibold ${s.margin >= 0 ? 'text-badge-success' : 'text-danger'}`}>{formatRupiah(s.margin)}</span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">{new Date(s.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                      </div>
+                    ))}
                   </div>
-                  <p className="text-sm font-medium text-ink">{s.buyer_name}</p>
-                  <div className="flex justify-between items-center pt-1">
-                    <span className="text-[10px] text-stone">{new Date(s.date).toLocaleDateString('id-ID')}</span>
-                    <div className="text-right">
-                      <p className="text-sm font-bold font-mono text-ink">{formatRupiah(s.sell_price)}</p>
-                      <p className="text-[10px] text-badge-success font-mono">margin: {formatRupiah(s.margin || s.sell_price - s.buy_price)}</p>
-                    </div>
+                  {/* Desktop */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-hairline text-left text-xs text-ash">
+                          <th className="px-4 py-3 font-medium">Invoice</th>
+                          <th className="px-4 py-3 font-medium">Pembeli</th>
+                          <th className="px-4 py-3 font-medium text-right">Harga Beli</th>
+                          <th className="px-4 py-3 font-medium text-right">Harga Jual</th>
+                          <th className="px-4 py-3 font-medium text-right">Margin</th>
+                          <th className="px-4 py-3 font-medium">Status</th>
+                          <th className="px-4 py-3 font-medium">Tanggal</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-hairline">
+                        {sales.map((s) => (
+                          <tr key={s.id} className="transition-colors hover:bg-secondary/40">
+                            <td className="px-4 py-3 font-medium">#{s.invoice_number}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{s.buyer_name}</td>
+                            <td className="px-4 py-3 text-right text-muted-foreground">{formatRupiah(s.buy_price)}</td>
+                            <td className="px-4 py-3 text-right">{formatRupiah(s.sell_price)}</td>
+                            <td className={`px-4 py-3 text-right font-semibold ${s.margin >= 0 ? 'text-badge-success' : 'text-danger'}`}>{formatRupiah(s.margin)}</td>
+                            <td className="px-4 py-3"><Badge variant={statusVariant(s.status)}>{s.status}</Badge></td>
+                            <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(s.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                </div>
-              ))}
-            </div>
-            {/* Desktop Table */}
-            <div className="hidden lg:block overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-hairline bg-secondary/30">
-                    <th className="text-left p-3 text-xs font-medium text-ash uppercase">Invoice</th>
-                    <th className="text-left p-3 text-xs font-medium text-ash uppercase">Pembeli</th>
-                    <th className="text-right p-3 text-xs font-medium text-ash uppercase">Harga Beli</th>
-                    <th className="text-right p-3 text-xs font-medium text-ash uppercase">Harga Jual</th>
-                    <th className="text-right p-3 text-xs font-medium text-ash uppercase">Margin</th>
-                    <th className="text-left p-3 text-xs font-medium text-ash uppercase">Status</th>
-                    <th className="text-left p-3 text-xs font-medium text-ash uppercase">Tanggal</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sales.length === 0 ? (
-                    <tr><td colSpan={7} className="p-8 text-center text-xs text-stone">Belum ada transaksi penjualan</td></tr>
-                  ) : sales.map(s => (
-                    <tr key={s.id} className="border-b border-hairline hover:bg-secondary/20">
-                      <td className="p-3 text-xs font-mono font-semibold text-ink">{s.invoice_number || '-'}</td>
-                      <td className="p-3 text-xs font-medium text-ink">{s.buyer_name}</td>
-                      <td className="p-3 text-xs text-right font-mono">{formatRupiah(s.buy_price)}</td>
-                      <td className="p-3 text-xs text-right font-mono">{formatRupiah(s.sell_price)}</td>
-                      <td className="p-3 text-xs text-right font-mono font-bold text-badge-success">{formatRupiah(s.margin || s.sell_price - s.buy_price)}</td>
-                      <td className="p-3"><Badge variant={statusVariant(s.status)} className="text-[10px] px-1.5 py-0.5">{s.status}</Badge></td>
-                      <td className="p-3 text-xs text-muted-foreground">{new Date(s.date).toLocaleDateString('id-ID')}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </Reveal>
       )}
 
-      {/* Rekap Harian */}
       {activeTab === 'harian' && (
-        <Card className="shadow-card">
-          <CardContent className="p-0">
-            {/* Mobile Card View */}
-            <div className="block lg:hidden divide-y divide-hairline">
-              {dailySummary.length === 0 ? (
-                <div className="p-6 text-center text-sm text-muted-foreground">Belum ada data harian</div>
-              ) : dailySummary.map(d => (
-                <div key={d.date} className="p-3 space-y-1.5">
-                  <p className="text-sm font-semibold text-ink">{new Date(d.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="flex items-center gap-1.5">
-                      <Wrench size={12} className="text-muted-foreground" />
-                      <span className="text-muted-foreground">Servis:</span>
-                      <span className="font-mono font-medium text-ink">{formatRupiah(d.omzetServis)}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <ShoppingCart size={12} className="text-muted-foreground" />
-                      <span className="text-muted-foreground">Unit:</span>
-                      <span className="font-mono font-medium text-ink">{formatRupiah(d.omzetUnit)}</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center pt-1 border-t border-hairline">
-                    <span className="text-[10px] text-stone">{d.countServis + d.countUnit} transaksi</span>
-                    <span className="text-sm font-bold font-mono text-ink">{formatRupiah(d.omzetServis + d.omzetUnit)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {/* Desktop Table */}
-            <div className="hidden lg:block overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-hairline bg-secondary/30">
-                    <th className="text-left p-3 text-xs font-medium text-ash uppercase">Tanggal</th>
-                    <th className="text-right p-3 text-xs font-medium text-ash uppercase">Omzet Servis</th>
-                    <th className="text-center p-3 text-xs font-medium text-ash uppercase">Transaksi Servis</th>
-                    <th className="text-right p-3 text-xs font-medium text-ash uppercase">Omzet Unit</th>
-                    <th className="text-center p-3 text-xs font-medium text-ash uppercase">Transaksi Unit</th>
-                    <th className="text-right p-3 text-xs font-medium text-ash uppercase">Total Hari Ini</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dailySummary.length === 0 ? (
-                    <tr><td colSpan={6} className="p-8 text-center text-xs text-stone">Belum ada data harian</td></tr>
-                  ) : dailySummary.map(d => (
-                    <tr key={d.date} className="border-b border-hairline hover:bg-secondary/20">
-                      <td className="p-3 text-xs font-medium text-ink">{new Date(d.date).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' })}</td>
-                      <td className="p-3 text-xs text-right font-mono">{formatRupiah(d.omzetServis)}</td>
-                      <td className="p-3 text-xs text-center">{d.countServis}</td>
-                      <td className="p-3 text-xs text-right font-mono">{formatRupiah(d.omzetUnit)}</td>
-                      <td className="p-3 text-xs text-center">{d.countUnit}</td>
-                      <td className="p-3 text-xs text-right font-mono font-bold">{formatRupiah(d.omzetServis + d.omzetUnit)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+        <Reveal delay={300}>
+          <DailyTable rows={dailySummary} />
+        </Reveal>
       )}
 
-      {/* Top Customer */}
       {activeTab === 'customer' && (
-        <Card className="shadow-card">
-          <CardContent className="p-0">
-            {/* Mobile Card View */}
-            <div className="block lg:hidden divide-y divide-hairline">
+        <Reveal delay={300}>
+          <Card className="shadow-card">
+            <CardContent className="p-0 sm:p-0">
               {topCustomers.length === 0 ? (
-                <div className="p-6 text-center text-sm text-muted-foreground">Belum ada data customer</div>
-              ) : topCustomers.map((c, i) => (
-                <div key={c.name} className="p-3 flex items-center gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-sm">
-                    {i + 1}
+                <p className="p-8 text-center text-sm text-muted-foreground">Belum ada customer di {periodLabel}</p>
+              ) : (
+                <>
+                  {/* Mobile */}
+                  <div className="divide-y divide-hairline md:hidden">
+                    {topCustomers.map((c, i) => (
+                      <div key={c.name} className="flex items-center gap-3 p-3">
+                        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${i < 3 ? 'bg-badge-success/15 text-badge-success' : 'bg-secondary text-muted-foreground'}`}>{i + 1}</span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">{c.name}</p>
+                          <p className="text-xs text-muted-foreground">{c.count} transaksi</p>
+                        </div>
+                        <span className="text-sm font-semibold">{formatRupiah(c.total)}</span>
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-ink truncate">{c.name}</p>
-                    <p className="text-xs text-muted-foreground">{c.count} transaksi</p>
+                  {/* Desktop */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-hairline text-left text-xs text-ash">
+                          <th className="px-4 py-3 font-medium">#</th>
+                          <th className="px-4 py-3 font-medium">Nama</th>
+                          <th className="px-4 py-3 font-medium text-right">Jumlah Transaksi</th>
+                          <th className="px-4 py-3 font-medium text-right">Total Belanja</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-hairline">
+                        {topCustomers.map((c, i) => (
+                          <tr key={c.name} className="transition-colors hover:bg-secondary/40">
+                            <td className="px-4 py-3">
+                              <span className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${i < 3 ? 'bg-badge-success/15 text-badge-success' : 'bg-secondary text-muted-foreground'}`}>{i + 1}</span>
+                            </td>
+                            <td className="px-4 py-3 font-medium">{c.name}</td>
+                            <td className="px-4 py-3 text-right text-muted-foreground">{c.count}×</td>
+                            <td className="px-4 py-3 text-right font-semibold">{formatRupiah(c.total)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                  <span className="text-sm font-bold font-mono text-ink">{formatRupiah(c.total)}</span>
-                </div>
-              ))}
-            </div>
-            {/* Desktop Table */}
-            <div className="hidden lg:block overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-hairline bg-secondary/30">
-                    <th className="text-center p-3 text-xs font-medium text-ash uppercase w-12">#</th>
-                    <th className="text-left p-3 text-xs font-medium text-ash uppercase">Nama Customer</th>
-                    <th className="text-center p-3 text-xs font-medium text-ash uppercase">Jumlah Transaksi</th>
-                    <th className="text-right p-3 text-xs font-medium text-ash uppercase">Total Belanja</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {topCustomers.length === 0 ? (
-                    <tr><td colSpan={4} className="p-8 text-center text-xs text-stone">Belum ada data customer</td></tr>
-                  ) : topCustomers.map((c, i) => (
-                    <tr key={c.name} className="border-b border-hairline hover:bg-secondary/20">
-                      <td className="p-3 text-xs text-center font-bold text-muted-foreground">{i + 1}</td>
-                      <td className="p-3 text-sm font-medium text-ink">{c.name}</td>
-                      <td className="p-3 text-xs text-center">{c.count}x</td>
-                      <td className="p-3 text-xs text-right font-mono font-bold">{formatRupiah(c.total)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </Reveal>
       )}
-    </div>
-  )
-}
-
-function DetailRow({ label, value, color }: { label: string; value: string; color: string }) {
-  return (
-    <div className="flex justify-between items-center py-2.5 border-b border-hairline">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className={`text-sm font-medium font-mono ${color}`}>{value}</span>
     </div>
   )
 }
