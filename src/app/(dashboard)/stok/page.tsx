@@ -90,7 +90,7 @@ export default function StokPage() {
 
   // Total aset inventori = Σ (harga beli × stok) dari barang yang masih tersedia
   const aset = (list: Product[]) =>
-    list.filter(p => p.quantity > 0 && p.status !== 'sold').reduce((sum, p) => sum + (p.buy_price || 0) * p.quantity, 0)
+    list.filter(p => p.quantity > 0).reduce((sum, p) => sum + (p.buy_price || 0) * p.quantity, 0)
   const asetSparepart = aset(products.filter(p => catName(p) === 'Sparepart'))
   const asetUnit = aset(products.filter(p => catName(p) === 'Unit Laptop'))
 

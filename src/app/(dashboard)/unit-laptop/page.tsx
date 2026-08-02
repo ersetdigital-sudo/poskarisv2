@@ -44,7 +44,7 @@ export default function UnitLaptopPage() {
   const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
 
   // Total aset unit = Σ (harga beli × stok) dari unit yang masih tersedia
-  const readyUnits = products.filter(p => p.quantity > 0 && p.status !== 'sold')
+  const readyUnits = products.filter(p => p.quantity > 0)
   const totalAsetUnit = readyUnits.reduce((sum, p) => sum + (p.buy_price || 0) * p.quantity, 0)
   
   const statusVariant = (status: string): 'default' | 'secondary' | 'success' | 'warning' | 'destructive' => {
