@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { fetchFinanceData } from '@/lib/finance'
-import { Wrench, ShoppingCart, Laptop, TrendingDown, DollarSign, Users, Calendar } from 'lucide-react'
+import { Wrench, ShoppingCart, TrendingDown, DollarSign, Users, Calendar, Package } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import PageHeader from '@/components/dashboard/PageHeader'
@@ -26,7 +26,8 @@ interface ServiceDetail {
 
 interface SaleDetail {
   id: string; invoice_number: string; buyer_name: string; product_id: string | null;
-  sell_price: number; buy_price: number; margin: number; status: string; date: string;
+  product_name: string; sell_price: number; buy_price: number; margin: number;
+  status: string; date: string;
 }
 
 interface TopCustomer {
@@ -77,7 +78,6 @@ export default function LaporanPage() {
       setDeltas({
         omzetServis: pctDelta(summary.omzetServis, ps.omzetServis),
         omzetPenjualan: pctDelta(summary.omzetPenjualan, ps.omzetPenjualan),
-        unitTerjual: pctDelta(summary.totalTransaksiUnit, ps.totalTransaksiUnit),
         biaya: pctDelta(summary.biayaOperasional, ps.biayaOperasional),
         laba: pctDelta(summary.labaBersih, ps.labaBersih),
       })
@@ -164,8 +164,8 @@ export default function LaporanPage() {
     return (
       <div className="space-y-3 sm:space-y-4">
         <div className="h-8 w-48 animate-pulse rounded-lg bg-muted" />
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-5">
-          {[...Array(5)].map((_, i) => <div key={i} className="h-28 animate-pulse rounded-xl bg-muted" />)}
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => <div key={i} className="h-28 animate-pulse rounded-xl bg-muted" />)}
         </div>
         <div className="h-64 animate-pulse rounded-xl bg-muted" />
         <div className="h-48 animate-pulse rounded-xl bg-muted" />
@@ -201,7 +201,7 @@ export default function LaporanPage() {
 
       {/* KPI Cards */}
       <Reveal delay={60}>
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
           <KpiCard
             title="Omzet Servis"
             value={data.omzetServis}
@@ -219,15 +219,6 @@ export default function LaporanPage() {
             delta={deltas.omzetPenjualan ?? null}
           />
           <KpiCard
-            title="Unit Terjual"
-            value={data.totalTransaksiUnit}
-            format={n => Math.round(n).toLocaleString('id-ID')}
-            sub="unit laptop terjual"
-            icon={Laptop}
-            tone="sky"
-            delta={deltas.unitTerjual ?? null}
-          />
-          <KpiCard
             title="Biaya Operasional"
             value={data.biayaOperasional}
             icon={TrendingDown}
@@ -240,13 +231,86 @@ export default function LaporanPage() {
             icon={DollarSign}
             tone={data.labaBersih >= 0 ? 'emerald' : 'danger'}
             delta={deltas.laba ?? null}
-            className="col-span-2 lg:col-span-1"
           />
         </div>
       </Reveal>
 
-      {/* Tren Harian */}
+      {/* Unit Terjual */}
       <Reveal delay={120}>
+        <Card className="shadow-card">
+          <CardContent className="p-0 sm:p-0">
+            {sales.length === 0 ? (
+              <div className="p-8 text-center">
+                <p className="text-sm font-semibold text-ink">Unit Terjual</p>
+                <p className="mt-1 text-xs text-muted-foreground">Belum ada unit terjual di {periodLabel}</p>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 px-4 pt-4">
+                  <div className="grid h-9 w-9 place-items-center rounded-lg bg-badge-info/15 text-badge-info">
+                    <Package className="h-4 w-4" strokeWidth={2} />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-ink">Unit Terjual</h2>
+                    <p className="text-[10px] text-muted-foreground">{data.totalTransaksiUnit} unit · {sales.length} transaksi di {periodLabel}</p>
+                  </div>
+                </div>
+                {/* Mobile */}
+                <div className="mt-3 divide-y divide-hairline lg:hidden">
+                  {sales.map((s) => (
+                    <div key={s.id} className="p-3 space-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="min-w-0 truncate text-sm font-medium text-ink">{s.product_name || 'Unit'}</p>
+                        <Badge variant={statusVariant(s.status)}>{s.status}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">#{s.invoice_number} · {s.buyer_name}</p>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">Beli {formatRupiah(s.buy_price)} · Jual {formatRupiah(s.sell_price)}</span>
+                        <span className={`font-semibold ${s.margin >= 0 ? 'text-badge-success' : 'text-danger'}`}>{formatRupiah(s.margin)}</span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">{new Date(s.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                    </div>
+                  ))}
+                </div>
+                {/* Desktop */}
+                <div className="mt-3 hidden overflow-x-auto lg:block">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-hairline bg-secondary/30 text-left text-xs text-ash">
+                        <th className="px-4 py-2.5 font-medium">Produk</th>
+                        <th className="px-4 py-2.5 font-medium">Invoice</th>
+                        <th className="px-4 py-2.5 font-medium">Pembeli</th>
+                        <th className="px-4 py-2.5 font-medium text-right">Harga Beli</th>
+                        <th className="px-4 py-2.5 font-medium text-right">Harga Jual</th>
+                        <th className="px-4 py-2.5 font-medium text-right">Margin</th>
+                        <th className="px-4 py-2.5 font-medium">Status</th>
+                        <th className="px-4 py-2.5 font-medium">Tanggal</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-hairline">
+                      {sales.map((s) => (
+                        <tr key={s.id} className="transition-colors hover:bg-secondary/40">
+                          <td className="px-4 py-3 font-medium text-ink">{s.product_name || 'Unit'}</td>
+                          <td className="px-4 py-3 text-muted-foreground">#{s.invoice_number}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{s.buyer_name}</td>
+                          <td className="px-4 py-3 text-right text-muted-foreground">{formatRupiah(s.buy_price)}</td>
+                          <td className="px-4 py-3 text-right">{formatRupiah(s.sell_price)}</td>
+                          <td className={`px-4 py-3 text-right font-semibold ${s.margin >= 0 ? 'text-badge-success' : 'text-danger'}`}>{formatRupiah(s.margin)}</td>
+                          <td className="px-4 py-3"><Badge variant={statusVariant(s.status)}>{s.status}</Badge></td>
+                          <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(s.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </Reveal>
+
+      {/* Tren Harian */}
+      <Reveal delay={180}>
         {chartData.length === 0 ? (
           <Card className="shadow-card">
             <CardContent className="flex h-56 items-center justify-center">
@@ -263,7 +327,7 @@ export default function LaporanPage() {
       </Reveal>
 
       {/* Rincian Laba Rugi */}
-      <Reveal delay={180}>
+      <Reveal delay={240}>
         <RincianLabaRugi
           periodLabel={periodLabel}
           labaBersih={data.labaBersih}
@@ -277,7 +341,7 @@ export default function LaporanPage() {
       </Reveal>
 
       {/* Tabs Detail Transaksi */}
-      <Reveal delay={240}>
+      <Reveal delay={300}>
         <div className="grid grid-cols-2 gap-2 sm:flex">
           <button onClick={() => setActiveTab('servis')} className={tabClass(activeTab === 'servis')}>
             <Wrench size={14} /> Servis ({services.length})

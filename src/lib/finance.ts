@@ -47,6 +47,7 @@ export interface FinanceSale {
   invoice_number: string
   buyer_name: string
   product_id: string | null
+  product_name: string
   sell_price: number
   buy_price: number
   margin: number
@@ -165,7 +166,7 @@ export async function fetchFinanceData(period: FinancePeriod): Promise<FinancePe
   const salesQuery = supabase
     .from('sales')
     .select(
-      'id, invoice_number, buyer_name, product_id, sell_price, buy_price, margin, status, date, created_at',
+      'id, invoice_number, buyer_name, product_id, sell_price, buy_price, margin, status, date, created_at, products(name)',
     )
     .gte('date', start)
     .lt('date', end)
@@ -193,7 +194,19 @@ export async function fetchFinanceData(period: FinancePeriod): Promise<FinancePe
   ])
 
   const services = servicesRes.data || []
-  const sales = salesRes.data || []
+  const sales: FinanceSale[] = (salesRes.data || []).map((s) => ({
+    id: s.id,
+    invoice_number: s.invoice_number,
+    buyer_name: s.buyer_name,
+    product_id: s.product_id,
+    product_name: s.products?.[0]?.name || '',
+    sell_price: s.sell_price,
+    buy_price: s.buy_price,
+    margin: s.margin,
+    status: s.status,
+    date: s.date,
+    created_at: s.created_at,
+  }))
   const costs = costsRes.data || []
   const parts: FinanceServicePart[] = (partsRes.data || []).map((p) => ({
     service_id: p.service_id,
