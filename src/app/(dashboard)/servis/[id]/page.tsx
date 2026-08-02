@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { supabase, Service } from '@/lib/supabase'
-import { ArrowLeft, Send, CheckCircle, Download, Edit } from 'lucide-react'
+import { supabase, Service, Product } from '@/lib/supabase'
+import { useAuth } from '@/lib/auth-context'
+import { ArrowLeft, Send, CheckCircle, Download, Edit, Plus, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -18,7 +19,7 @@ export default function ServisDetailPage() {
   const params = useParams()
   const router = useRouter()
   const [service, setService] = useState<Service | null>(null)
-  const [parts, setParts] = useState<{ name: string; quantity: number; price: number }[]>([])
+  const [parts, setParts] = useState<{ product_id: string; name: string; quantity: number; price: number; buy_price: number }[]>([])
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
   const [pdfLoading, setPdfLoading] = useState(false)
@@ -59,9 +60,11 @@ export default function ServisDetailPage() {
       // Extract parts
       const serviceParts = (data as any).service_parts || []
       setParts(serviceParts.map((p: any) => ({
+        product_id: p.product_id,
         name: p.products?.name || 'Sparepart',
         quantity: p.quantity,
         price: p.price,
+        buy_price: p.buy_price || 0,
       })))
     } catch (e) { console.error(e) } finally { setLoading(false) }
   }
@@ -318,10 +321,23 @@ export default function ServisDetailPage() {
                         <p className="font-medium text-foreground truncate">{part.name}</p>
                         <p className="text-[11px] text-muted-foreground">Qty: {part.quantity} x {formatRupiah(part.price)}</p>
                       </div>
-                      <p className="font-mono font-semibold text-foreground shrink-0">{formatRupiah(part.price * part.quantity)}</p>
+                      <div className="text-right shrink-0">
+                        <p className="font-mono font-semibold text-foreground">{formatRupiah(part.price * part.quantity)}</p>
+                        {part.buy_price > 0 && (
+                          <p className="text-[10px] text-stone font-mono">modal: {formatRupiah(part.buy_price * part.quantity)}</p>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
+                {parts.some(p => p.buy_price > 0) && (
+                  <div className="mt-3 flex justify-between border-t border-border pt-2.5">
+                    <span className="text-xs text-muted-foreground">Total Modal Sparepart (HPP)</span>
+                    <span className="text-xs font-mono font-semibold text-muted-foreground">
+                      {formatRupiah(parts.reduce((sum, p) => sum + (p.buy_price * p.quantity), 0))}
+                    </span>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -465,6 +481,7 @@ export default function ServisDetailPage() {
       {showEditForm && service && (
         <ServisEditForm
           service={service}
+          initialParts={parts}
           onClose={() => setShowEditForm(false)}
           onSaved={() => {
             fetchService(service.id)
@@ -477,9 +494,30 @@ export default function ServisDetailPage() {
 }
 
 // Edit Form Component
-function ServisEditForm({ service, onClose, onSaved }: { service: Service; onClose: () => void; onSaved: () => void }) {
+interface SparepartItem {
+  product_id: string
+  name: string
+  quantity: number
+  price: number
+  buy_price: number
+  max_qty: number
+}
+
+function ServisEditForm({ service, initialParts, onClose, onSaved }: { service: Service; initialParts: { product_id: string; name: string; quantity: number; price: number; buy_price: number }[]; onClose: () => void; onSaved: () => void }) {
+  const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [spareparts, setSpareparts] = useState<Product[]>([])
+  const [items, setItems] = useState<SparepartItem[]>(() =>
+    initialParts.map(p => ({
+      product_id: p.product_id,
+      name: p.name,
+      quantity: p.quantity,
+      price: p.price,
+      buy_price: p.buy_price,
+      max_qty: p.quantity,
+    }))
+  )
   const [form, setForm] = useState({
     customer_name: service.customer_name,
     customer_phone: service.customer_phone,
@@ -495,7 +533,59 @@ function ServisEditForm({ service, onClose, onSaved }: { service: Service; onClo
     status: service.status,
   })
 
+  // Hitung total biaya sparepart dari items (untuk parts_fee & total_fee)
+  const parts_fee = items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+  const parts_modal = items.reduce((sum, item) => sum + (item.buy_price * item.quantity), 0)
+  const total = form.service_fee + parts_fee
+
   const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
+
+  // Fetch sparepart dari stok
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      try {
+        const { data: cat } = await supabase.from('categories').select('id').eq('name', 'Sparepart').maybeSingle()
+        if (!cat || cancelled) return
+        const { data } = await supabase.from('products').select('*').eq('category_id', cat.id).gt('quantity', 0).order('name')
+        if (!cancelled) setSpareparts(data || [])
+      } catch (e) { console.error(e) }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [])
+
+  // Tambah sparepart ke list
+  function addSparepart() {
+    setItems([...items, { product_id: '', name: '', quantity: 1, price: 0, buy_price: 0, max_qty: 0 }])
+  }
+
+  // Update sparepart item
+  function updateItem(index: number, field: keyof SparepartItem, value: string | number) {
+    const updated = [...items]
+    if (field === 'product_id') {
+      const product = spareparts.find(p => p.id === value)
+      if (product) {
+        updated[index] = {
+          ...updated[index],
+          product_id: product.id,
+          name: product.name,
+          price: product.sell_price || product.buy_price,
+          buy_price: product.buy_price || 0,
+          max_qty: product.quantity,
+          quantity: 1,
+        }
+      }
+    } else {
+      updated[index] = { ...updated[index], [field]: value }
+    }
+    setItems(updated)
+  }
+
+  // Hapus sparepart dari list
+  function removeItem(index: number) {
+    setItems(items.filter((_, i) => i !== index))
+  }
 
   // Hitung tanggal berakhir garansi dari input manual
   function hitungWarrantyEnd(): string | null {
@@ -527,6 +617,24 @@ function ServisEditForm({ service, onClose, onSaved }: { service: Service; onClo
     setError('')
 
     try {
+      // 1. Simpan sparepart secara ATOMIK via RPC (selisih otomatis: restore/kurangi stok + snapshot modal)
+      const itemsPayload = items
+        .filter(i => i.product_id && i.quantity > 0)
+        .map(i => ({
+          product_id: i.product_id,
+          quantity: i.quantity,
+          price: i.price,
+          buy_price: i.buy_price,
+        }))
+
+      const { error: partsError } = await supabase.rpc('save_service_parts', {
+        p_service_id: service.id,
+        p_items: itemsPayload,
+        p_created_by: user?.id,
+      })
+      if (partsError) throw partsError
+
+      // 2. Update data servis (parts_fee & total_fee ikut dihitung ulang dari items)
       const { error: updateError } = await supabase.from('services').update({
         customer_name: form.customer_name,
         customer_phone: form.customer_phone,
@@ -536,6 +644,8 @@ function ServisEditForm({ service, onClose, onSaved }: { service: Service; onClo
         complaint: form.complaint || null,
         kelengkapan: form.kelengkapan || null,
         service_fee: form.service_fee,
+        parts_fee,
+        total_fee: total,
         dp_amount: form.dp_amount,
         notes: form.notes || null,
         garansi: form.garansi,
@@ -608,6 +718,82 @@ function ServisEditForm({ service, onClose, onSaved }: { service: Service; onClo
         <div>
           <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Keluhan/Kerusakan</label>
           <textarea value={form.complaint} onChange={e => setForm({ ...form, complaint: e.target.value })} rows={3} className="w-full resize-none rounded-lg border border-input bg-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20" placeholder="Deskripsikan keluhan atau kerusakan perangkat..." />
+        </div>
+
+        {/* Sparepart yang Dipakai */}
+        <div className="rounded-lg border border-dashed border-border p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-bold text-foreground">Sparepart yang Dipakai</h4>
+              <p className="text-[10px] text-muted-foreground">Pilih sparepart dari stok. Selisih stok otomatis dihitung saat disimpan (tambah = kurangi stok, hapus = restore stok)</p>
+            </div>
+            <Button type="button" variant="secondary" size="sm" onClick={addSparepart} className="h-8 gap-1.5 text-xs">
+              <Plus size={14} /> Tambah
+            </Button>
+          </div>
+
+          {items.length === 0 && (
+            <p className="py-4 text-center text-xs text-muted-foreground">Belum ada sparepart ditambahkan</p>
+          )}
+
+          <div className="space-y-2">
+            {items.map((item, i) => (
+              <div key={i} className="rounded-lg border border-border bg-card p-3">
+                <div className="flex flex-col gap-2">
+                  {/* Baris 1: Select sparepart (full width) */}
+                  <div className="flex items-start gap-2">
+                    <select
+                      value={item.product_id}
+                      onChange={e => updateItem(i, 'product_id', e.target.value)}
+                      className="h-9 min-w-0 flex-1 rounded-md border border-input bg-surface px-2 text-xs"
+                    >
+                      <option value="">Pilih sparepart...</option>
+                      {spareparts.map(p => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} (stok: {p.quantity}) — {formatRupiah(p.sell_price || p.buy_price)}
+                        </option>
+                      ))}
+                    </select>
+                    <button type="button" onClick={() => removeItem(i)} className="h-9 w-9 shrink-0 flex items-center justify-center rounded-md border border-destructive/30 text-destructive hover:bg-destructive/10">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                  {/* Baris 2: Qty + Harga + Total */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-[10px] text-muted-foreground">Qty:</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={item.max_qty || 999}
+                        value={item.quantity}
+                        onChange={e => updateItem(i, 'quantity', Math.min(Number(e.target.value), item.max_qty || 999))}
+                        className="h-9 w-16 rounded-md border border-input bg-surface px-2 text-xs text-center"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-1 min-w-[120px]">
+                      <label className="text-[10px] text-muted-foreground shrink-0">Harga:</label>
+                      <RupiahInput
+                        value={item.price}
+                        onChange={v => updateItem(i, 'price', v)}
+                        className="h-9 min-w-0 flex-1 text-xs"
+                      />
+                    </div>
+                    <div className="text-xs font-mono font-medium text-foreground shrink-0">
+                      = {formatRupiah(item.price * item.quantity)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {(parts_fee > 0 || parts_modal > 0) && (
+            <div className="mt-3 flex justify-between border-t border-border pt-2 text-xs text-muted-foreground">
+              <span>Biaya Sparepart: <span className="font-mono font-semibold text-foreground">{formatRupiah(parts_fee)}</span></span>
+              <span>Total Modal (HPP): <span className="font-mono font-semibold text-foreground">{formatRupiah(parts_modal)}</span></span>
+            </div>
+          )}
         </div>
 
         {/* Biaya Jasa */}

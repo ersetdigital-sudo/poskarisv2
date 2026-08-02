@@ -72,6 +72,7 @@ export interface Service {
   created_by: string | null
   created_at: string
   updated_at: string
+  service_parts?: { quantity: number; buy_price: number }[]
 }
 
 export interface ServicePart {
@@ -80,6 +81,7 @@ export interface ServicePart {
   product_id: string
   quantity: number
   price: number
+  buy_price: number
   created_at: string
 }
 

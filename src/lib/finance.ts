@@ -11,6 +11,7 @@ export interface FinanceMonthly {
   omzetPenjualan: number
   marginUnit: number
   biaya: number
+  modalSparepart: number
   laba: number
 }
 
@@ -19,6 +20,7 @@ export interface FinanceSummary {
   omzetPenjualan: number
   marginUnit: number
   biayaOperasional: number
+  modalSparepart: number
   labaBersih: number
   totalTransaksiServis: number
   totalTransaksiUnit: number
@@ -53,6 +55,13 @@ export interface FinanceSale {
   created_at: string
 }
 
+export interface FinanceServicePart {
+  service_id: string
+  quantity: number
+  buy_price: number
+  date_in: string
+}
+
 export interface FinanceCost {
   amount: number
   period_month: number
@@ -64,6 +73,7 @@ export interface FinancePeriodData {
   services: FinanceService[]
   sales: FinanceSale[]
   costs: FinanceCost[]
+  parts: FinanceServicePart[]
 }
 
 const SERVICE_DONE = 'selesai'
@@ -81,6 +91,7 @@ export function computeFinanceSummary(
   services: FinanceService[],
   sales: FinanceSale[],
   costs: FinanceCost[],
+  parts: FinanceServicePart[] = [],
 ): FinanceSummary {
   const doneServices = services.filter((s) => s.status === SERVICE_DONE)
   const doneSales = sales.filter((s) => s.status === SALE_DONE)
@@ -92,12 +103,17 @@ export function computeFinanceSummary(
     0,
   )
   const biayaOperasional = costs.reduce((sum, c) => sum + (c.amount || 0), 0)
-  const labaBersih = omzetServis + marginUnit - biayaOperasional
+  const modalSparepart = parts.reduce(
+    (sum, p) => sum + (p.quantity || 0) * (p.buy_price || 0),
+    0,
+  )
+  const labaBersih = omzetServis + marginUnit - biayaOperasional - modalSparepart
 
   const monthly: FinanceMonthly[] = Array.from({ length: 12 }, (_, idx) => {
     const month = idx + 1
     const monthServices = doneServices.filter((s) => new Date(s.date_in).getMonth() === idx)
     const monthSales = doneSales.filter((s) => new Date(s.date).getMonth() === idx)
+    const monthParts = parts.filter((p) => new Date(p.date_in).getMonth() === idx)
     const monthOmzetServis = monthServices.reduce((sum, s) => sum + (s.total_fee || 0), 0)
     const monthOmzetPenjualan = monthSales.reduce((sum, s) => sum + (s.sell_price || 0), 0)
     const monthMarginUnit = monthSales.reduce(
@@ -107,13 +123,18 @@ export function computeFinanceSummary(
     const biaya = costs
       .filter((c) => c.period_month === month)
       .reduce((sum, c) => sum + (c.amount || 0), 0)
+    const modalSparepart = monthParts.reduce(
+      (sum, p) => sum + (p.quantity || 0) * (p.buy_price || 0),
+      0,
+    )
     return {
       month,
       omzetServis: monthOmzetServis,
       omzetPenjualan: monthOmzetPenjualan,
       marginUnit: monthMarginUnit,
       biaya,
-      laba: monthOmzetServis + monthMarginUnit - biaya,
+      modalSparepart,
+      laba: monthOmzetServis + monthMarginUnit - biaya - modalSparepart,
     }
   })
 
@@ -122,6 +143,7 @@ export function computeFinanceSummary(
     omzetPenjualan,
     marginUnit,
     biayaOperasional,
+    modalSparepart,
     labaBersih,
     totalTransaksiServis: doneServices.length,
     totalTransaksiUnit: doneSales.length,
@@ -156,15 +178,35 @@ export async function fetchFinanceData(period: FinancePeriod): Promise<FinancePe
     costsQuery = costsQuery.eq('period_month', period.month)
   }
 
-  const [servicesRes, salesRes, costsRes] = await Promise.all([
+  const partsQuery = supabase
+    .from('service_parts')
+    .select('service_id, quantity, buy_price, services!inner(status, date_in)')
+    .eq('services.status', SERVICE_DONE)
+    .gte('services.date_in', start)
+    .lt('services.date_in', end)
+
+  const [servicesRes, salesRes, costsRes, partsRes] = await Promise.all([
     servicesQuery,
     salesQuery,
     costsQuery,
+    partsQuery,
   ])
 
   const services = servicesRes.data || []
   const sales = salesRes.data || []
   const costs = costsRes.data || []
+  const parts: FinanceServicePart[] = (partsRes.data || []).map((p) => ({
+    service_id: p.service_id,
+    quantity: p.quantity,
+    buy_price: p.buy_price,
+    date_in: p.services?.[0]?.date_in || '',
+  }))
 
-  return { services, sales, costs, summary: computeFinanceSummary(services, sales, costs) }
+  return {
+    services,
+    sales,
+    costs,
+    parts,
+    summary: computeFinanceSummary(services, sales, costs, parts),
+  }
 }

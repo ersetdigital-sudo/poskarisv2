@@ -55,10 +55,10 @@ export default function DashboardPage() {
       // MonthPicker mengirim index 0-based (0=Januari), helper finance.ts memakai bulan 1-based (1=Januari)
       const monthNum = month === 'all' ? null : Number(month) + 1
 
-      const { summary, services, sales } = await fetchFinanceData({ year: yearNum, month: monthNum })
+      const { summary, services, sales, parts } = await fetchFinanceData({ year: yearNum, month: monthNum })
 
-      // sparepart_cost/sparepart_used belum ada di DB — 0 sampai fitur pemakaian sparepart dibangun
-      const sparepartDigunakan = 0
+      // Jumlah sparepart yang dipakai pada servis selesai di periode ini
+      const sparepartDigunakan = (parts || []).reduce((sum, p) => sum + (p.quantity || 0), 0)
 
       setStats({
         totalServis: services.length,
@@ -79,12 +79,14 @@ export default function DashboardPage() {
       setMonthlyData(monthly)
 
       // Category breakdown (Servis vs Unit) — profit dari status selesai/completed saja
-      const grossProfit = summary.omzetServis + summary.marginUnit
+      // Profit Servis = omzet servis - modal sparepart (HPP), Profit Unit = margin unit
+      const servisProfit = summary.omzetServis - summary.modalSparepart
+      const grossProfit = servisProfit + summary.marginUnit
       setCategoryData([
         {
           name: 'Servis',
-          value: Math.round(summary.omzetServis),
-          pct: grossProfit > 0 ? Math.round((summary.omzetServis / grossProfit) * 100) : 0,
+          value: Math.round(servisProfit),
+          pct: grossProfit > 0 ? Math.round((servisProfit / grossProfit) * 100) : 0,
         },
         {
           name: 'Unit Laptop',

@@ -32,6 +32,7 @@ export default function ServisPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [showForm, setShowForm] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<Service | null>(null)
+  const [restoreStock, setRestoreStock] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [sendingWA, setSendingWA] = useState<string | null>(null)
   const [waResult, setWaResult] = useState<{ id: string; ok: boolean; msg: string } | null>(null)
@@ -76,7 +77,7 @@ export default function ServisPage() {
 
       const { data, error } = await supabase
         .from('services')
-        .select('*')
+        .select('*, service_parts(quantity, buy_price)')
         .gte('date_in', startDate)
         .lte('date_in', endDate)
         .order('created_at', { ascending: false })
@@ -89,6 +90,16 @@ export default function ServisPage() {
   async function handleDelete(service: Service) {
     setDeleting(true)
     try {
+      // Opsional: kembalikan stok sparepart ke gudang (hanya jika dikonfirmasi user)
+      if (restoreStock) {
+        const { error: restoreError } = await supabase.rpc('save_service_parts', {
+          p_service_id: service.id,
+          p_items: [],
+          p_created_by: null,
+        })
+        if (restoreError) throw restoreError
+      }
+
       // Hapus service_parts terkait dulu
       const { error: partsError } = await supabase.from('service_parts').delete().eq('service_id', service.id)
       if (partsError) console.error('Error deleting parts:', partsError)
@@ -279,6 +290,10 @@ export default function ServisPage() {
 
   const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
 
+  // Total modal (HPP) sparepart per servis — snapshot buy_price saat dipakai
+  const modalSparepart = (s: Service) =>
+    (s.service_parts || []).reduce((sum, p) => sum + (p.quantity * (p.buy_price || 0)), 0)
+
   // Generate month options for quick select
   const monthOptions = []
   const now = new Date()
@@ -373,6 +388,13 @@ export default function ServisPage() {
                   <p className="text-sm font-bold font-mono text-ink shrink-0">{formatRupiah(s.total_fee)}</p>
                 </div>
                 
+                {modalSparepart(s) > 0 && (
+                  <div className="flex items-center justify-between rounded-md bg-secondary/40 px-2 py-1">
+                    <p className="text-[10px] text-muted-foreground">Modal Sparepart</p>
+                    <p className="text-[10px] font-mono font-medium text-muted-foreground">{formatRupiah(modalSparepart(s))}</p>
+                  </div>
+                )}
+                
                 <div className="flex items-center justify-between pt-1">
                   <p className="text-[10px] text-stone">{new Date(s.date_in).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                   <div className="flex gap-1.5">
@@ -399,7 +421,7 @@ export default function ServisPage() {
                         variant="outline" 
                         size="sm" 
                         className="h-7 px-2 text-[11px] gap-1 text-destructive border-destructive/30 hover:bg-destructive/10"
-                        onClick={() => setDeleteConfirm(s)}
+                        onClick={() => { setRestoreStock(false); setDeleteConfirm(s) }}
                       >
                         <Trash2 size={12} />
                       </Button>
@@ -424,6 +446,7 @@ export default function ServisPage() {
                     <th className="text-left p-3 text-xs font-medium text-ash uppercase tracking-wide">Customer</th>
                     <th className="text-left p-3 text-xs font-medium text-ash uppercase tracking-wide">Perangkat</th>
                     <th className="text-right p-3 text-xs font-medium text-ash uppercase tracking-wide">Total</th>
+                    <th className="text-right p-3 text-xs font-medium text-ash uppercase tracking-wide">Modal Sparepart</th>
                     <th className="text-left p-3 text-xs font-medium text-ash uppercase tracking-wide">Status</th>
                     <th className="text-left p-3 text-xs font-medium text-ash uppercase tracking-wide">Tanggal</th>
                     <th className="text-center p-3 text-xs font-medium text-ash uppercase tracking-wide">Aksi</th>
@@ -432,7 +455,7 @@ export default function ServisPage() {
                 <tbody>
                   {paginatedData.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="text-center p-8 text-xs text-stone">
+                      <td colSpan={8} className="text-center p-8 text-xs text-stone">
                         Belum ada data servis
                       </td>
                     </tr>
@@ -453,6 +476,13 @@ export default function ServisPage() {
                       </td>
                       <td className="p-3 text-right">
                         <p className="text-xs font-bold text-ink font-mono">{formatRupiah(s.total_fee)}</p>
+                      </td>
+                      <td className="p-3 text-right">
+                        {modalSparepart(s) > 0 ? (
+                          <p className="text-xs font-medium text-muted-foreground font-mono">{formatRupiah(modalSparepart(s))}</p>
+                        ) : (
+                          <p className="text-xs text-stone font-mono">-</p>
+                        )}
                       </td>
                       <td className="p-3">
                         <Badge variant={statusVariant(s.status)} className="text-[10px] px-2 py-0.5">
@@ -487,7 +517,7 @@ export default function ServisPage() {
                               variant="ghost" 
                               size="sm" 
                               className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => setDeleteConfirm(s)}
+                              onClick={() => { setRestoreStock(false); setDeleteConfirm(s) }}
                             >
                               <Trash2 size={13} />
                             </Button>
@@ -566,6 +596,22 @@ export default function ServisPage() {
             <p className="text-sm text-muted-foreground">
               Yakin ingin menghapus servis <span className="font-semibold text-foreground">{deleteConfirm.nota_number}</span>?
             </p>
+            {modalSparepart(deleteConfirm) > 0 && (
+              <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-hairline bg-surface p-3">
+                <input
+                  type="checkbox"
+                  checked={restoreStock}
+                  onChange={e => setRestoreStock(e.target.checked)}
+                  className="mt-0.5 h-4 w-4"
+                />
+                <span className="text-xs text-foreground">
+                  Kembalikan stok sparepart ke gudang
+                  <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                    Sparepart yang dipakai servis ini ({formatRupiah(modalSparepart(deleteConfirm))} modal) akan dikembalikan ke stok. Wajib dikonfirmasi — tidak otomatis.
+                  </span>
+                </span>
+              </label>
+            )}
             <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3">
               <p className="text-xs text-destructive">
                 Data yang dihapus tidak dapat dikembalikan.
@@ -640,6 +686,7 @@ interface SparepartItem {
   name: string
   quantity: number
   price: number
+  buy_price: number
   max_qty: number
 }
 
@@ -658,6 +705,8 @@ function ServisForm({ onClose, onSaved, prefillCustomerId, prefillNama, prefillP
 
   // Hitung total biaya sparepart dari items
   const parts_fee = items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+  // Total modal (HPP) sparepart — snapshot buy_price saat dipakai
+  const parts_modal = items.reduce((sum, item) => sum + (item.buy_price * item.quantity), 0)
   const total = form.service_fee + parts_fee
   const sisa = total - form.dp_amount
   const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
@@ -700,7 +749,7 @@ function ServisForm({ onClose, onSaved, prefillCustomerId, prefillNama, prefillP
 
   // Tambah sparepart ke list
   function addSparepart() {
-    setItems([...items, { product_id: '', name: '', quantity: 1, price: 0, max_qty: 0 }])
+    setItems([...items, { product_id: '', name: '', quantity: 1, price: 0, buy_price: 0, max_qty: 0 }])
   }
 
   // Update sparepart item
@@ -714,6 +763,7 @@ function ServisForm({ onClose, onSaved, prefillCustomerId, prefillNama, prefillP
           product_id: product.id,
           name: product.name,
           price: product.sell_price || product.buy_price,
+          buy_price: product.buy_price || 0,
           max_qty: product.quantity,
           quantity: 1,
         }
@@ -757,28 +807,27 @@ function ServisForm({ onClose, onSaved, prefillCustomerId, prefillNama, prefillP
       }).select('id').single()
       if (serviceError) throw serviceError
 
-      // 2. Insert service_parts + stock_movements untuk setiap sparepart
-      for (const item of items) {
-        if (!item.product_id || item.quantity <= 0) continue
+      // 2. Simpan sparepart secara ATOMIK via RPC (row lock + cek stok + snapshot modal)
+      //    - Kurangi stok (trigger stock_movements)
+      //    - Snapshot harga jual (price) & harga beli (buy_price) saat dipakai
+      const itemsPayload = items
+        .filter(i => i.product_id && i.quantity > 0)
+        .map(i => ({
+          product_id: i.product_id,
+          quantity: i.quantity,
+          price: i.price,
+          buy_price: i.buy_price,
+        }))
 
-        // Insert service_part
-        await supabase.from('service_parts').insert({
-          service_id: service.id,
-          product_id: item.product_id,
-          quantity: item.quantity,
-          price: item.price,
-        })
-
-        // Insert stock_movement (trigger otomatis kurangi stok)
-        await supabase.from('stock_movements').insert({
-          product_id: item.product_id,
-          type: 'keluar',
-          quantity: item.quantity,
-          reference_type: 'servis',
-          reference_id: service.id,
-          notes: `Sparepart dipakai untuk servis ${form.customer_name}`,
-          created_by: user?.id,
-        })
+      const { error: partsError } = await supabase.rpc('save_service_parts', {
+        p_service_id: service.id,
+        p_items: itemsPayload,
+        p_created_by: user?.id,
+      })
+      if (partsError) {
+        // Rollback: hapus servis yang baru dibuat agar tidak jadi data yatim
+        await supabase.from('services').delete().eq('id', service.id)
+        throw partsError
       }
 
       onSaved(); onClose()
@@ -948,6 +997,10 @@ function ServisForm({ onClose, onSaved, prefillCustomerId, prefillNama, prefillP
             <div className="flex justify-between text-muted-foreground">
               <span>Biaya Sparepart ({items.length} item)</span>
               <span className="font-mono">{formatRupiah(parts_fee)}</span>
+            </div>
+            <div className="flex justify-between text-muted-foreground">
+              <span>Total Modal Sparepart (HPP)</span>
+              <span className="font-mono">{formatRupiah(parts_modal)}</span>
             </div>
             <div className="flex justify-between text-muted-foreground">
               <span>Biaya Jasa</span>

@@ -10,7 +10,7 @@ import PageHeader from '@/components/dashboard/PageHeader'
 
 interface LaporanData {
   omzetServis: number; omzetPenjualan: number; marginUnit: number;
-  biayaOperasional: number; labaBersih: number;
+  biayaOperasional: number; modalSparepart: number; labaBersih: number;
   totalTransaksiServis: number; totalTransaksiUnit: number;
 }
 
@@ -34,7 +34,7 @@ interface TopCustomer {
 }
 
 export default function LaporanPage() {
-  const [data, setData] = useState<LaporanData>({ omzetServis: 0, omzetPenjualan: 0, marginUnit: 0, biayaOperasional: 0, labaBersih: 0, totalTransaksiServis: 0, totalTransaksiUnit: 0 })
+  const [data, setData] = useState<LaporanData>({ omzetServis: 0, omzetPenjualan: 0, marginUnit: 0, biayaOperasional: 0, modalSparepart: 0, labaBersih: 0, totalTransaksiServis: 0, totalTransaksiUnit: 0 })
   const [loading, setLoading] = useState(true)
   const [filterMonth, setFilterMonth] = useState(() => { const now = new Date(); return { month: now.getMonth() + 1, year: now.getFullYear() } })
   const [services, setServices] = useState<ServiceDetail[]>([])
@@ -58,6 +58,7 @@ export default function LaporanPage() {
         omzetPenjualan: summary.omzetPenjualan,
         marginUnit: summary.marginUnit,
         biayaOperasional: summary.biayaOperasional,
+        modalSparepart: summary.modalSparepart,
         labaBersih: summary.labaBersih,
         totalTransaksiServis: summary.totalTransaksiServis,
         totalTransaksiUnit: summary.totalTransaksiUnit,
@@ -182,6 +183,7 @@ export default function LaporanPage() {
           <div className="space-y-0">
             <DetailRow label="(+) Omzet Servis" value={formatRupiah(data.omzetServis)} color="text-badge-success" />
             <DetailRow label="(+) Margin Penjualan Unit" value={formatRupiah(data.marginUnit)} color="text-badge-success" />
+            <DetailRow label="(-) Modal Sparepart" value={data.modalSparepart > 0 ? `-${formatRupiah(data.modalSparepart)}` : formatRupiah(0)} color="text-danger" />
             <DetailRow label="(-) Biaya Operasional" value={`-${formatRupiah(data.biayaOperasional)}`} color="text-danger" />
             <div className="border-t border-hairline pt-3 mt-3 flex justify-between items-center">
               <span className="text-base font-bold text-ink">= Laba Bersih</span>
