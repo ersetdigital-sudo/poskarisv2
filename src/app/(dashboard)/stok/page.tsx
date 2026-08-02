@@ -35,6 +35,16 @@ export default function StokPage() {
 
   useEffect(() => { fetchData(); fetchCategories() }, [])
 
+  // Next.js 16: saat halaman direstore dari bfcache/router cache,
+  // useEffect mount tidak dijalankan lagi → refetch data agar tidak stale.
+  useEffect(() => {
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) { fetchData(); fetchCategories() }
+    }
+    window.addEventListener('pageshow', onPageShow)
+    return () => window.removeEventListener('pageshow', onPageShow)
+  }, [])
+
   async function fetchData() {
     try {
       const [prodRes, movRes] = await Promise.all([

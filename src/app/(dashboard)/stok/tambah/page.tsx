@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { startTransition, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
@@ -26,7 +26,7 @@ export default function TambahStokPage() {
   const [catLoading, setCatLoading] = useState(false)
   const [catError, setCatError] = useState('')
   const [form, setForm] = useState({
-    category_id: '', name: '', sku: '', brand: '', model: '', specs: '',
+    category_id: '', sku: '', brand: '', model: '', specs: '',
     condition: 'baru' as 'baru' | 'bekas' | 'refurbished',
     buy_price: 0, sell_price: 0, quantity: 1, min_quantity: 0,
   })
@@ -49,20 +49,25 @@ export default function TambahStokPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
+    const productName = `${form.brand} ${form.model}`.trim()
     try {
       const { error } = await supabase.from('products').insert({
-        category_id: form.category_id || null, name: form.name, sku: form.sku || null,
+        category_id: form.category_id || null, name: productName, sku: form.sku || null,
         brand: form.brand || null, model: form.model || null, specs: form.specs || null,
         condition: form.condition, buy_price: form.buy_price, sell_price: form.sell_price,
         quantity: 0, min_quantity: form.min_quantity, status: 'ready',
       })
       if (error) throw error
       if (form.quantity > 0) {
-        const { data: prod } = await supabase.from('products').select('id').eq('name', form.name).order('created_at', { ascending: false }).limit(1).single()
-        if (prod) await supabase.from('stock_movements').insert({ product_id: prod.id, type: 'masuk', quantity: form.quantity, reference_type: 'adjustment', notes: `Stok awal ${form.name}`, created_by: user?.id })
+        const { data: prod } = await supabase.from('products').select('id').eq('name', productName).order('created_at', { ascending: false }).limit(1).single()
+        if (prod) await supabase.from('stock_movements').insert({ product_id: prod.id, type: 'masuk', quantity: form.quantity, reference_type: 'adjustment', notes: `Stok awal ${productName}`, created_by: user?.id })
       }
       showToast('Barang berhasil ditambahkan', 'success')
-      router.push('/stok')
+      // router.refresh() mencegah Next.js 16 menampilkan /stok dari cache stale
+      startTransition(() => {
+        router.push('/stok')
+        router.refresh()
+      })
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Gagal menyimpan')
     } finally { setLoading(false) }
@@ -139,18 +144,12 @@ export default function TambahStokPage() {
                 <textarea value={form.specs} onChange={e => setForm({ ...form, specs: e.target.value })} placeholder="RAM 8GB, SSD 256GB, DDR4 3200MHz" rows={2} className={textareaClass} />
               </div>
 
-              {/* Kondisi & Nama Barang - SAMA PERSIS kaya Beli Unit (Kondisi & IMEI/SN) */}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div>
-                  <label className={labelClass}>Kondisi *</label>
-                  <select value={form.condition} onChange={e => setForm({ ...form, condition: e.target.value as 'baru' | 'bekas' | 'refurbished' })} className={selectClass}>
-                    <option value="baru">Baru</option><option value="bekas">Bekas</option><option value="refurbished">Refurbished</option>
-                  </select>
-                </div>
-                <div>
-                  <label className={labelClass}>Nama Barang *</label>
-                  <Input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="RAM 8GB DDR4 SODIMM" className="h-10 w-full" />
-                </div>
+              {/* Kondisi */}
+              <div>
+                <label className={labelClass}>Kondisi *</label>
+                <select value={form.condition} onChange={e => setForm({ ...form, condition: e.target.value as 'baru' | 'bekas' | 'refurbished' })} className={selectClass}>
+                  <option value="baru">Baru</option><option value="bekas">Bekas</option><option value="refurbished">Refurbished</option>
+                </select>
               </div>
 
               {/* Harga Beli & Harga Jual - SAMA PERSIS kaya Beli Unit */}
