@@ -89,9 +89,14 @@ export default function StokPage() {
     }
   }
   const catName = (p: Product) => (p as Product & { categories?: { name: string } }).categories?.name || ''
+  const isSparepart = (name: string) => name.toLowerCase().trim() === 'sparepart'
+  const isUnitLaptop = (name: string) => {
+    const n = name.toLowerCase().trim()
+    return n === 'unit laptop' || n === 'laptop'
+  }
   const filteredByTab = products.filter(p => {
-    if (activeTab === 'sparepart') return catName(p) === 'Sparepart'
-    return catName(p) === 'Unit Laptop'
+    if (activeTab === 'sparepart') return isSparepart(catName(p))
+    return isUnitLaptop(catName(p))
   })
 
   const filtered = filteredByTab.filter(p => {
@@ -102,15 +107,15 @@ export default function StokPage() {
   // Total aset inventori = Σ (harga beli × stok) dari barang yang masih tersedia
   const aset = (list: Product[]) =>
     list.filter(p => p.quantity > 0).reduce((sum, p) => sum + (p.buy_price || 0) * p.quantity, 0)
-  const asetSparepart = aset(products.filter(p => catName(p) === 'Sparepart'))
-  const asetUnit = aset(products.filter(p => catName(p) === 'Unit Laptop'))
+  const asetSparepart = aset(products.filter(p => isSparepart(catName(p))))
+  const asetUnit = aset(products.filter(p => isUnitLaptop(catName(p))))
 
   // Filter movements by tab category
   const filteredMovements = movements.filter(m => {
     const prod = m as StockMovement & { products?: { name: string; categories?: { name: string } } }
-    const catName = prod.products?.categories?.name || ''
-    if (activeTab === 'sparepart') return catName === 'Sparepart'
-    return catName === 'Unit Laptop'
+    const cat = prod.products?.categories?.name || ''
+    if (activeTab === 'sparepart') return isSparepart(cat)
+    return isUnitLaptop(cat)
   })
 
   const lowStock = filteredByTab.filter(p => p.quantity <= p.min_quantity && p.min_quantity > 0)
