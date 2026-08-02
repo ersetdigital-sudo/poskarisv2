@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
-import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, Wrench, Users, Calendar, ArrowUp, ArrowDown } from 'lucide-react'
+import { fetchFinanceData } from '@/lib/finance'
+import { TrendingDown, DollarSign, ShoppingCart, Wrench, Users, Calendar } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import StatCard from '@/components/dashboard/StatCard'
@@ -21,7 +21,7 @@ interface ServiceDetail {
 }
 
 interface SaleDetail {
-  id: string; invoice_number: string; buyer_name: string; product_id: string;
+  id: string; invoice_number: string; buyer_name: string; product_id: string | null;
   sell_price: number; buy_price: number; margin: number; status: string; date: string;
 }
 
@@ -48,38 +48,21 @@ export default function LaporanPage() {
   async function fetchLaporan() {
     setLoading(true)
     try {
-      const startDate = new Date(filterMonth.year, filterMonth.month - 1, 1).toISOString()
-      const endDate = new Date(filterMonth.year, filterMonth.month, 0, 23, 59, 59).toISOString()
-      
-      // Fetch services
-      const { data: servisData } = await supabase.from('services')
-        .select('id, nota_number, customer_name, device_type, device_brand, service_fee, parts_fee, total_fee, status, date_in')
-        .gte('date_in', startDate).lte('date_in', endDate)
-        .order('date_in', { ascending: false })
-      
-      // Fetch sales
-      const { data: salesData } = await supabase.from('sales')
-        .select('id, invoice_number, buyer_name, product_id, sell_price, buy_price, margin, status, date')
-        .gte('date', startDate).lte('date', endDate)
-        .order('date', { ascending: false })
-      
-      // Fetch operational costs
-      const { data: costData } = await supabase.from('operational_costs')
-        .select('amount').eq('period_month', filterMonth.month).eq('period_year', filterMonth.year)
-      
-      // Calculate totals
-      const omzetServis = servisData?.reduce((sum, s) => sum + (s.status === 'selesai' ? s.total_fee : 0), 0) || 0
-      const omzetPenjualan = salesData?.reduce((sum, s) => sum + (s.status === 'completed' ? s.sell_price : 0), 0) || 0
-      const marginUnit = salesData?.reduce((sum, s) => sum + (s.status === 'completed' ? (s.margin || s.sell_price - s.buy_price) : 0), 0) || 0
-      const biayaOperasional = costData?.reduce((sum, c) => sum + c.amount, 0) || 0
-      const labaBersih = (omzetServis + marginUnit) - biayaOperasional
-      
-      setData({
-        omzetServis, omzetPenjualan, marginUnit, biayaOperasional, labaBersih,
-        totalTransaksiServis: servisData?.filter(s => s.status === 'selesai').length || 0,
-        totalTransaksiUnit: salesData?.filter(s => s.status === 'completed').length || 0,
+      const { summary, services: servisData, sales: salesData } = await fetchFinanceData({
+        year: filterMonth.year,
+        month: filterMonth.month,
       })
-      
+
+      setData({
+        omzetServis: summary.omzetServis,
+        omzetPenjualan: summary.omzetPenjualan,
+        marginUnit: summary.marginUnit,
+        biayaOperasional: summary.biayaOperasional,
+        labaBersih: summary.labaBersih,
+        totalTransaksiServis: summary.totalTransaksiServis,
+        totalTransaksiUnit: summary.totalTransaksiUnit,
+      })
+
       setServices(servisData || [])
       setSales(salesData || [])
       

@@ -39,7 +39,7 @@ export default function MonthPicker({ month, year }: MonthPickerProps) {
           <SelectValue placeholder="Pilih bulan" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">Semua Bulan</SelectItem>
+          <SelectItem value="all">Kumulatif</SelectItem>
           {MONTHS.map((m, i) => (
             <SelectItem key={i} value={String(i)}>
               {m}

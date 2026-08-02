@@ -1,10 +1,10 @@
 'use client'
 
 import { useAuth } from '@/lib/auth-context'
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
-import { Wrench, TrendingUp, DollarSign, ShoppingCart, Package, Receipt } from 'lucide-react'
+import { fetchFinanceData } from '@/lib/finance'
+import { Wrench, TrendingUp, DollarSign } from 'lucide-react'
 
 import PageHeader from '@/components/dashboard/PageHeader'
 import MonthPicker from '@/components/dashboard/MonthPicker'
@@ -53,82 +53,49 @@ export default function DashboardPage() {
     try {
       const yearNum = Number(year)
       const monthNum = month === 'all' ? null : Number(month)
-      
-      // Fetch services & sales for the period
-      let servicesQuery = supabase.from('services').select('*')
-      let salesQuery = supabase.from('sales').select('*')
-      
-      // Filter by year
-      servicesQuery = servicesQuery.gte('created_at', `${yearNum}-01-01`).lt('created_at', `${yearNum + 1}-01-01`)
-      salesQuery = salesQuery.gte('created_at', `${yearNum}-01-01`).lt('created_at', `${yearNum + 1}-01-01`)
-      
-      // Filter by month if not 'all'
-      if (monthNum !== null) {
-        const monthStart = new Date(yearNum, monthNum, 1).toISOString()
-        const monthEnd = new Date(yearNum, monthNum + 1, 1).toISOString()
-        servicesQuery = servicesQuery.gte('created_at', monthStart).lt('created_at', monthEnd)
-        salesQuery = salesQuery.gte('created_at', monthStart).lt('created_at', monthEnd)
-      }
-      
-      // Fetch operational costs for the period
-      let costsQuery = supabase.from('operational_costs').select('amount, period_month, period_year')
-      costsQuery = costsQuery.eq('period_year', yearNum)
-      if (monthNum !== null) costsQuery = costsQuery.eq('period_month', monthNum)
-      
-      const [servicesRes, salesRes, productsRes, stockRes, costsRes] = await Promise.all([
-        servicesQuery,
-        salesQuery,
-        supabase.from('products').select('*, categories(name)'),
-        supabase.from('stock_movements').select('*, products(name)').order('created_at', { ascending: false }).limit(50),
-        costsQuery
-      ])
-      
-      const services = servicesRes.data || []
-      const sales = salesRes.data || []
-      const costs = costsRes.data || []
-      const products = productsRes.data || []
-      
-      // Calculate stats
-      const totalServis = services.length
-      const totalOmzet = services.reduce((sum, s) => sum + (s.total_fee || 0), 0) + 
-                         sales.reduce((sum, s) => sum + (s.sell_price || 0), 0)
-      const totalBiayaOperasional = costs.reduce((sum, c) => sum + (c.amount || 0), 0)
-      const grossProfit = services.reduce((sum, s) => sum + (s.total_fee - (s.sparepart_cost || 0)), 0) +
-                          sales.reduce((sum, s) => sum + ((s.sell_price || 0) - (s.buy_price || 0)), 0)
-      const totalProfit = grossProfit - totalBiayaOperasional
-      const totalBiaya = services.reduce((sum, s) => sum + (s.sparepart_cost || 0), 0)
-      const unitTerjual = sales.filter(s => s.status === 'completed').length
-      const sparepartDigunakan = services.reduce((sum, s) => sum + (s.sparepart_used?.length || 0), 0)
-      
-      setStats({ totalServis, totalOmzet, totalProfit, totalBiaya, unitTerjual, sparepartDigunakan })
-      
-      // Monthly chart data (all 12 months for the year)
-      const monthly = MONTHS.map((name, idx) => {
-        const monthServices = services.filter(s => new Date(s.created_at).getMonth() === idx)
-        const monthSales = sales.filter(s => new Date(s.created_at).getMonth() === idx)
-        const biaya = costs
-          .filter(c => c.period_month === idx + 1)
-          .reduce((sum, c) => sum + (c.amount || 0), 0)
-        const omzet = monthServices.reduce((sum, s) => sum + (s.total_fee || 0), 0) +
-                      monthSales.reduce((sum, s) => sum + (s.sell_price || 0), 0)
-        const profit = monthServices.reduce((sum, s) => sum + (s.total_fee - (s.sparepart_cost || 0)), 0) +
-                       monthSales.reduce((sum, s) => sum + ((s.sell_price || 0) - (s.buy_price || 0)), 0) - biaya
-        return { name: name.slice(0, 3), omzet, profit, biaya }
+
+      const { summary, services, sales } = await fetchFinanceData({ year: yearNum, month: monthNum })
+
+      // sparepart_cost/sparepart_used belum ada di DB — 0 sampai fitur pemakaian sparepart dibangun
+      const sparepartDigunakan = 0
+
+      setStats({
+        totalServis: services.length,
+        totalOmzet: summary.omzetServis + summary.omzetPenjualan,
+        totalProfit: summary.labaBersih,
+        totalBiaya: 0,
+        unitTerjual: summary.totalTransaksiUnit,
+        sparepartDigunakan,
       })
+
+      // Monthly chart data (12 bulan, dari satu sumber formula laba)
+      const monthly = summary.monthly.map((m) => ({
+        name: MONTHS[m.month - 1].slice(0, 3),
+        omzet: m.omzetServis + m.omzetPenjualan,
+        profit: m.laba,
+        biaya: m.biaya,
+      }))
       setMonthlyData(monthly)
-      
-      // Category breakdown (Servis vs Unit)
-      const servisProfit = services.reduce((sum, s) => sum + (s.total_fee - (s.sparepart_cost || 0)), 0)
-      const unitProfit = sales.reduce((sum, s) => sum + ((s.sell_price || 0) - (s.buy_price || 0)), 0)
+
+      // Category breakdown (Servis vs Unit) — profit dari status selesai/completed saja
+      const grossProfit = summary.omzetServis + summary.marginUnit
       setCategoryData([
-        { name: 'Servis', value: Math.round(servisProfit), pct: Math.round((servisProfit / grossProfit) * 100) || 0 },
-        { name: 'Unit Laptop', value: Math.round(unitProfit), pct: Math.round((unitProfit / grossProfit) * 100) || 0 }
+        {
+          name: 'Servis',
+          value: Math.round(summary.omzetServis),
+          pct: grossProfit > 0 ? Math.round((summary.omzetServis / grossProfit) * 100) : 0,
+        },
+        {
+          name: 'Unit Laptop',
+          value: Math.round(summary.marginUnit),
+          pct: grossProfit > 0 ? Math.round((summary.marginUnit / grossProfit) * 100) : 0,
+        },
       ])
-      
+
       // Marketplace placeholder (can be customized based on your data)
       setMarketplaceData([
-        { name: 'Walk-in', value: Math.round(totalProfit * 0.6), pct: 60 },
-        { name: 'Online', value: Math.round(totalProfit * 0.4), pct: 40 }
+        { name: 'Walk-in', value: Math.round(summary.labaBersih * 0.6), pct: 60 },
+        { name: 'Online', value: Math.round(summary.labaBersih * 0.4), pct: 40 }
       ])
       
       // Top products by quantity
@@ -198,7 +165,7 @@ export default function DashboardPage() {
   }
 
   const periodLabel = month === 'all' 
-    ? `Tahun ${year}` 
+    ? `Kumulatif Tahun ${year}` 
     : `${MONTHS[Number(month)]} ${year}`
 
   return (
