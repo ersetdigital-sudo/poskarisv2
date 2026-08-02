@@ -278,6 +278,7 @@ export default function StokPage() {
                   <div className="min-w-0 flex-1">
                     <p className="text-[13px] font-semibold text-foreground leading-tight truncate">{p.name}</p>
                     <p className="text-[10px] text-muted-foreground mt-0.5">{p.sku || catName}</p>
+                    {p.specs && <p className="text-[10px] text-muted-foreground/80 mt-0.5 truncate">{p.specs}</p>}
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     {isLow && (
@@ -385,6 +386,7 @@ export default function StokPage() {
                         <td className="p-4">
                           <p className="text-sm font-semibold text-ink">{p.name}</p>
                           <p className="text-[10px] text-stone font-mono mt-0.5">{p.sku || '-'}</p>
+                          {p.specs && <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1 max-w-56">{p.specs}</p>}
                         </td>
                         <td className="p-4">
                           <p className="text-xs text-charcoal">{catName}</p>
