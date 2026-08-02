@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase, Product, StockMovement } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
 import Link from 'next/link'
-import { Search, ArrowDown, ArrowUp, AlertTriangle, Plus, Package, X, Cpu, Wrench, Pencil, Trash2, ShoppingCart, ArrowDownToLine } from 'lucide-react'
+import { Search, ArrowDown, ArrowUp, AlertTriangle, Plus, Package, X, Cpu, Wrench, Pencil, Trash2, ShoppingCart, ArrowDownToLine, Laptop } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { RupiahInput } from '@/components/ui/rupiah-input'
 import PageHeader from '@/components/dashboard/PageHeader'
+import KpiCard from '@/components/laporan/KpiCard'
 import { showToast } from '@/components/ui/toast'
 
 type TabType = 'sparepart' | 'unit'
@@ -76,16 +77,22 @@ export default function StokPage() {
       setDeleting(false)
     }
   }
+  const catName = (p: Product) => (p as Product & { categories?: { name: string } }).categories?.name || ''
   const filteredByTab = products.filter(p => {
-    const catName = (p as Product & { categories?: { name: string } }).categories?.name || ''
-    if (activeTab === 'sparepart') return catName === 'Sparepart'
-    return catName === 'Unit Laptop'
+    if (activeTab === 'sparepart') return catName(p) === 'Sparepart'
+    return catName(p) === 'Unit Laptop'
   })
 
   const filtered = filteredByTab.filter(p => {
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) || (p.sku || '').toLowerCase().includes(search.toLowerCase())
     return matchSearch
   })
+
+  // Total aset inventori = Σ (harga beli × stok) dari barang yang masih tersedia
+  const aset = (list: Product[]) =>
+    list.filter(p => p.quantity > 0 && p.status !== 'sold').reduce((sum, p) => sum + (p.buy_price || 0) * p.quantity, 0)
+  const asetSparepart = aset(products.filter(p => catName(p) === 'Sparepart'))
+  const asetUnit = aset(products.filter(p => catName(p) === 'Unit Laptop'))
 
   // Filter movements by tab category
   const filteredMovements = movements.filter(m => {
@@ -133,6 +140,31 @@ export default function StokPage() {
           </Link>
         </div>
       </PageHeader>
+
+      {/* Total Aset */}
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3">
+        <KpiCard
+          title="Aset Sparepart"
+          value={asetSparepart}
+          sub="modal stok sparepart"
+          icon={Wrench}
+          tone="emerald"
+        />
+        <KpiCard
+          title="Aset Unit Laptop"
+          value={asetUnit}
+          sub="modal unit laptop"
+          icon={Laptop}
+          tone="primary"
+        />
+        <KpiCard
+          title="Total Aset Inventori"
+          value={asetSparepart + asetUnit}
+          icon={Package}
+          tone="sky"
+          className="col-span-2 lg:col-span-1"
+        />
+      </div>
 
       {/* Tabs */}
       <div className="flex flex-col sm:flex-row gap-2">

@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import { supabase, Product } from '@/lib/supabase'
-import { Search, ShoppingCart, ArrowDownToLine } from 'lucide-react'
+import { Search, ShoppingCart, ArrowDownToLine, Laptop, DollarSign } from 'lucide-react'
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import PageHeader from '@/components/dashboard/PageHeader'
+import KpiCard from '@/components/laporan/KpiCard'
 
 export default function UnitLaptopPage() {
   const [products, setProducts] = useState<Product[]>([])
@@ -41,6 +42,10 @@ export default function UnitLaptopPage() {
   })
 
   const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
+
+  // Total aset unit = Σ (harga beli × stok) dari unit yang masih tersedia
+  const readyUnits = products.filter(p => p.quantity > 0 && p.status !== 'sold')
+  const totalAsetUnit = readyUnits.reduce((sum, p) => sum + (p.buy_price || 0) * p.quantity, 0)
   
   const statusVariant = (status: string): 'default' | 'secondary' | 'success' | 'warning' | 'destructive' => {
     const map: Record<string, 'default' | 'secondary' | 'success' | 'warning' | 'destructive'> = {
@@ -77,6 +82,24 @@ export default function UnitLaptopPage() {
           </Link>
         </div>
       </PageHeader>
+
+      {/* Total Aset */}
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+        <KpiCard
+          title="Total Aset Unit"
+          value={totalAsetUnit}
+          sub="modal unit laptop tersedia"
+          icon={DollarSign}
+          tone="emerald"
+        />
+        <KpiCard
+          title="Unit Ready"
+          value={readyUnits.length}
+          format={n => `${Math.round(n)} unit`}
+          icon={Laptop}
+          tone="primary"
+        />
+      </div>
 
       {/* Filters */}
       <Card className="shadow-card">
