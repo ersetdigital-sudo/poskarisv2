@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
+import { AlertDialog } from '@/components/ui/alert-dialog'
 import { TestWhatsApp } from './test-whatsapp'
 import PageHeader from '@/components/dashboard/PageHeader'
 
@@ -397,32 +398,29 @@ function UsersTab({ userId }: { userId?: string }) {
         </Modal>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
-        <Modal title="Hapus User" onClose={() => { setDeleteConfirm(null); setError('') }} maxWidth="sm">
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Yakin ingin menghapus user <span className="font-semibold text-foreground">{deleteConfirm.name}</span>?
-            </p>
-            <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3">
-              <p className="text-xs text-destructive">
-                User akan dihapus permanen dari sistem. Tindakan ini tidak dapat dibatalkan.
-              </p>
-            </div>
+      {/* Delete Confirmation */}
+      <AlertDialog
+        open={!!deleteConfirm}
+        title="Hapus User"
+        description={
+          <>
+            Yakin ingin menghapus user{' '}
+            <span className="font-semibold text-foreground">{deleteConfirm?.name}</span>?
+            <span className="mt-2 block text-xs text-destructive">
+              User akan dihapus permanen dari sistem. Tindakan ini tidak dapat dibatalkan.
+            </span>
             {error && (
-              <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3">
-                <p className="text-xs text-destructive">{error}</p>
-              </div>
+              <span className="mt-2 block rounded-lg border border-destructive/20 bg-destructive/10 p-2.5 text-xs text-destructive">
+                {error}
+              </span>
             )}
-            <div className="flex gap-2">
-              <Button variant="secondary" className="flex-1 h-10" onClick={() => { setDeleteConfirm(null); setError('') }}>Batal</Button>
-              <Button variant="destructive" className="flex-1 h-10" onClick={handleDeleteUser} disabled={deleting}>
-                {deleting ? 'Menghapus...' : 'Hapus'}
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
+          </>
+        }
+        confirmLabel={deleting ? 'Menghapus...' : 'Hapus'}
+        loading={deleting}
+        onConfirm={handleDeleteUser}
+        onCancel={() => { setDeleteConfirm(null); setError('') }}
+      />
     </>
   )
 }
@@ -914,19 +912,20 @@ function PaymentMethodsTab() {
         )}
 
         {/* Delete Confirmation */}
-        {deleteConfirm && (
-          <Modal title="Hapus Metode Pembayaran" onClose={() => setDeleteConfirm(null)} maxWidth="sm">
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Yakin ingin menghapus <span className="font-semibold text-foreground">{deleteConfirm.name}</span>?
-              </p>
-              <div className="flex gap-2">
-                <Button variant="secondary" className="flex-1 h-10" onClick={() => setDeleteConfirm(null)}>Batal</Button>
-                <Button variant="destructive" className="flex-1 h-10" onClick={() => handleDelete(deleteConfirm)}>Hapus</Button>
-              </div>
-            </div>
-          </Modal>
-        )}
+        <AlertDialog
+          open={!!deleteConfirm}
+          title="Hapus Metode Pembayaran"
+          description={
+            <>
+              Yakin ingin menghapus{' '}
+              <span className="font-semibold text-foreground">{deleteConfirm?.name}</span>? Metode ini akan hilang dari
+              form penjualan dan tidak dapat dikembalikan.
+            </>
+          }
+          confirmLabel="Hapus"
+          onConfirm={() => deleteConfirm && handleDelete(deleteConfirm)}
+          onCancel={() => setDeleteConfirm(null)}
+        />
       </CardContent>
     </Card>
 

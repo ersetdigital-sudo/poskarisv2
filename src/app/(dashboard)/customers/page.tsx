@@ -4,10 +4,9 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase, Customer } from '@/lib/supabase'
 import { Search, Eye, Phone, MapPin, ArrowUpDown, Loader2, Trash2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Modal } from '@/components/ui/modal'
+import { AlertDialog } from '@/components/ui/alert-dialog'
 import PageHeader from '@/components/dashboard/PageHeader'
 import { showToast } from '@/components/ui/toast'
 import Link from 'next/link'
@@ -303,27 +302,22 @@ export default function CustomersPage() {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
-        <Modal title="Hapus Customer" onClose={() => setDeleteConfirm(null)} maxWidth="sm">
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Yakin ingin menghapus customer <span className="font-semibold text-foreground">{deleteConfirm.nama}</span>?
-            </p>
-            <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3">
-              <p className="text-xs text-destructive">
-                Data customer dan kaitannya dengan transaksi akan dihapus. Tindakan ini tidak dapat dibatalkan.
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="secondary" className="flex-1 h-10" onClick={() => setDeleteConfirm(null)}>Batal</Button>
-              <Button variant="destructive" className="flex-1 h-10" onClick={handleDelete} disabled={deleting}>
-                {deleting ? 'Menghapus...' : 'Hapus'}
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
+      {/* Delete Confirmation */}
+      <AlertDialog
+        open={!!deleteConfirm}
+        title="Hapus Customer"
+        description={
+          <>
+            Yakin ingin menghapus customer{' '}
+            <span className="font-semibold text-foreground">{deleteConfirm?.nama}</span>? Data customer dan kaitannya
+            dengan transaksi akan dihapus permanen.
+          </>
+        }
+        confirmLabel={deleting ? 'Menghapus...' : 'Hapus'}
+        loading={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteConfirm(null)}
+      />
     </div>
   )
 }

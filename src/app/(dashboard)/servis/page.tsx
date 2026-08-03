@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
+import { AlertDialog } from '@/components/ui/alert-dialog'
 import { RupiahInput } from '@/components/ui/rupiah-input'
 import PageHeader from '@/components/dashboard/PageHeader'
 import { NotaServisPDF } from '@/components/pdf/nota-servis'
@@ -589,15 +590,16 @@ export default function ServisPage() {
         </Card>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
-        <Modal title="Hapus Servis" onClose={() => setDeleteConfirm(null)} maxWidth="sm">
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Yakin ingin menghapus servis <span className="font-semibold text-foreground">{deleteConfirm.nota_number}</span>?
-            </p>
-            {modalSparepart(deleteConfirm) > 0 && (
-              <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-hairline bg-surface p-3">
+      {/* Delete Confirmation */}
+      <AlertDialog
+        open={!!deleteConfirm}
+        title="Hapus Servis"
+        description={
+          <>
+            Yakin ingin menghapus servis{' '}
+            <span className="font-semibold text-foreground">{deleteConfirm?.nota_number}</span>?
+            {deleteConfirm && modalSparepart(deleteConfirm) > 0 && (
+              <label className="mt-3 flex cursor-pointer items-start gap-2.5 rounded-lg border border-border bg-surface p-3 text-left">
                 <input
                   type="checkbox"
                   checked={restoreStock}
@@ -607,36 +609,20 @@ export default function ServisPage() {
                 <span className="text-xs text-foreground">
                   Kembalikan stok sparepart ke gudang
                   <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                    Sparepart yang dipakai servis ini ({formatRupiah(modalSparepart(deleteConfirm))} modal) akan dikembalikan ke stok. Wajib dikonfirmasi — tidak otomatis.
+                    Sparepart yang dipakai servis ini ({formatRupiah(modalSparepart(deleteConfirm))} modal) akan
+                    dikembalikan ke stok. Wajib dikonfirmasi — tidak otomatis.
                   </span>
                 </span>
               </label>
             )}
-            <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3">
-              <p className="text-xs text-destructive">
-                Data yang dihapus tidak dapat dikembalikan.
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                variant="secondary" 
-                className="flex-1 h-10"
-                onClick={() => setDeleteConfirm(null)}
-              >
-                Batal
-              </Button>
-              <Button 
-                variant="destructive" 
-                className="flex-1 h-10"
-                onClick={() => handleDelete(deleteConfirm)}
-                disabled={deleting}
-              >
-                {deleting ? 'Menghapus...' : 'Hapus'}
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
+            <span className="mt-3 block text-xs text-destructive">Data yang dihapus tidak dapat dikembalikan.</span>
+          </>
+        }
+        confirmLabel={deleting ? 'Menghapus...' : 'Hapus'}
+        loading={deleting}
+        onConfirm={() => deleteConfirm && handleDelete(deleteConfirm)}
+        onCancel={() => setDeleteConfirm(null)}
+      />
 
       {/* WhatsApp Result Toast */}
       {waResult && (

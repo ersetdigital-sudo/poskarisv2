@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
+import { AlertDialog } from '@/components/ui/alert-dialog'
 import { RupiahInput } from '@/components/ui/rupiah-input'
 import { BrandAutocomplete } from '@/components/ui/brand-autocomplete'
 import PageHeader from '@/components/dashboard/PageHeader'
@@ -561,27 +562,24 @@ export default function StokPage() {
         </Modal>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
-        <Modal title="Hapus Produk" onClose={() => setDeleteConfirm(null)} maxWidth="sm">
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Yakin ingin menghapus produk <span className="font-semibold text-foreground">{deleteConfirm.name}</span>?
-            </p>
-            <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3">
-              <p className="text-xs text-destructive">
-                Semua data mutasi stok terkait juga akan dihapus. Tindakan ini tidak dapat dibatalkan.
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="secondary" className="flex-1 h-10" onClick={() => setDeleteConfirm(null)}>Batal</Button>
-              <Button variant="destructive" className="flex-1 h-10" onClick={() => handleDeleteProduct(deleteConfirm)} disabled={deleting}>
-                {deleting ? 'Menghapus...' : 'Hapus'}
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
+      {/* Delete Confirmation */}
+      <AlertDialog
+        open={!!deleteConfirm}
+        title="Hapus Produk"
+        description={
+          <>
+            Yakin ingin menghapus produk{' '}
+            <span className="font-semibold text-foreground">{deleteConfirm?.name}</span>?
+            <span className="mt-2 block text-xs text-destructive">
+              Semua data mutasi stok, penjualan, dan pembelian terkait juga akan dihapus. Tindakan ini tidak dapat dibatalkan.
+            </span>
+          </>
+        }
+        confirmLabel={deleting ? 'Menghapus...' : 'Hapus'}
+        loading={deleting}
+        onConfirm={() => deleteConfirm && handleDeleteProduct(deleteConfirm)}
+        onCancel={() => setDeleteConfirm(null)}
+      />
 
       {editProduct && <EditStokForm product={editProduct} onClose={() => setEditProduct(null)} onSaved={fetchData} onCategoryAdded={fetchCategories} defaultCategory={activeTab === 'sparepart' ? 'Sparepart' : 'Unit Laptop'} userId={user?.id} />}
       {adjustProduct && <AdjustStokForm product={adjustProduct} onClose={() => setAdjustProduct(null)} onSaved={fetchData} userId={user?.id} />}
@@ -1084,28 +1082,27 @@ function AddCategoryForm({ existingCategories, onClose, onSaved }: {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={() => setDeleteConfirm(null)}>
-          <div className="w-full max-w-sm rounded-xl bg-card p-5 shadow-elevated" onClick={e => e.stopPropagation()}>
-            <h3 className="text-base font-bold text-foreground mb-2">Hapus Kategori</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Yakin ingin menghapus kategori <span className="font-semibold text-foreground">{deleteConfirm.name}</span>?
-            </p>
+      {/* Delete Confirmation */}
+      <AlertDialog
+        open={!!deleteConfirm}
+        title="Hapus Kategori"
+        description={
+          <>
+            Yakin ingin menghapus kategori{' '}
+            <span className="font-semibold text-foreground">{deleteConfirm?.name}</span>?
             {deleteError && (
-              <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 p-3">
-                <p className="text-xs text-destructive">{deleteError}</p>
-              </div>
+              <span className="mt-2 block rounded-lg border border-destructive/20 bg-destructive/10 p-2.5 text-xs text-destructive">
+                {deleteError}
+              </span>
             )}
-            <div className="flex gap-2">
-              <Button variant="secondary" className="flex-1 h-10" onClick={() => setDeleteConfirm(null)}>Batal</Button>
-              <Button variant="destructive" className="flex-1 h-10" onClick={() => handleDelete(deleteConfirm)} disabled={deleting || !!deleteError}>
-                {deleting ? 'Menghapus...' : 'Hapus'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+          </>
+        }
+        confirmLabel={deleting ? 'Menghapus...' : 'Hapus'}
+        loading={deleting}
+        confirmDisabled={!!deleteError}
+        onConfirm={() => deleteConfirm && handleDelete(deleteConfirm)}
+        onCancel={() => { setDeleteConfirm(null); setDeleteError('') }}
+      />
     </Modal>
   )
 }

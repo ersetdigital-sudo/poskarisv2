@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
+import { AlertDialog } from '@/components/ui/alert-dialog'
 import { RupiahInput } from '@/components/ui/rupiah-input'
 import PageHeader from '@/components/dashboard/PageHeader'
 
@@ -20,6 +21,8 @@ export default function OperasionalPage() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingCost, setEditingCost] = useState<OperationalCost | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<OperationalCost | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [filterMonth, setFilterMonth] = useState(() => {
     const now = new Date()
     return { month: now.getMonth() + 1, year: now.getFullYear() }
@@ -40,10 +43,18 @@ export default function OperasionalPage() {
     } catch (e) { console.error(e) } finally { setLoading(false) }
   }
 
-  async function deleteCost(id: string) {
-    if (!confirm('Hapus biaya ini?')) return
-    await supabase.from('operational_costs').delete().eq('id', id)
-    fetchCosts()
+  async function handleDeleteCost() {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      await supabase.from('operational_costs').delete().eq('id', deleteTarget.id)
+      setDeleteTarget(null)
+      fetchCosts()
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setDeleting(false)
+    }
   }
 
   const totalBiaya = costs.reduce((sum, c) => sum + c.amount, 0)
@@ -120,7 +131,7 @@ export default function OperasionalPage() {
                     <Button variant="ghost" size="sm" onClick={() => { setEditingCost(c); setShowForm(true) }} className="h-7 px-2.5 text-[10px] gap-1 text-muted-foreground hover:text-foreground">
                       <Edit size={12} /> Edit
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => deleteCost(c.id)} className="h-7 px-2.5 text-[10px] gap-1 text-muted-foreground hover:text-destructive">
+                    <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(c)} className="h-7 px-2.5 text-[10px] gap-1 text-muted-foreground hover:text-destructive">
                       <Trash2 size={12} /> Hapus
                     </Button>
                   </div>
@@ -154,7 +165,7 @@ export default function OperasionalPage() {
                               <Button variant="ghost" size="sm" onClick={() => { setEditingCost(c); setShowForm(true) }} className="h-7 w-7 p-0">
                                 <Edit size={13} />
                               </Button>
-                              <Button variant="ghost" size="sm" onClick={() => deleteCost(c.id)} className="h-7 w-7 p-0">
+                              <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(c)} className="h-7 w-7 p-0">
                                 <Trash2 size={13} />
                               </Button>
                             </div>
@@ -180,6 +191,22 @@ export default function OperasionalPage() {
           onSaved={fetchCosts}
         />
       )}
+
+      {/* Delete Confirmation */}
+      <AlertDialog
+        open={!!deleteTarget}
+        title="Hapus Biaya"
+        description={
+          <>
+            Yakin ingin menghapus biaya{' '}
+            <span className="font-semibold text-foreground">{deleteTarget?.name}</span> ({deleteTarget && formatRupiah(deleteTarget.amount)})? Data ini tidak dapat dikembalikan.
+          </>
+        }
+        confirmLabel={deleting ? 'Menghapus...' : 'Hapus'}
+        loading={deleting}
+        onConfirm={handleDeleteCost}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   )
 }
