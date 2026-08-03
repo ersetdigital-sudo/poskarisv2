@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase, Profile, PaymentMethod } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
-import { Plus, UserCheck, UserX, Store, Save, Eye, EyeOff, CheckCircle, Wifi, Lock, Trash2, GripVertical, DollarSign } from 'lucide-react'
+import { Plus, UserCheck, UserX, Store, Save, Eye, EyeOff, CheckCircle, Wifi, Lock, Trash2, GripVertical, DollarSign, ArrowLeft, ChevronRight, LogOut } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -16,58 +16,166 @@ const labelClass = 'mb-1.5 block text-[11px] font-medium uppercase tracking-wide
 
 type Tab = 'users' | 'settings' | 'payment' | 'password'
 
+const tabTitles: Record<Tab, string> = {
+  users: 'User & Akses',
+  settings: 'Toko & WhatsApp',
+  payment: 'Metode Pembayaran',
+  password: 'Ubah Password',
+}
+
 export default function PengaturanPage() {
-  const { user } = useAuth()
+  const { user, profile, signOut } = useAuth()
   const [tab, setTab] = useState<Tab>('users')
+  const [mobileView, setMobileView] = useState<'menu' | Tab>('menu')
+
+  const openTab = (t: Tab) => { setTab(t); setMobileView(t) }
+
+  const menuItems: { key: Tab; label: string; icon: React.ElementType; tint: string }[] = [
+    { key: 'users', label: 'User & Akses', icon: UserCheck, tint: 'bg-primary/10 text-primary' },
+    { key: 'settings', label: 'Toko & WhatsApp', icon: Store, tint: 'bg-badge-success/10 text-badge-success' },
+    { key: 'payment', label: 'Metode Pembayaran', icon: DollarSign, tint: 'bg-badge-info/10 text-badge-info' },
+    { key: 'password', label: 'Keamanan & Password', icon: Lock, tint: 'bg-badge-warning/10 text-badge-warning' },
+  ]
 
   return (
     <div className="space-y-3">
-      <PageHeader title="Pengaturan" subtitle="Kelola user dan pengaturan sistem" />
+      {/* ── Mobile Menu (wireframe: stack-settings) ── */}
+      {mobileView === 'menu' && (
+        <div className="relative -mx-4 -mt-4 overflow-hidden px-5 pb-12 pt-6 sm:-mx-6 sm:-mt-6 lg:hidden">
+          {/* Deco circles */}
+          <div className="pointer-events-none absolute -left-12 -top-12 h-40 w-40 rounded-full bg-primary/10" />
+          <div className="pointer-events-none absolute -right-14 top-20 h-32 w-32 rounded-full bg-badge-warning/20" />
 
-      {/* Tab switcher */}
-      <div className="grid grid-cols-2 sm:flex gap-1.5 sm:gap-1 rounded-xl border border-border bg-secondary/50 p-1.5 sm:p-1">
-        <button
-          onClick={() => setTab('users')}
-          className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 sm:py-2 text-xs sm:text-sm font-medium transition-colors ${
-            tab === 'users' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <UserCheck size={14} className="sm:w-4 sm:h-4" />
-          User
-        </button>
-        <button
-          onClick={() => setTab('settings')}
-          className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 sm:py-2 text-xs sm:text-sm font-medium transition-colors ${
-            tab === 'settings' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <Store size={14} className="sm:w-4 sm:h-4" />
-          Toko & WA
-        </button>
-        <button
-          onClick={() => setTab('payment')}
-          className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 sm:py-2 text-xs sm:text-sm font-medium transition-colors ${
-            tab === 'payment' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <DollarSign size={14} className="sm:w-4 sm:h-4" />
-          Pembayaran
-        </button>
-        <button
-          onClick={() => setTab('password')}
-          className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 sm:py-2 text-xs sm:text-sm font-medium transition-colors ${
-            tab === 'password' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <Lock size={14} className="sm:w-4 sm:h-4" />
-          Password
-        </button>
+          {/* Header: back + title + spacer */}
+          <div className="relative flex items-center justify-between">
+            <button
+              onClick={() => { signOut() }}
+              aria-label="Kembali"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-foreground transition-colors hover:bg-secondary/70 active:scale-95"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Pengaturan</h1>
+            <div className="w-10" />
+          </div>
+
+          {/* Profile section */}
+          <div className="relative mt-6 flex flex-col items-center">
+            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-primary via-primary/85 to-primary/60 shadow-xl shadow-primary/20 ring-4 ring-background">
+              <span className="text-3xl font-bold text-white">
+                {(profile?.name || user?.email || '?').charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <p className="mt-3 text-lg font-bold text-foreground">{profile?.name || 'Pengguna'}</p>
+            <p className="text-sm text-muted-foreground">{profile?.email || user?.email || ''}</p>
+            {profile && (
+              <span className="mt-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-medium capitalize text-primary">
+                {profile.role}
+              </span>
+            )}
+          </div>
+
+          {/* Menu items */}
+          <div className="relative mt-7 space-y-3">
+            {menuItems.map(item => (
+              <button
+                key={item.key}
+                onClick={() => openTab(item.key)}
+                className="flex w-full items-center justify-between rounded-2xl border border-border bg-card px-4 py-3.5 shadow-sm transition-all hover:bg-secondary/50 active:scale-[0.99]"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${item.tint}`}>
+                    <item.icon size={18} />
+                  </div>
+                  <span className="text-base font-semibold text-muted-foreground">{item.label}</span>
+                </div>
+                <ChevronRight size={16} className="text-muted-foreground/50" />
+              </button>
+            ))}
+
+            {/* Sign out */}
+            <button
+              onClick={() => signOut()}
+              className="flex w-full items-center justify-between rounded-2xl border border-destructive/20 bg-destructive/5 px-4 py-3.5 shadow-sm transition-all hover:bg-destructive/10 active:scale-[0.99]"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-destructive/10">
+                  <LogOut size={18} className="text-destructive" />
+                </div>
+                <span className="text-base font-semibold text-destructive">Keluar</span>
+              </div>
+              <ChevronRight size={16} className="text-destructive/50" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Mobile Sub-header (kembali ke menu) ── */}
+      {mobileView !== 'menu' && (
+        <div className="flex items-center gap-3 pt-1 lg:hidden">
+          <button
+            onClick={() => setMobileView('menu')}
+            aria-label="Kembali ke menu pengaturan"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-foreground transition-colors hover:bg-secondary/70 active:scale-95"
+          >
+            <ArrowLeft size={16} />
+          </button>
+          <h1 className="text-lg font-bold tracking-tight text-foreground">{tabTitles[tab]}</h1>
+        </div>
+      )}
+
+      {/* ── Desktop Header + Tab Switcher ── */}
+      <div className="hidden lg:block">
+        <PageHeader title="Pengaturan" subtitle="Kelola user dan pengaturan sistem" />
+
+        {/* Tab switcher */}
+        <div className="grid grid-cols-2 sm:flex gap-1.5 sm:gap-1 rounded-xl border border-border bg-secondary/50 p-1.5 sm:p-1">
+          <button
+            onClick={() => setTab('users')}
+            className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 sm:py-2 text-xs sm:text-sm font-medium transition-colors ${
+              tab === 'users' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <UserCheck size={14} className="sm:w-4 sm:h-4" />
+            User
+          </button>
+          <button
+            onClick={() => setTab('settings')}
+            className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 sm:py-2 text-xs sm:text-sm font-medium transition-colors ${
+              tab === 'settings' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Store size={14} className="sm:w-4 sm:h-4" />
+            Toko & WA
+          </button>
+          <button
+            onClick={() => setTab('payment')}
+            className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 sm:py-2 text-xs sm:text-sm font-medium transition-colors ${
+              tab === 'payment' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <DollarSign size={14} className="sm:w-4 sm:h-4" />
+            Pembayaran
+          </button>
+          <button
+            onClick={() => setTab('password')}
+            className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 sm:py-2 text-xs sm:text-sm font-medium transition-colors ${
+              tab === 'password' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Lock size={14} className="sm:w-4 sm:h-4" />
+            Password
+          </button>
+        </div>
       </div>
 
-      {tab === 'users' && <UsersTab userId={user?.id} />}
-      {tab === 'settings' && <SettingsTab />}
-      {tab === 'payment' && <PaymentMethodsTab />}
-      {tab === 'password' && <PasswordTab />}
+      {/* ── Content: desktop selalu tampil, mobile hanya saat sub-view aktif ── */}
+      <div className={mobileView === 'menu' ? 'hidden lg:block' : 'block'}>
+        {tab === 'users' && <UsersTab userId={user?.id} />}
+        {tab === 'settings' && <SettingsTab />}
+        {tab === 'payment' && <PaymentMethodsTab />}
+        {tab === 'password' && <PasswordTab />}
+      </div>
     </div>
   )
 }
