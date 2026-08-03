@@ -258,8 +258,8 @@ export default function StokPage() {
         </CardContent>
       </Card>
 
-      {/* Mobile Card View */}
-      <div className="block lg:hidden space-y-2.5">
+      {/* Mobile Card View — grid 2 kolom ala marketplace */}
+      <div className="block lg:hidden">
         {filtered.length === 0 ? (
           <Card className="shadow-card">
             <CardContent className="p-8 text-center">
@@ -270,99 +270,88 @@ export default function StokPage() {
               <p className="text-xs text-muted-foreground mt-1">Tambah barang pertama Anda</p>
             </CardContent>
           </Card>
-        ) : filtered.map(p => {
-          const catLabel = (p as Product & { categories?: { name: string } }).categories?.name || '-'
-          const isLow = p.quantity <= p.min_quantity && p.min_quantity > 0
-          const isOut = p.quantity === 0
-          const isUnit = isUnitLaptop(catLabel)
-          const toneCls = isUnit ? 'bg-primary/10 text-primary' : 'bg-badge-success/10 text-badge-success'
-          const stockCls = isOut
-            ? 'bg-danger/10 text-danger'
-            : isLow
-              ? 'bg-badge-warning/10 text-badge-warning'
-              : 'bg-badge-success/10 text-badge-success'
-          const stockPct = p.min_quantity > 0 ? Math.max(0, Math.min(1, p.quantity / p.min_quantity)) : 1
-          const barCls = isOut ? 'bg-danger' : isLow ? 'bg-badge-warning' : 'bg-badge-success'
-          const conditionLabel = p.condition === 'bekas' ? 'Bekas' : p.condition === 'refurbished' ? 'Refurbished' : null
+        ) : (
+          <div className="grid grid-cols-2 gap-2.5">
+            {filtered.map(p => {
+              const catLabel = (p as Product & { categories?: { name: string } }).categories?.name || '-'
+              const isLow = p.quantity <= p.min_quantity && p.min_quantity > 0
+              const isOut = p.quantity === 0
+              const isUnit = isUnitLaptop(catLabel)
+              const toneCls = isUnit ? 'bg-primary/10 text-primary' : 'bg-badge-success/10 text-badge-success'
+              const stockCls = isOut
+                ? 'bg-danger text-white'
+                : isLow
+                  ? 'bg-badge-warning text-white'
+                  : 'bg-card/90 text-ink shadow-sm ring-1 ring-hairline'
+              const stockPct = p.min_quantity > 0 ? Math.max(0, Math.min(1, p.quantity / p.min_quantity)) : 1
+              const barCls = isOut ? 'bg-danger' : isLow ? 'bg-badge-warning' : 'bg-badge-success'
+              const conditionLabel = p.condition === 'bekas' ? 'Bekas' : p.condition === 'refurbished' ? 'Refurbished' : null
 
-          return (
-            <Card key={p.id} className={`shadow-card overflow-hidden ${isLow || isOut ? 'border-l-[3px] border-l-badge-warning' : ''}`}>
-              <CardContent className="p-0">
-                {/* Header: Icon + Info + Stock */}
-                <div className="flex items-start gap-3 px-3.5 pt-3.5 pb-3">
-                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${toneCls}`}>
-                    {isUnit ? <Laptop size={20} /> : <Wrench size={20} />}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="min-w-0 flex-1 text-[13px] font-semibold text-foreground leading-snug line-clamp-2">{p.name}</p>
-                      <span className={`flex h-6 shrink-0 items-center gap-1 rounded-full px-2 text-[10px] font-bold ${stockCls}`}>
-                        {isOut && <X size={10} strokeWidth={3} />}
-                        {isOut ? 'Habis' : `Stok ${p.quantity}`}
+              return (
+                <Card key={p.id} className={`flex flex-col overflow-hidden shadow-card ${isLow || isOut ? 'ring-1 ring-badge-warning/60' : ''}`}>
+                  {/* Visual */}
+                  <div className={`relative flex h-24 shrink-0 items-center justify-center ${toneCls}`}>
+                    {isUnit ? <Laptop size={36} strokeWidth={1.5} /> : <Wrench size={36} strokeWidth={1.5} />}
+                    <span className={`absolute right-2 top-2 flex h-5 items-center rounded-full px-2 text-[9px] font-bold ${stockCls}`}>
+                      {isOut ? 'Habis' : `Stok ${p.quantity}`}
+                    </span>
+                    {isOut && (
+                      <span className="absolute inset-0 flex items-center justify-center bg-card/70 backdrop-blur-[2px]">
+                        <span className="rounded-md bg-danger px-2.5 py-1 text-[10px] font-bold text-white shadow-sm">
+                          Stok Habis
+                        </span>
                       </span>
+                    )}
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex flex-1 flex-col gap-1 p-3 pb-2">
+                    <p className="text-[12px] font-semibold leading-snug line-clamp-2">{p.name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="min-w-0 flex-1 truncate font-mono text-[9px] text-muted-foreground">{p.sku || catLabel}</p>
+                      {conditionLabel && (
+                        <span className="shrink-0 rounded bg-secondary px-1 py-px text-[8px] font-medium uppercase tracking-wide text-muted-foreground">
+                          {conditionLabel}
+                        </span>
+                      )}
                     </div>
-                    <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">{p.sku || '-'}</p>
-                    {p.specs && <p className="mt-0.5 truncate text-[10px] text-muted-foreground/80">{p.specs}</p>}
+                    {p.specs && <p className="truncate text-[9px] text-muted-foreground/80">{p.specs}</p>}
                     {p.min_quantity > 0 && (
-                      <div className="mt-2 flex items-center gap-2">
-                        <div className="h-1 w-20 overflow-hidden rounded-full bg-secondary">
+                      <div className="mt-auto flex items-center gap-1.5 pt-1.5">
+                        <div className="h-1 flex-1 overflow-hidden rounded-full bg-secondary">
                           <div className={`h-full rounded-full ${barCls} transition-all`} style={{ width: `${stockPct * 100}%` }} />
                         </div>
-                        <span className="text-[9px] text-muted-foreground">min. {p.min_quantity}</span>
+                        <span className="text-[8px] text-muted-foreground">min {p.min_quantity}</span>
                       </div>
                     )}
                   </div>
-                </div>
 
-                {/* Chips Row */}
-                <div className="flex flex-wrap items-center gap-1.5 px-3.5 pb-3">
-                  <span className="inline-flex items-center rounded-md bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                    {catLabel}
-                  </span>
-                  {conditionLabel && (
-                    <span className="inline-flex items-center rounded-md bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                      {conditionLabel}
-                    </span>
-                  )}
-                  {(isLow && !isOut) && (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-badge-warning/10 px-1.5 py-0.5 text-[10px] font-semibold text-badge-warning">
-                      <AlertTriangle size={10} /> Stok menipis
-                    </span>
-                  )}
-                </div>
-
-                {/* Price + Actions */}
-                <div className="flex items-center justify-between gap-3 border-t border-border bg-secondary/30 px-3.5 py-2.5">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="min-w-0">
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Jual</p>
-                      <p className="truncate font-mono text-[13px] font-bold text-foreground">{formatRupiah(p.sell_price)}</p>
-                    </div>
-                    <span className="text-stone">·</span>
-                    <div className="min-w-0">
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Beli</p>
-                      <p className="truncate font-mono text-[11px] font-medium text-muted-foreground">{formatRupiah(p.buy_price)}</p>
-                    </div>
+                  {/* Price */}
+                  <div className="shrink-0 border-t border-border bg-secondary/30 px-3 py-2">
+                    <p className="truncate font-mono text-[13px] font-bold leading-tight">{formatRupiah(p.sell_price)}</p>
+                    <p className="truncate font-mono text-[9px] text-muted-foreground">beli {formatRupiah(p.buy_price)}</p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-0.5">
-                    <Button variant="ghost" size="sm" onClick={() => setEditProduct(p)} title="Edit barang" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
+
+                  {/* Actions */}
+                  <div className="flex shrink-0 items-stretch justify-around border-t border-border">
+                    <button onClick={() => setEditProduct(p)} title="Edit barang" className="flex h-9 flex-1 items-center justify-center text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground">
                       <Pencil size={13} />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setAdjustProduct(p)} title="Penyesuaian stok" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
+                    </button>
+                    <button onClick={() => setAdjustProduct(p)} title="Penyesuaian stok" className="flex h-9 flex-1 items-center justify-center border-l border-border text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground">
                       <Plus size={14} />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setSelectedProduct(p)} title="Riwayat mutasi" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
+                    </button>
+                    <button onClick={() => setSelectedProduct(p)} title="Riwayat mutasi" className="flex h-9 flex-1 items-center justify-center border-l border-border text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground">
                       <ArrowDownUp size={13} />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setDeleteConfirm(p)} title="Hapus" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                    </button>
+                    <button onClick={() => setDeleteConfirm(p)} title="Hapus" className="flex h-9 flex-1 items-center justify-center border-l border-border text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive">
                       <Trash2 size={13} />
-                    </Button>
+                    </button>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
+                </Card>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Desktop Table View */}
