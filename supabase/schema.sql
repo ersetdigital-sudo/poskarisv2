@@ -284,6 +284,7 @@ CREATE TABLE public.operational_costs (
   amount BIGINT NOT NULL,
   period_month INTEGER NOT NULL CHECK (period_month BETWEEN 1 AND 12),
   period_year INTEGER NOT NULL,
+  cost_date DATE DEFAULT CURRENT_DATE, -- tanggal biaya terjadi
   notes TEXT,
   created_by UUID REFERENCES public.profiles(id),
   created_at TIMESTAMPTZ DEFAULT now()

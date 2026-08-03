@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, OperationalCost } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
-import { Plus, Trash2, Edit } from 'lucide-react'
+import { Plus, Trash2, Edit, CalendarDays, TrendingDown } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -37,6 +37,7 @@ export default function OperasionalPage() {
         .select('*')
         .eq('period_month', filterMonth.month)
         .eq('period_year', filterMonth.year)
+        .order('cost_date', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false })
       if (error) throw error
       setCosts(data || [])
@@ -94,13 +95,23 @@ export default function OperasionalPage() {
         </CardContent>
       </Card>
 
-      {/* Total card */}
-      <Card className="shadow-card">
-        <CardContent className="flex items-center justify-between p-5">
-          <span className="text-sm text-muted-foreground">Total Biaya Operasional</span>
-          <span className="text-xl font-bold text-destructive">{formatRupiah(totalBiaya)}</span>
-        </CardContent>
-      </Card>
+      {/* Hero total — ala category-spend-detail */}
+      <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-danger to-danger/85 text-white shadow-card">
+        <div className="flex items-center justify-between gap-3 p-4 sm:p-5">
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-white/70">
+              Total Biaya Operasional
+            </p>
+            <p className="mt-1 text-xl font-extrabold tabular-nums sm:text-2xl">{formatRupiah(totalBiaya)}</p>
+            <p className="mt-0.5 text-[11px] text-white/70">
+              {costs.length} item biaya · {months[filterMonth.month - 1]} {filterMonth.year}
+            </p>
+          </div>
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/20">
+            <TrendingDown className="h-5 w-5" strokeWidth={2} />
+          </div>
+        </div>
+      </div>
 
       {/* List */}
       {costs.length === 0 ? (
@@ -115,19 +126,26 @@ export default function OperasionalPage() {
         </Card>
       ) : (
         <>
-          {/* Mobile Card View */}
-          <div className="block lg:hidden space-y-2">
+          {/* Mobile Card View — ala category-spend-detail */}
+          <div className="block lg:hidden space-y-2.5">
             {costs.map(c => (
               <Card key={c.id} className="shadow-card">
-                <CardContent className="p-0">
-                  <div className="flex items-start justify-between px-3.5 pt-3 pb-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[13px] font-semibold text-foreground">{c.name}</p>
-                      {c.notes && <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{c.notes}</p>}
+                <CardContent className="p-3.5">
+                  <div className="flex items-center gap-3">
+                    <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-danger/10 text-danger">
+                      <TrendingDown className="h-5 w-5" strokeWidth={2} />
                     </div>
-                    <p className="text-sm font-bold font-mono text-destructive shrink-0 ml-3">{formatRupiah(c.amount)}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-foreground">{c.name}</p>
+                      {c.notes && <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{c.notes}</p>}
+                      <p className="mt-0.5 flex items-center gap-1 text-[10px] text-stone">
+                        <CalendarDays size={10} />
+                        {c.cost_date ? new Date(`${c.cost_date}T00:00:00`).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                      </p>
+                    </div>
+                    <p className="shrink-0 text-sm font-bold font-mono text-danger">{formatRupiah(c.amount)}</p>
                   </div>
-                  <div className="flex items-center justify-end gap-1 border-t border-border px-3.5 py-2 bg-secondary/30">
+                  <div className="mt-3 flex justify-end gap-1 border-t border-border pt-2.5">
                     <Button variant="ghost" size="sm" onClick={() => { setEditingCost(c); setShowForm(true) }} className="h-7 px-2.5 text-[10px] gap-1 text-muted-foreground hover:text-foreground">
                       <Edit size={12} /> Edit
                     </Button>
@@ -150,6 +168,7 @@ export default function OperasionalPage() {
                       <tr className="border-b border-border">
                         <th className="p-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Nama Biaya</th>
                         <th className="p-3 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">Jumlah</th>
+                        <th className="p-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Tanggal</th>
                         <th className="p-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Catatan</th>
                         <th className="p-3 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground">Aksi</th>
                       </tr>
@@ -158,7 +177,10 @@ export default function OperasionalPage() {
                       {costs.map(c => (
                         <tr key={c.id} className="border-b border-border transition-colors hover:bg-secondary/30">
                           <td className="p-3 text-sm font-medium text-foreground">{c.name}</td>
-                          <td className="p-3 text-right text-sm font-semibold text-destructive">{formatRupiah(c.amount)}</td>
+                          <td className="p-3 text-right text-sm font-semibold text-danger">{formatRupiah(c.amount)}</td>
+                          <td className="p-3 text-xs text-muted-foreground">
+                            {c.cost_date ? new Date(`${c.cost_date}T00:00:00`).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                          </td>
                           <td className="p-3 text-xs text-muted-foreground">{c.notes || '-'}</td>
                           <td className="p-3">
                             <div className="flex justify-center gap-1">
@@ -216,7 +238,12 @@ function OperasionalForm({ cost, month, year, userId, onClose, onSaved }: {
 }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [form, setForm] = useState({ name: cost?.name || '', amount: cost?.amount || 0, notes: cost?.notes || '' })
+  const [form, setForm] = useState({
+    name: cost?.name || '',
+    amount: cost?.amount || 0,
+    cost_date: cost?.cost_date || new Date().toISOString().split('T')[0],
+    notes: cost?.notes || '',
+  })
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -224,10 +251,23 @@ function OperasionalForm({ cost, month, year, userId, onClose, onSaved }: {
     setError('')
     try {
       if (cost) {
-        const { error } = await supabase.from('operational_costs').update({ name: form.name, amount: form.amount, notes: form.notes || null }).eq('id', cost.id)
+        const { error } = await supabase.from('operational_costs').update({
+          name: form.name,
+          amount: form.amount,
+          cost_date: form.cost_date || null,
+          notes: form.notes || null,
+        }).eq('id', cost.id)
         if (error) throw error
       } else {
-        const { error } = await supabase.from('operational_costs').insert({ name: form.name, amount: form.amount, period_month: month, period_year: year, notes: form.notes || null, created_by: userId })
+        const { error } = await supabase.from('operational_costs').insert({
+          name: form.name,
+          amount: form.amount,
+          period_month: month,
+          period_year: year,
+          cost_date: form.cost_date || null,
+          notes: form.notes || null,
+          created_by: userId,
+        })
         if (error) throw error
       }
       onSaved(); onClose()
@@ -252,6 +292,16 @@ function OperasionalForm({ cost, month, year, userId, onClose, onSaved }: {
         <div>
           <label className={labelClass}>Jumlah (Rp) *</label>
           <RupiahInput value={form.amount} onChange={v => setForm({ ...form, amount: v })} className="h-10 w-full font-mono" />
+        </div>
+        <div>
+          <label className={labelClass}>Tanggal Biaya *</label>
+          <input
+            type="date"
+            required
+            value={form.cost_date}
+            onChange={e => setForm({ ...form, cost_date: e.target.value })}
+            className="h-10 w-full rounded-lg border border-input bg-surface px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring/20"
+          />
         </div>
         <div>
           <label className={labelClass}>Catatan</label>

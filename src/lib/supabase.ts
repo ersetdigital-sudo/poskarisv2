@@ -154,6 +154,7 @@ export interface OperationalCost {
   amount: number
   period_month: number
   period_year: number
+  cost_date: string | null
   notes: string | null
   created_by: string | null
   created_at: string

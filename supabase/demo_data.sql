@@ -106,13 +106,13 @@ BEGIN
   -- ============================================
   -- DATA BIAYA OPERASIONAL (Juli 2026)
   -- ============================================
-  INSERT INTO operational_costs (name, amount, period_month, period_year, notes)
+  INSERT INTO operational_costs (name, amount, period_month, period_year, cost_date, notes)
   VALUES
-    ('Sewa Tempat', 3000000, 7, 2026, 'Sewa ruko bulanan'),
-    ('Listrik', 500000, 7, 2026, 'Tagihan listrik PLN'),
-    ('Internet', 350000, 7, 2026, 'IndiHome 50Mbps'),
-    ('Gaji Karyawan', 2500000, 7, 2026, 'Gaji 1 karyawan'),
-    ('Transport & Logistik', 200000, 7, 2026, 'Biaya pengiriman sparepart');
+    ('Sewa Tempat', 3000000, 7, 2026, '2026-07-01', 'Sewa ruko bulanan'),
+    ('Listrik', 500000, 7, 2026, '2026-07-05', 'Tagihan listrik PLN'),
+    ('Internet', 350000, 7, 2026, '2026-07-08', 'IndiHome 50Mbps'),
+    ('Gaji Karyawan', 2500000, 7, 2026, '2026-07-25', 'Gaji 1 karyawan'),
+    ('Transport & Logistik', 200000, 7, 2026, '2026-07-12', 'Biaya pengiriman sparepart');
 
   -- ============================================
   -- DATA STOCK MOVEMENTS
