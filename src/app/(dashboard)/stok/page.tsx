@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase, Product, StockMovement } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
 import Link from 'next/link'
-import { Search, ArrowDown, ArrowUp, AlertTriangle, Plus, Package, X, Cpu, Wrench, Pencil, Trash2, ShoppingCart, ArrowDownToLine, Laptop } from 'lucide-react'
+import { Search, ArrowDown, ArrowUp, ArrowDownUp, AlertTriangle, Plus, Package, X, Cpu, Wrench, Pencil, Trash2, ShoppingCart, ArrowDownToLine, Laptop } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -259,7 +259,7 @@ export default function StokPage() {
       </Card>
 
       {/* Mobile Card View */}
-      <div className="block lg:hidden space-y-2">
+      <div className="block lg:hidden space-y-2.5">
         {filtered.length === 0 ? (
           <Card className="shadow-card">
             <CardContent className="p-8 text-center">
@@ -271,79 +271,92 @@ export default function StokPage() {
             </CardContent>
           </Card>
         ) : filtered.map(p => {
-          const catName = (p as Product & { categories?: { name: string } }).categories?.name || '-'
+          const catLabel = (p as Product & { categories?: { name: string } }).categories?.name || '-'
           const isLow = p.quantity <= p.min_quantity && p.min_quantity > 0
-          const displayStatus = p.quantity > 0 ? 'ready' : 'sold'
-          const statusVariant = displayStatus === 'ready' ? 'success' : 'secondary'
-          
+          const isOut = p.quantity === 0
+          const isUnit = isUnitLaptop(catLabel)
+          const toneCls = isUnit ? 'bg-primary/10 text-primary' : 'bg-badge-success/10 text-badge-success'
+          const stockCls = isOut
+            ? 'bg-danger/10 text-danger'
+            : isLow
+              ? 'bg-badge-warning/10 text-badge-warning'
+              : 'bg-badge-success/10 text-badge-success'
+          const stockPct = p.min_quantity > 0 ? Math.max(0, Math.min(1, p.quantity / p.min_quantity)) : 1
+          const barCls = isOut ? 'bg-danger' : isLow ? 'bg-badge-warning' : 'bg-badge-success'
+          const conditionLabel = p.condition === 'bekas' ? 'Bekas' : p.condition === 'refurbished' ? 'Refurbished' : null
+
           return (
-            <Card key={p.id} className={`shadow-card overflow-hidden ${isLow ? 'border-l-[3px] border-l-badge-warning' : ''}`}>
+            <Card key={p.id} className={`shadow-card overflow-hidden ${isLow || isOut ? 'border-l-[3px] border-l-badge-warning' : ''}`}>
               <CardContent className="p-0">
-                {/* Header: Name + Status */}
-                <div className="flex items-start justify-between gap-2 px-3.5 pt-3 pb-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-semibold text-foreground leading-tight truncate">{p.name}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{p.sku || catName}</p>
-                    {p.specs && <p className="text-[10px] text-muted-foreground/80 mt-0.5 truncate">{p.specs}</p>}
+                {/* Header: Icon + Info + Stock */}
+                <div className="flex items-start gap-3 px-3.5 pt-3.5 pb-3">
+                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${toneCls}`}>
+                    {isUnit ? <Laptop size={20} /> : <Wrench size={20} />}
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {isLow && (
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-badge-warning/10">
-                        <AlertTriangle size={11} className="text-badge-warning" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="min-w-0 flex-1 text-[13px] font-semibold text-foreground leading-snug line-clamp-2">{p.name}</p>
+                      <span className={`flex h-6 shrink-0 items-center gap-1 rounded-full px-2 text-[10px] font-bold ${stockCls}`}>
+                        {isOut && <X size={10} strokeWidth={3} />}
+                        {isOut ? 'Habis' : `Stok ${p.quantity}`}
                       </span>
+                    </div>
+                    <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">{p.sku || '-'}</p>
+                    {p.specs && <p className="mt-0.5 truncate text-[10px] text-muted-foreground/80">{p.specs}</p>}
+                    {p.min_quantity > 0 && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <div className="h-1 w-20 overflow-hidden rounded-full bg-secondary">
+                          <div className={`h-full rounded-full ${barCls} transition-all`} style={{ width: `${stockPct * 100}%` }} />
+                        </div>
+                        <span className="text-[9px] text-muted-foreground">min. {p.min_quantity}</span>
+                      </div>
                     )}
-                    <Badge variant={statusVariant as any} className="text-[9px] px-1.5 py-0 h-4 capitalize">
-                      {displayStatus}
-                    </Badge>
                   </div>
                 </div>
 
-                {/* Info Row */}
-                <div className="flex items-center gap-2 px-3.5 pb-2">
+                {/* Chips Row */}
+                <div className="flex flex-wrap items-center gap-1.5 px-3.5 pb-3">
                   <span className="inline-flex items-center rounded-md bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                    {catName}
+                    {catLabel}
                   </span>
-                  <span className="text-[10px] text-muted-foreground">·</span>
-                  <span className={`text-xs font-bold ${isLow ? 'text-badge-warning' : 'text-foreground'}`}>
-                    Stok: {p.quantity}
-                  </span>
+                  {conditionLabel && (
+                    <span className="inline-flex items-center rounded-md bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                      {conditionLabel}
+                    </span>
+                  )}
+                  {(isLow && !isOut) && (
+                    <span className="inline-flex items-center gap-1 rounded-md bg-badge-warning/10 px-1.5 py-0.5 text-[10px] font-semibold text-badge-warning">
+                      <AlertTriangle size={10} /> Stok menipis
+                    </span>
+                  )}
                 </div>
 
                 {/* Price + Actions */}
-                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-border px-3.5 py-2.5 bg-secondary/30">
-                  <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
-                    <div>
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Beli</p>
-                      <p className="text-xs font-semibold font-mono text-foreground whitespace-nowrap">{formatRupiah(p.buy_price)}</p>
-                    </div>
-                    <div>
+                <div className="flex items-center justify-between gap-3 border-t border-border bg-secondary/30 px-3.5 py-2.5">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="min-w-0">
                       <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Jual</p>
-                      <p className="text-xs font-bold font-mono text-foreground whitespace-nowrap">{formatRupiah(p.sell_price)}</p>
+                      <p className="truncate font-mono text-[13px] font-bold text-foreground">{formatRupiah(p.sell_price)}</p>
+                    </div>
+                    <span className="text-stone">·</span>
+                    <div className="min-w-0">
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Beli</p>
+                      <p className="truncate font-mono text-[11px] font-medium text-muted-foreground">{formatRupiah(p.buy_price)}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 ml-auto">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => setEditProduct(p)}
-                      className="h-7 px-2 text-[10px] gap-1 text-muted-foreground hover:text-foreground"
-                    >
-                      <Pencil size={11} /> Edit
+                  <div className="flex shrink-0 items-center gap-0.5">
+                    <Button variant="ghost" size="sm" onClick={() => setEditProduct(p)} title="Edit barang" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
+                      <Pencil size={13} />
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => setAdjustProduct(p)}
-                      className="h-7 px-2 text-[10px] gap-1 text-muted-foreground hover:text-foreground"
-                    >
-                      <Plus size={11} /> Stok
+                    <Button variant="ghost" size="sm" onClick={() => setAdjustProduct(p)} title="Penyesuaian stok" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
+                      <Plus size={14} />
                     </Button>
-                    <button
-                      onClick={() => setDeleteConfirm(p)}
-                      className="h-7 w-7 flex items-center justify-center rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                    >
-                      <Trash2 size={12} />
-                    </button>
+                    <Button variant="ghost" size="sm" onClick={() => setSelectedProduct(p)} title="Riwayat mutasi" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
+                      <ArrowDownUp size={13} />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setDeleteConfirm(p)} title="Hapus" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                      <Trash2 size={13} />
+                    </Button>
                   </div>
                 </div>
               </CardContent>
