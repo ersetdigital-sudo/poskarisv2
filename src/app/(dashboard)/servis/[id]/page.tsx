@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase, Service, Product } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
-import { ArrowLeft, Send, CheckCircle, Download, Edit, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Send, CheckCircle, Download, Edit, Plus, Trash2, Laptop } from 'lucide-react'
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -236,8 +236,54 @@ export default function ServisDetailPage() {
 
   return (
     <div className="space-y-3">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* ── Mobile Hero (wireframe: product-detail-sheet) ── */}
+      <div className="relative -mx-4 -mt-4 sm:-mx-6 sm:-mt-6 lg:hidden">
+        {/* Overlay header: back + edit */}
+        <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between p-4">
+          <button
+            onClick={() => router.back()}
+            aria-label="Kembali"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-black/20 text-white backdrop-blur-sm transition-colors hover:bg-black/30 active:scale-95"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <button
+            onClick={() => setShowEditForm(true)}
+            aria-label="Edit servis"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm transition-colors hover:bg-white/25 active:scale-95"
+          >
+            <Edit size={16} />
+          </button>
+        </div>
+
+        {/* Hero section */}
+        <div className="relative overflow-hidden rounded-b-[40px] bg-gradient-to-br from-primary via-primary/85 to-primary/60 px-5 pb-8 pt-16">
+          <div className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-white/10" />
+          <div className="pointer-events-none absolute -bottom-24 -left-10 h-56 w-56 rounded-full bg-white/5" />
+
+          <div className="relative">
+            {/* "Image" area */}
+            <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-3xl bg-white/15 shadow-lg shadow-black/10 backdrop-blur-sm">
+              <Laptop size={44} className="text-white" strokeWidth={1.5} />
+            </div>
+
+            <p className="text-center text-xs font-medium text-white/70">
+              {service.device_type}{service.device_brand ? ` · ${service.device_brand}` : ''}{service.device_model ? ` ${service.device_model}` : ''}
+            </p>
+            <h1 className="mt-1 text-center text-lg font-bold tracking-tight text-white">
+              {service.nota_number}
+            </h1>
+            <div className="mt-3 flex justify-center">
+              <Badge variant={statusVariant[service.status] || 'secondary'} className="text-[10px] capitalize">
+                {service.status}
+              </Badge>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Desktop Header ── */}
+      <div className="hidden items-center justify-between lg:flex">
         <div className="flex items-center gap-3">
           <Button onClick={() => router.back()} variant="secondary" className="h-9 w-9 shrink-0 p-0">
             <ArrowLeft size={16} />
@@ -413,8 +459,8 @@ export default function ServisDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Action buttons */}
-          <div className="space-y-2">
+          {/* Action buttons (desktop) */}
+          <div className="hidden space-y-2 lg:block">
             {service.status === 'proses' && (
               <Button onClick={markSelesai} disabled={updating} className="h-11 w-full gap-2">
                 <CheckCircle size={16} />
@@ -474,6 +520,69 @@ export default function ServisDetailPage() {
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* ── Mobile Sticky CTA Bar (wireframe: product-detail-sheet) ── */}
+      <div className="sticky bottom-0 z-30 -mx-4 -mb-4 sm:-mx-6 sm:-mb-6 lg:hidden">
+        <div className="border-t border-border bg-background/90 px-4 pb-[calc(env(safe-area-inset-bottom)+14px)] pt-3 shadow-[0_-8px_24px_rgba(0,0,0,0.06)] backdrop-blur-md">
+          {waResult && (
+            <div className={`mb-2.5 rounded-lg border px-3 py-2 text-[11px] ${waResult.ok ? 'border-badge-success/30 bg-badge-success/10 text-badge-success' : 'border-destructive/30 bg-destructive/10 text-destructive'}`}>
+              {waResult.msg}
+            </div>
+          )}
+
+          {service.status === 'selesai' ? (
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                onClick={handleDownloadPDF}
+                disabled={pdfLoading}
+                variant="secondary"
+                className="h-11 w-full gap-2"
+              >
+                {pdfLoading ? (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-foreground" />
+                ) : (
+                  <Download size={16} />
+                )}
+                {pdfLoading ? 'Memproses...' : 'Cetak Nota'}
+              </Button>
+              <Button
+                onClick={handleKirimWhatsApp}
+                disabled={waLoading}
+                className="h-11 w-full gap-2 bg-badge-success/90 hover:bg-badge-success text-white"
+              >
+                {waLoading ? (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                ) : (
+                  <Send size={16} />
+                )}
+                {waLoading ? 'Mengirim...' : 'Kirim Nota WA'}
+              </Button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <Button
+                onClick={handleKirimNotif}
+                disabled={waLoading}
+                variant="outline"
+                className="h-11 flex-1 gap-2"
+              >
+                {waLoading ? (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-foreground" />
+                ) : (
+                  <Send size={16} />
+                )}
+                {waLoading ? 'Mengirim...' : 'Kirim Update'}
+              </Button>
+              {service.status === 'proses' && (
+                <Button onClick={markSelesai} disabled={updating} className="h-11 flex-1 gap-2">
+                  <CheckCircle size={16} />
+                  {updating ? 'Memperbarui...' : 'Tandai Selesai'}
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
