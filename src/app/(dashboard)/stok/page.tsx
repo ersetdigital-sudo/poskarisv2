@@ -158,7 +158,7 @@ export default function StokPage() {
       </PageHeader>
 
       {/* Total Aset */}
-      <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
         <KpiCard
           title="Aset Sparepart"
           value={asetSparepart}
@@ -178,7 +178,7 @@ export default function StokPage() {
           value={asetSparepart + asetUnit}
           icon={Package}
           tone="sky"
-          className="col-span-2 lg:col-span-1"
+          className="sm:col-span-2 lg:col-span-1"
         />
       </div>
 
