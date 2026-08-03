@@ -7,9 +7,9 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { AlertDialog } from '@/components/ui/alert-dialog'
+import { CustomerDetailSheet } from '@/components/customers/customer-detail-sheet'
 import PageHeader from '@/components/dashboard/PageHeader'
 import { showToast } from '@/components/ui/toast'
-import Link from 'next/link'
 
 interface CustomerWithStats extends Customer {
   total_transaksi: number
@@ -24,6 +24,7 @@ export default function CustomersPage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [deleteConfirm, setDeleteConfirm] = useState<CustomerWithStats | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [detailId, setDetailId] = useState<string | null>(null)
 
   const fetchCustomers = useCallback(async () => {
     setLoading(true)
@@ -243,11 +244,14 @@ export default function CustomersPage() {
                     </a>
                   </div>
                   <div className="mt-3 flex gap-1.5">
-                    <Link href={`/customers/${c.id}`} className="flex-1">
-                      <Button variant="secondary" size="sm" className="h-8 w-full gap-1 text-[11px]">
-                        <Eye size={12} /> Detail
-                      </Button>
-                    </Link>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setDetailId(c.id)}
+                      className="h-8 flex-1 gap-1 text-[11px]"
+                    >
+                      <Eye size={12} /> Detail
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -308,11 +312,9 @@ export default function CustomersPage() {
                           </td>
                           <td className="p-3">
                             <div className="flex justify-center gap-1">
-                              <Link href={`/customers/${c.id}`}>
-                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                                  <Eye size={13} />
-                                </Button>
-                              </Link>
+                              <Button variant="ghost" size="sm" onClick={() => setDetailId(c.id)} className="h-7 w-7 p-0">
+                                <Eye size={13} />
+                              </Button>
                               <Button variant="ghost" size="sm" onClick={() => setDeleteConfirm(c)} className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10">
                                 <Trash2 size={13} />
                               </Button>
@@ -344,6 +346,14 @@ export default function CustomersPage() {
         loading={deleting}
         onConfirm={handleDelete}
         onCancel={() => setDeleteConfirm(null)}
+      />
+
+      {/* Detail Customer — sheet/drawer */}
+      <CustomerDetailSheet
+        key={detailId ?? 'closed'}
+        open={!!detailId}
+        customerId={detailId}
+        onClose={() => setDetailId(null)}
       />
     </div>
   )
