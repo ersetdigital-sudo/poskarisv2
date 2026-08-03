@@ -95,10 +95,13 @@ export default function DashboardPage() {
         },
       ])
 
-      // Marketplace placeholder (can be customized based on your data)
+      // Komposisi Laba vs Biaya Operasional (dari data asli)
+      const labaBersih = Math.max(0, summary.labaBersih)
+      const biayaTotal = summary.biayaOperasional || 0
+      const totalLabaBiaya = labaBersih + biayaTotal
       setMarketplaceData([
-        { name: 'Walk-in', value: Math.round(summary.labaBersih * 0.6), pct: 60 },
-        { name: 'Online', value: Math.round(summary.labaBersih * 0.4), pct: 40 }
+        { name: 'Laba Bersih', value: Math.round(labaBersih), pct: totalLabaBiaya > 0 ? Math.round((labaBersih / totalLabaBiaya) * 100) : 0 },
+        { name: 'Biaya Operasional', value: Math.round(biayaTotal), pct: totalLabaBiaya > 0 ? Math.round((biayaTotal / totalLabaBiaya) * 100) : 0 },
       ])
       
       // Top products by quantity
@@ -231,8 +234,8 @@ export default function DashboardPage() {
           />
           <CategoryChart
             data={marketplaceData}
-            title="Profit per Channel"
-            subtitle="Walk-in vs Online"
+            title="Laba vs Biaya Operasional"
+            subtitle="Sisa laba bersih setelah biaya bulan ini"
           />
         </div>
       )}
