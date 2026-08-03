@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { supabase, Customer } from '@/lib/supabase'
-import { Search, Eye, Phone, MapPin, ArrowUpDown, Loader2, Trash2 } from 'lucide-react'
+import { Search, Eye, ArrowUpDown, Loader2, Trash2, MessageCircle } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -135,6 +135,23 @@ export default function CustomersPage() {
     return new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
   }
 
+  // Avatar warna deterministik dari nama — ala list-search
+  const AVATAR_TONES = [
+    'bg-badge-info/15 text-badge-info',
+    'bg-badge-success/15 text-badge-success',
+    'bg-badge-warning/15 text-badge-warning',
+    'bg-primary/10 text-primary',
+    'bg-danger/10 text-danger',
+  ]
+  const avatarTone = (name: string) => {
+    let hash = 0
+    for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0
+    return AVATAR_TONES[hash % AVATAR_TONES.length]
+  }
+  const initials = (name: string) => name.trim().split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase() || '').join('') || '?'
+
+  const waLink = (noWa: string) => `https://wa.me/${noWa.replace(/^0/, '62')}`
+
   return (
     <div className="space-y-3">
       <PageHeader title="Customer" subtitle="Daftar customer yang pernah melakukan transaksi" />
@@ -184,9 +201,9 @@ export default function CustomersPage() {
         </div>
       )}
 
-      {/* Mobile Card View */}
+      {/* Mobile Card View — ala list-search */}
       {!loading && (
-        <div className="block lg:hidden space-y-2">
+        <div className="block lg:hidden space-y-2.5">
           {filtered.length === 0 ? (
             <Card className="shadow-card">
               <CardContent className="p-6 text-center">
@@ -197,37 +214,47 @@ export default function CustomersPage() {
             </Card>
           ) : (
             filtered.map(c => (
-              <Card key={c.id} className="shadow-card">
-                <CardContent className="p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-foreground truncate">{c.nama}</p>
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <Phone size={11} className="text-muted-foreground shrink-0" />
-                        <p className="text-xs text-muted-foreground">{c.no_wa}</p>
-                      </div>
-                      {c.alamat && (
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <MapPin size={11} className="text-muted-foreground shrink-0" />
-                          <p className="text-xs text-muted-foreground truncate">{c.alamat}</p>
-                        </div>
-                      )}
+              <Card key={c.id} className="shadow-card overflow-hidden">
+                <CardContent className="p-3.5">
+                  <div className="flex items-center gap-3">
+                    <div className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl text-sm font-bold ${avatarTone(c.nama)}`}>
+                      {initials(c.nama)}
                     </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-xs font-medium text-foreground">{c.total_transaksi} transaksi</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
-                        {c.transaksi_terakhir ? formatDate(c.transaksi_terakhir) : '-'}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-foreground">{c.nama}</p>
+                      <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                        <span className="font-medium text-stone">No. WA</span> · {c.no_wa}
+                        {c.alamat ? ` · ${c.alamat}` : ''}
+                      </p>
+                      <p className="mt-0.5 text-[10px] font-medium text-muted-foreground">
+                        {c.total_transaksi} transaksi
+                        <span className="mx-1 text-stone">·</span>
+                        Terakhir {c.transaksi_terakhir ? formatDate(c.transaksi_terakhir) : '-'}
                       </p>
                     </div>
+                    <a
+                      href={waLink(c.no_wa)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`WhatsApp ${c.nama}`}
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-badge-success/15 text-badge-success transition-colors hover:bg-badge-success/25"
+                    >
+                      <MessageCircle size={15} strokeWidth={2} />
+                    </a>
                   </div>
-                  <div className="flex items-center justify-end gap-1 mt-2 pt-2 border-t border-border">
-                    <Link href={`/customers/${c.id}`}>
-                      <Button variant="ghost" size="sm" className="h-7 px-2 text-[10px] gap-1">
-                        <Eye size={11} /> Detail
+                  <div className="mt-3 flex gap-1.5">
+                    <Link href={`/customers/${c.id}`} className="flex-1">
+                      <Button variant="secondary" size="sm" className="h-8 w-full gap-1 text-[11px]">
+                        <Eye size={12} /> Detail
                       </Button>
                     </Link>
-                    <Button variant="ghost" size="sm" onClick={(e) => { e.preventDefault(); setDeleteConfirm(c) }} className="h-7 px-2 text-[10px] gap-1 text-destructive hover:text-destructive hover:bg-destructive/10">
-                      <Trash2 size={11} /> Hapus
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDeleteConfirm(c)}
+                      className="h-8 w-9 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 size={13} />
                     </Button>
                   </div>
                 </CardContent>
