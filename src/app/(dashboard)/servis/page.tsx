@@ -289,6 +289,25 @@ export default function ServisPage() {
     return map[status] || 'secondary'
   }
 
+  const statusLabel = (status: string): string => {
+    const map: Record<string, string> = { proses: 'Proses', menunggu: 'Menunggu Konfirmasi', selesai: 'Selesai', dibatalkan: 'Dibatalkan' }
+    return map[status] || status
+  }
+
+  const progressPct = (status: string): number => {
+    const map: Record<string, number> = { dibatalkan: 0, menunggu: 33, proses: 66, selesai: 100 }
+    return map[status] ?? 0
+  }
+  const progressSteps = ['Diterima', 'Proses', 'Selesai']
+
+  const statusTabs = [
+    { value: 'all', label: 'Semua' },
+    { value: 'proses', label: 'Proses' },
+    { value: 'menunggu', label: 'Menunggu' },
+    { value: 'selesai', label: 'Selesai' },
+    { value: 'dibatalkan', label: 'Dibatalkan' },
+  ]
+
   const formatRupiah = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
 
   // Total modal (HPP) sparepart per servis — snapshot buy_price saat dipakai
@@ -345,7 +364,7 @@ export default function ServisPage() {
               <select 
                 value={filterStatus} 
                 onChange={e => { setFilterStatus(e.target.value); setCurrentPage(1) }} 
-                className="h-9 rounded-lg border border-hairline-strong bg-surface px-3 text-sm flex-1 sm:w-[160px]"
+                className="hidden lg:block h-9 rounded-lg border border-hairline-strong bg-surface px-3 text-sm sm:w-[160px]"
               >
                 <option value="all">Semua Status</option>
                 <option value="proses">Proses</option>
@@ -354,85 +373,131 @@ export default function ServisPage() {
                 <option value="dibatalkan">Dibatalkan</option>
               </select>
             </div>
+
+            {/* Status tabs (mobile only) — ala foodu-orders-tabs */}
+            <div className="mt-2 flex gap-1.5 overflow-x-auto pb-0.5 lg:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {statusTabs.map(t => {
+                const count = t.value === 'all' ? services.length : services.filter(s => s.status === t.value).length
+                const active = filterStatus === t.value
+                return (
+                  <button
+                    key={t.value}
+                    onClick={() => { setFilterStatus(t.value); setCurrentPage(1) }}
+                    className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+                      active ? 'bg-primary text-primary-foreground shadow-card' : 'border border-hairline bg-surface text-muted-foreground hover:bg-secondary/60'
+                    }`}
+                  >
+                    {t.label}
+                    <span className={`ml-1 ${active ? 'text-primary-foreground/70' : 'text-stone'}`}>{count}</span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Mobile Card View */}
-      <div className="block lg:hidden space-y-2">
+      {/* Mobile Card View — ala hot-pot-order-tracking */}
+      <div className="block lg:hidden space-y-2.5">
         {paginatedData.length === 0 ? (
           <Card className="shadow-card">
             <CardContent className="p-6 text-center">
               <p className="text-sm text-muted-foreground">Belum ada data servis</p>
             </CardContent>
           </Card>
-        ) : paginatedData.map(s => (
-          <Card key={s.id} className="shadow-card overflow-hidden">
-            <CardContent className="p-0">
-              {/* Header with status */}
-              <div className="flex items-center justify-between px-3 py-2 bg-secondary/30 border-b border-hairline">
-                <p className="text-[11px] font-mono font-semibold text-ink">{s.nota_number}</p>
-                <Badge variant={statusVariant(s.status)} className="text-[10px] px-2 py-0.5">
-                  {s.status}
-                </Badge>
-              </div>
-              
-              {/* Main content */}
-              <div className="px-3 py-2.5 space-y-1.5">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-ink truncate">{s.customer_name}</p>
-                    <p className="text-[11px] text-muted-foreground truncate">
-                      {s.device_type} {s.device_brand && `· ${s.device_brand}`} {s.device_model && `· ${s.device_model}`}
-                    </p>
-                  </div>
-                  <p className="text-sm font-bold font-mono text-ink shrink-0">{formatRupiah(s.total_fee)}</p>
+        ) : paginatedData.map(s => {
+          const pct = progressPct(s.status)
+          return (
+            <Card key={s.id} className="shadow-card overflow-hidden">
+              <CardContent className="p-3.5 space-y-3">
+                {/* Status badge + nota */}
+                <div className="flex items-center justify-between gap-2">
+                  <Badge variant={statusVariant(s.status)} className="px-2 py-0.5 text-[10px]">
+                    {statusLabel(s.status)}
+                  </Badge>
+                  <p className="font-mono text-[11px] font-semibold text-stone">#{s.nota_number}</p>
                 </div>
-                
+
+                {/* Customer + device */}
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-ink">{s.customer_name}</p>
+                  <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                    {s.device_type} {s.device_brand && `· ${s.device_brand}`} {s.device_model && `· ${s.device_model}`}
+                  </p>
+                </div>
+
+                {/* Progress tracker */}
+                <div>
+                  <div className="flex items-center justify-between text-[10px]">
+                    {progressSteps.map((step, i) => {
+                      const done = pct > 0 && pct >= (i + 1) * 33.33
+                      return (
+                        <span key={step} className={done ? 'font-semibold text-primary' : 'text-stone'}>
+                          {done ? '✓ ' : ''}{step}
+                        </span>
+                      )
+                    })}
+                  </div>
+                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className={`h-full rounded-full transition-all duration-700 ${s.status === 'dibatalkan' ? 'bg-danger' : 'bg-primary'}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+
                 {modalSparepart(s) > 0 && (
-                  <div className="flex items-center justify-between rounded-md bg-secondary/40 px-2 py-1">
+                  <div className="flex items-center justify-between rounded-lg bg-secondary/40 px-2.5 py-1.5">
                     <p className="text-[10px] text-muted-foreground">Modal Sparepart</p>
                     <p className="text-[10px] font-mono font-medium text-muted-foreground">{formatRupiah(modalSparepart(s))}</p>
                   </div>
                 )}
-                
-                <div className="flex items-center justify-between pt-1">
-                  <p className="text-[10px] text-stone">{new Date(s.date_in).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                  <div className="flex gap-1.5">
-                    <Link href={`/servis/${s.id}`}>
-                      <Button variant="outline" size="sm" className="h-7 px-2 text-[11px] gap-1">
-                        <Eye size={12} /> Detail
-                      </Button>
-                    </Link>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="h-7 px-2 text-[11px] gap-1"
-                      onClick={() => handleKirimNotif(s)}
-                      disabled={sendingWA === s.id}
-                    >
-                      {sendingWA === s.id ? (
-                        <span className="h-3 w-3 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-foreground" />
-                      ) : (
-                        <Send size={12} />
-                      )}
-                    </Button>
-                    {isAdmin && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-7 px-2 text-[11px] gap-1 text-destructive border-destructive/30 hover:bg-destructive/10"
-                        onClick={() => { setRestoreStock(false); setDeleteConfirm(s) }}
-                      >
-                        <Trash2 size={12} />
-                      </Button>
-                    )}
+
+                {/* Total + date */}
+                <div className="flex items-end justify-between gap-2 border-t border-hairline pt-2.5">
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Total Biaya</p>
+                    <p className="font-mono text-sm font-bold text-ink">{formatRupiah(s.total_fee)}</p>
                   </div>
+                  <p className="text-[10px] text-stone">{new Date(s.date_in).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+
+                {/* Actions */}
+                <div className="flex gap-1.5">
+                  <Link href={`/servis/${s.id}`} className="flex-1">
+                    <Button variant="outline" size="sm" className="h-8 w-full gap-1 text-[11px]">
+                      <Eye size={12} /> Detail
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 flex-1 gap-1 text-[11px]"
+                    onClick={() => handleKirimNotif(s)}
+                    disabled={sendingWA === s.id}
+                  >
+                    {sendingWA === s.id ? (
+                      <span className="h-3 w-3 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-foreground" />
+                    ) : (
+                      <Send size={12} />
+                    )}
+                    Notif
+                  </Button>
+                  {isAdmin && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-9 p-0 text-destructive border-destructive/30 hover:bg-destructive/10"
+                      onClick={() => { setRestoreStock(false); setDeleteConfirm(s) }}
+                    >
+                      <Trash2 size={12} />
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
 
       {/* Desktop Table View */}
