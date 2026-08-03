@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { fetchFinanceData } from '@/lib/finance'
-import { Wrench, ShoppingCart, TrendingDown, DollarSign, Users, Calendar, Package } from 'lucide-react'
+import { Wrench, ShoppingCart, TrendingDown, DollarSign, Users, Calendar, Package, Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import PageHeader from '@/components/dashboard/PageHeader'
@@ -44,6 +44,7 @@ export default function LaporanPage() {
   const [dailySummary, setDailySummary] = useState<DailyRow[]>([])
   const [topCustomers, setTopCustomers] = useState<TopCustomer[]>([])
   const [activeTab, setActiveTab] = useState<'servis' | 'unit' | 'harian' | 'customer'>('harian')
+  const [search, setSearch] = useState('')
 
   useEffect(() => { fetchLaporan() }, [filterMonth])
 
@@ -153,6 +154,30 @@ export default function LaporanPage() {
     profit: d.profit,
   }))
 
+  // Breakdown laba rugi untuk segmented bar mobile (ala analytics-dashboard)
+  const segments = [
+    { label: 'Omzet Servis', value: data.omzetServis, color: 'bg-badge-success' },
+    { label: 'Margin Unit', value: data.marginUnit, color: 'bg-badge-info' },
+    { label: 'Modal Sparepart', value: data.modalSparepart, color: 'bg-badge-warning' },
+    { label: 'Biaya Operasional', value: data.biayaOperasional, color: 'bg-danger' },
+  ]
+  const segmentTotal = Math.max(segments.reduce((sum, s) => sum + Math.abs(s.value), 0), 1)
+
+  const currentIdx = new Date().getFullYear() * 12 + new Date().getMonth()
+  const filterIdx = filterMonth.year * 12 + (filterMonth.month - 1)
+  const isNextDisabled = filterIdx >= currentIdx
+
+  const prevMonth = () => setFilterMonth(m => (m.month === 1 ? { month: 12, year: m.year - 1 } : { month: m.month - 1, year: m.year }))
+  const nextMonth = () => setFilterMonth(m => (m.month === 12 ? { month: 1, year: m.year + 1 } : { month: m.month + 1, year: m.year }))
+
+  const q = search.trim().toLowerCase()
+  const filteredServices = q
+    ? services.filter(s => `${s.nota_number} ${s.customer_name} ${s.device_brand ?? ''} ${s.device_type}`.toLowerCase().includes(q))
+    : services
+  const filteredSales = q
+    ? sales.filter(s => `${s.invoice_number} ${s.buyer_name} ${s.product_name ?? ''}`.toLowerCase().includes(q))
+    : sales
+
   const tabClass = (active: boolean) =>
     `flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs sm:text-sm font-medium transition-all duration-200 ${
       active
@@ -198,6 +223,63 @@ export default function LaporanPage() {
           </div>
         </PageHeader>
       </Reveal>
+
+      {/* Hero mobile: Laba Bersih + segmented breakdown (ala analytics-dashboard) */}
+      <div className="lg:hidden">
+        <div className="overflow-hidden rounded-2xl border border-hairline bg-surface-card shadow-card">
+          <div className="bg-gradient-to-br from-primary/[0.07] to-transparent p-4">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-ash">Laba Bersih</p>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={prevMonth}
+                  aria-label="Bulan sebelumnya"
+                  className="grid h-8 w-8 place-items-center rounded-full border border-hairline bg-surface text-muted-foreground transition-colors hover:bg-secondary active:scale-95"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <span className="min-w-[96px] text-center text-xs font-semibold text-ink">{periodLabel}</span>
+                <button
+                  onClick={nextMonth}
+                  disabled={isNextDisabled}
+                  aria-label="Bulan berikutnya"
+                  className="grid h-8 w-8 place-items-center rounded-full border border-hairline bg-surface text-muted-foreground transition-colors hover:bg-secondary active:scale-95 disabled:pointer-events-none disabled:opacity-40"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            <p className={`mt-2 text-2xl font-extrabold tabular-nums ${data.labaBersih >= 0 ? 'text-ink' : 'text-danger'}`}>
+              {formatRupiah(data.labaBersih)}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Omzet {formatRupiah(data.omzetServis + data.omzetPenjualan)} · {data.totalTransaksiServis + data.totalTransaksiUnit} transaksi
+            </p>
+            <div className="mt-4">
+              <div className="flex h-2.5 w-full gap-0.5 overflow-hidden rounded-full">
+                {segments.map(s => (
+                  <div
+                    key={s.label}
+                    className={`${s.color} ${s.value === 0 ? 'hidden' : ''}`}
+                    style={{ width: `${(Math.abs(s.value) / segmentTotal) * 100}%` }}
+                  />
+                ))}
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
+                {segments.map(s => (
+                  <div key={s.label} className="flex items-center gap-1.5">
+                    <span className={`h-2 w-2 shrink-0 rounded-full ${s.color}`} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[10px] text-muted-foreground">{s.label}</p>
+                      <p className="truncate text-[11px] font-semibold tabular-nums text-ink">{formatRupiah(s.value)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* KPI Cards */}
       <Reveal delay={60}>
@@ -257,20 +339,30 @@ export default function LaporanPage() {
                 </div>
                 {/* Mobile */}
                 <div className="mt-3 divide-y divide-hairline lg:hidden">
-                  {sales.map((s) => (
-                    <div key={s.id} className="p-3 space-y-1.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="min-w-0 truncate text-sm font-medium text-ink">{s.product_name || 'Unit'}</p>
-                        <Badge variant={statusVariant(s.status)}>{s.status}</Badge>
+                  {filteredSales.map((s) => (
+                    <div key={s.id} className="flex items-center gap-3 p-3">
+                      <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-badge-info/15 text-badge-info">
+                        <ShoppingCart className="h-5 w-5" strokeWidth={2} />
                       </div>
-                      <p className="text-xs text-muted-foreground">#{s.invoice_number} · {s.buyer_name}</p>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Beli {formatRupiah(s.buy_price)} · Jual {formatRupiah(s.sell_price)}</span>
-                        <span className={`font-semibold ${s.margin >= 0 ? 'text-badge-success' : 'text-danger'}`}>{formatRupiah(s.margin)}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="min-w-0 truncate text-sm font-semibold text-ink">{s.product_name || 'Unit'}</p>
+                          <Badge variant={statusVariant(s.status)}>{s.status}</Badge>
+                        </div>
+                        <p className="mt-0.5 truncate text-xs text-muted-foreground">#{s.invoice_number} · {s.buyer_name}</p>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">
+                          {new Date(s.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </p>
                       </div>
-                      <p className="text-[11px] text-muted-foreground">{new Date(s.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                      <div className="shrink-0 text-right">
+                        <p className={`text-sm font-bold tabular-nums ${s.margin >= 0 ? 'text-badge-success' : 'text-danger'}`}>{formatRupiah(s.margin)}</p>
+                        <p className="text-[10px] text-muted-foreground">Beli {formatRupiah(s.buy_price)} · Jual {formatRupiah(s.sell_price)}</p>
+                      </div>
                     </div>
                   ))}
+                  {filteredSales.length === 0 && (
+                    <p className="p-4 text-center text-xs text-muted-foreground">Tidak ada transaksi ditemukan</p>
+                  )}
                 </div>
                 {/* Desktop */}
                 <div className="mt-3 hidden overflow-x-auto lg:block">
@@ -340,6 +432,19 @@ export default function LaporanPage() {
         />
       </Reveal>
 
+      {/* Search transaksi (mobile) */}
+      <Reveal delay={280}>
+        <div className="relative lg:hidden">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Cari transaksi…"
+            className="h-11 w-full rounded-xl border border-hairline-strong bg-surface pl-10 pr-3 text-sm text-ink outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
+          />
+        </div>
+      </Reveal>
+
       {/* Tabs Detail Transaksi */}
       <Reveal delay={300}>
         <div className="grid grid-cols-2 gap-2 sm:flex">
@@ -368,20 +473,28 @@ export default function LaporanPage() {
                 <>
                   {/* Mobile */}
                   <div className="divide-y divide-hairline md:hidden">
-                    {services.map((s) => (
-                      <div key={s.id} className="p-3 space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium text-sm text-foreground">#{s.nota_number}</p>
-                          <Badge variant={statusVariant(s.status)}>{s.status}</Badge>
+                    {filteredServices.map((s) => (
+                      <div key={s.id} className="flex items-center gap-3 p-3">
+                        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-badge-success/15 text-badge-success">
+                          <Wrench className="h-5 w-5" strokeWidth={2} />
                         </div>
-                        <p className="text-xs text-muted-foreground">{s.customer_name} · {s.device_brand ? `${s.device_brand} - ` : ''}{s.device_type}</p>
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">Jasa {formatRupiah(s.service_fee)} · Sparepart {formatRupiah(s.parts_fee)}</span>
-                          <span className="font-semibold">{formatRupiah(s.total_fee)}</span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-semibold text-sm text-foreground">#{s.nota_number}</p>
+                            <Badge variant={statusVariant(s.status)}>{s.status}</Badge>
+                          </div>
+                          <p className="mt-0.5 truncate text-xs text-muted-foreground">{s.customer_name} · {s.device_brand ? `${s.device_brand} - ` : ''}{s.device_type}</p>
+                          <p className="mt-0.5 text-[11px] text-muted-foreground">{new Date(s.date_in).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                         </div>
-                        <p className="text-[11px] text-muted-foreground">{new Date(s.date_in).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                        <div className="shrink-0 text-right">
+                          <p className="text-sm font-bold tabular-nums">{formatRupiah(s.total_fee)}</p>
+                          <p className="text-[10px] text-muted-foreground">Jasa {formatRupiah(s.service_fee)} · Sparepart {formatRupiah(s.parts_fee)}</p>
+                        </div>
                       </div>
                     ))}
+                    {filteredServices.length === 0 && (
+                      <p className="p-4 text-center text-xs text-muted-foreground">Tidak ada transaksi ditemukan</p>
+                    )}
                   </div>
                   {/* Desktop */}
                   <div className="hidden md:block overflow-x-auto">
@@ -431,20 +544,28 @@ export default function LaporanPage() {
                 <>
                   {/* Mobile */}
                   <div className="divide-y divide-hairline md:hidden">
-                    {sales.map((s) => (
-                      <div key={s.id} className="p-3 space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium text-sm text-foreground">#{s.invoice_number}</p>
-                          <Badge variant={statusVariant(s.status)}>{s.status}</Badge>
+                    {filteredSales.map((s) => (
+                      <div key={s.id} className="flex items-center gap-3 p-3">
+                        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-badge-info/15 text-badge-info">
+                          <ShoppingCart className="h-5 w-5" strokeWidth={2} />
                         </div>
-                        <p className="text-xs text-muted-foreground">{s.buyer_name}</p>
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">Beli {formatRupiah(s.buy_price)} · Jual {formatRupiah(s.sell_price)}</span>
-                          <span className={`font-semibold ${s.margin >= 0 ? 'text-badge-success' : 'text-danger'}`}>{formatRupiah(s.margin)}</span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-medium text-sm text-foreground">#{s.invoice_number}</p>
+                            <Badge variant={statusVariant(s.status)}>{s.status}</Badge>
+                          </div>
+                          <p className="mt-0.5 truncate text-xs text-muted-foreground">{s.buyer_name}</p>
+                          <p className="mt-0.5 text-[11px] text-muted-foreground">{new Date(s.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                         </div>
-                        <p className="text-[11px] text-muted-foreground">{new Date(s.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                        <div className="shrink-0 text-right">
+                          <p className={`text-sm font-bold tabular-nums ${s.margin >= 0 ? 'text-badge-success' : 'text-danger'}`}>{formatRupiah(s.margin)}</p>
+                          <p className="text-[10px] text-muted-foreground">Beli {formatRupiah(s.buy_price)} · Jual {formatRupiah(s.sell_price)}</p>
+                        </div>
                       </div>
                     ))}
+                    {filteredSales.length === 0 && (
+                      <p className="p-4 text-center text-xs text-muted-foreground">Tidak ada transaksi ditemukan</p>
+                    )}
                   </div>
                   {/* Desktop */}
                   <div className="hidden md:block overflow-x-auto">
