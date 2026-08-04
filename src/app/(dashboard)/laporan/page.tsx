@@ -3,13 +3,13 @@
 import { useEffect, useState } from 'react'
 import { fetchFinanceData } from '@/lib/finance'
 import { Wrench, ShoppingCart, TrendingDown, DollarSign, Users, Calendar, Package, Search, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
-import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import PageHeader from '@/components/dashboard/PageHeader'
 import KpiCard from '@/components/laporan/KpiCard'
 import DailyChart from '@/components/laporan/DailyChart'
 import DailyTable, { DailyRow } from '@/components/laporan/DailyTable'
+import { Modal } from '@/components/ui/modal'
 import RincianLabaRugi from '@/components/laporan/RincianLabaRugi'
 import Reveal from '@/components/laporan/Reveal'
 import { pctDelta } from '@/lib/trend'
@@ -47,6 +47,7 @@ export default function LaporanPage() {
   const [topCustomers, setTopCustomers] = useState<TopCustomer[]>([])
   const [activeTab, setActiveTab] = useState<'servis' | 'unit' | 'harian' | 'customer'>('harian')
   const [search, setSearch] = useState('')
+  const [detailSale, setDetailSale] = useState<SaleDetail | null>(null)
 
   useEffect(() => { fetchLaporan() }, [filterMonth])
 
@@ -359,9 +360,9 @@ export default function LaporanPage() {
                       <div className="flex shrink-0 flex-col items-end gap-1">
                         <p className={`text-sm font-bold tabular-nums ${s.margin >= 0 ? 'text-badge-success' : 'text-danger'}`}>{formatRupiah(s.margin)}</p>
                         <p className="text-[10px] text-muted-foreground">Beli {formatRupiah(s.buy_price)} · Jual {formatRupiah(s.sell_price)}</p>
-                        <Link href="/riwayat-penjualan" className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium text-muted-foreground hover:text-ink hover:bg-secondary/60 transition-colors">
+                        <button onClick={() => setDetailSale(s)} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium text-muted-foreground hover:text-ink hover:bg-secondary/60 transition-colors">
                           <Eye size={11} /> Detail
-                        </Link>
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -370,16 +371,13 @@ export default function LaporanPage() {
                   )}
                 </div>
                 {/* Desktop */}
-                <div className="mt-3 hidden overflow-x-auto lg:block">
+                <div className="mt-3 hidden lg:block">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-hairline bg-secondary/30 text-left text-xs text-ash">
                         <th className="px-4 py-2.5 font-medium">Produk</th>
-                        <th className="px-4 py-2.5 font-medium">Tipe</th>
                         <th className="px-4 py-2.5 font-medium">Invoice</th>
                         <th className="px-4 py-2.5 font-medium">Pembeli</th>
-                        <th className="px-4 py-2.5 font-medium text-right">Harga Beli</th>
-                        <th className="px-4 py-2.5 font-medium text-right">Harga Jual</th>
                         <th className="px-4 py-2.5 font-medium text-right">Margin</th>
                         <th className="px-4 py-2.5 font-medium">Status</th>
                         <th className="px-4 py-2.5 font-medium whitespace-nowrap">Tanggal</th>
@@ -389,19 +387,19 @@ export default function LaporanPage() {
                     <tbody className="divide-y divide-hairline">
                       {sales.map((s) => (
                         <tr key={s.id} className="transition-colors hover:bg-secondary/40">
-                          <td className="px-4 py-3 font-medium text-ink">{s.product_name || 'Produk'}</td>
-                          <td className="px-4 py-3"><Badge variant={s.item_type === 'sparepart' ? 'success' : 'secondary'}>{s.item_type === 'sparepart' ? 'Sparepart' : 'Unit'}</Badge></td>
+                          <td className="px-4 py-3">
+                            <span className="font-medium text-ink">{s.product_name || 'Produk'}</span>
+                            <Badge variant={s.item_type === 'sparepart' ? 'success' : 'secondary'} className="ml-2 text-[10px]">{s.item_type === 'sparepart' ? 'Sparepart' : 'Unit'}</Badge>
+                          </td>
                           <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">#{s.invoice_number}</td>
                           <td className="px-4 py-3 text-muted-foreground">{s.buyer_name}</td>
-                          <td className="px-4 py-3 text-right text-muted-foreground">{formatRupiah(s.buy_price)}</td>
-                          <td className="px-4 py-3 text-right">{formatRupiah(s.sell_price)}</td>
                           <td className={`px-4 py-3 text-right font-semibold ${s.margin >= 0 ? 'text-badge-success' : 'text-danger'}`}>{formatRupiah(s.margin)}</td>
                           <td className="px-4 py-3"><Badge variant={statusVariant(s.status)}>{s.status}</Badge></td>
                           <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">{new Date(s.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
                           <td className="px-4 py-3 text-center">
-                            <Link href="/riwayat-penjualan" className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-ink hover:bg-secondary/60 transition-colors">
+                            <button onClick={() => setDetailSale(s)} className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-ink hover:bg-secondary/60 transition-colors">
                               <Eye size={15} />
-                            </Link>
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -673,6 +671,66 @@ export default function LaporanPage() {
             </CardContent>
           </Card>
         </Reveal>
+      )}
+
+      {/* Detail Modal */}
+      {detailSale && (
+        <Modal title={`Detail Transaksi`} onClose={() => setDetailSale(null)} maxWidth="md">
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">No. Invoice</p>
+                <p className="font-semibold text-foreground font-mono">#{detailSale.invoice_number}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Tanggal</p>
+                <p className="font-semibold text-foreground">{new Date(detailSale.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Tipe</p>
+                <Badge variant={detailSale.item_type === 'sparepart' ? 'success' : 'secondary'}>{detailSale.item_type === 'sparepart' ? 'Sparepart' : 'Unit'}</Badge>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Status</p>
+                <Badge variant={statusVariant(detailSale.status)}>{detailSale.status}</Badge>
+              </div>
+            </div>
+
+            <div className="border-t border-border pt-3">
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-2">Produk</p>
+              <p className="font-medium text-foreground">{detailSale.product_name || 'Produk'}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 border-t border-border pt-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Pembeli</p>
+                <p className="font-medium text-foreground">{detailSale.buyer_name}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Quantity</p>
+                <p className="font-medium text-foreground">{detailSale.quantity}</p>
+              </div>
+            </div>
+
+            <div className="border-t border-border pt-3">
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-2">Harga</p>
+              <div className="grid grid-cols-3 gap-3 text-sm">
+                <div>
+                  <p className="text-[10px] text-muted-foreground">Beli</p>
+                  <p className="font-medium text-foreground">{formatRupiah(detailSale.buy_price)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground">Jual</p>
+                  <p className="font-medium text-foreground">{formatRupiah(detailSale.sell_price)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground">Margin</p>
+                  <p className={`font-bold ${detailSale.margin >= 0 ? 'text-badge-success' : 'text-danger'}`}>{formatRupiah(detailSale.margin)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   )
