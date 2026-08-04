@@ -133,7 +133,7 @@ export default function StokPage() {
         title="Stok Barang"
         subtitle={activeTab === 'sparepart' ? 'Kelola stok sparepart untuk servis' : 'Kelola stok unit laptop untuk dijual'}
       >
-        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Link href="/stok/beli-sparepart">
             <Button variant="secondary" className="gap-1.5 h-9 sm:h-10 text-xs sm:text-sm">
               <ArrowDownToLine size={14} strokeWidth={2} />
@@ -153,21 +153,13 @@ export default function StokPage() {
             </Button>
           </Link>
           <Link href="/stok/riwayat-pembelian">
-            <Button variant="outline" className="gap-1.5 h-9 sm:h-10 text-xs sm:text-sm">
-              <Clock size={14} strokeWidth={2} />
-              Riwayat
+            <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground" title="Riwayat Pembelian">
+              <Clock size={16} />
             </Button>
           </Link>
-          <Button variant="outline" onClick={() => setShowAddCategoryForm(true)} className="gap-1.5 h-9 sm:h-10 text-xs sm:text-sm">
-            <Plus size={14} strokeWidth={2} />
-            Kategori
+          <Button variant="ghost" size="icon" onClick={() => setShowAddCategoryForm(true)} className="h-9 w-9 text-muted-foreground" title="Tambah Kategori">
+            <Plus size={16} />
           </Button>
-          <Link href="/stok/tambah">
-            <Button className="gap-1.5 h-9 sm:h-10 text-xs sm:text-sm">
-              <Plus size={14} strokeWidth={2} />
-              Tambah Stok
-            </Button>
-          </Link>
         </div>
       </PageHeader>
 
