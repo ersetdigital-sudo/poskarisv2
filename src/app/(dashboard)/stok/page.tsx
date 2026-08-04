@@ -73,6 +73,7 @@ export default function StokPage() {
       // Hapus semua data terkait dulu, baru hapus produk
       await supabase.from('service_parts').delete().eq('product_id', product.id)
       await supabase.from('purchases').delete().eq('product_id', product.id)
+      await supabase.from('sparepart_purchases').delete().eq('product_id', product.id)
       await supabase.from('stock_movements').delete().eq('product_id', product.id)
       await supabase.from('sales').delete().eq('product_id', product.id)
 
@@ -133,6 +134,12 @@ export default function StokPage() {
         subtitle={activeTab === 'sparepart' ? 'Kelola stok sparepart untuk servis' : 'Kelola stok unit laptop untuk dijual'}
       >
         <div className="grid grid-cols-2 sm:flex gap-2 w-full sm:w-auto">
+          <Link href="/stok/beli-sparepart" className="sm:flex-none">
+            <Button variant="secondary" className="w-full sm:w-auto gap-1.5 sm:gap-2 h-9 sm:h-10 text-xs sm:text-sm">
+              <ArrowDownToLine size={14} strokeWidth={2} className="sm:w-4 sm:h-4" />
+              Beli Sparepart
+            </Button>
+          </Link>
           <Link href="/unit-laptop/beli" className="sm:flex-none">
             <Button variant="secondary" className="w-full sm:w-auto gap-1.5 sm:gap-2 h-9 sm:h-10 text-xs sm:text-sm">
               <ArrowDownToLine size={14} strokeWidth={2} className="sm:w-4 sm:h-4" />
