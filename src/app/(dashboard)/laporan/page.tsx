@@ -11,6 +11,7 @@ import DailyChart from '@/components/laporan/DailyChart'
 import DailyTable, { DailyRow } from '@/components/laporan/DailyTable'
 import RincianLabaRugi from '@/components/laporan/RincianLabaRugi'
 import Reveal from '@/components/laporan/Reveal'
+import { pctDelta } from '@/lib/trend'
 
 interface LaporanData {
   omzetServis: number; omzetPenjualan: number; marginUnit: number;
@@ -71,10 +72,6 @@ export default function LaporanPage() {
         totalTransaksiUnit: summary.totalTransaksiUnit,
       })
 
-      const pctDelta = (a: number, b: number): number | null => {
-        if (b === 0) return null
-        return Math.round(((a - b) / Math.abs(b)) * 100)
-      }
       const ps = prevRes.summary
       setDeltas({
         omzetServis: pctDelta(summary.omzetServis, ps.omzetServis),
@@ -306,6 +303,7 @@ export default function LaporanPage() {
             icon={TrendingDown}
             tone="orange"
             delta={deltas.biaya ?? null}
+            invertDelta
           />
           <KpiCard
             title="Laba Bersih"

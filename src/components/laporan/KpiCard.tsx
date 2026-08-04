@@ -3,6 +3,7 @@
 import { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCountUp } from './useCountUp'
+import { isGoodDelta } from '@/lib/trend'
 
 const TONES = {
   emerald: { tile: 'bg-badge-success/15 text-badge-success', bar: 'from-badge-success' },
@@ -20,6 +21,7 @@ interface KpiCardProps {
   icon: LucideIcon
   tone?: keyof typeof TONES
   delta?: number | null
+  invertDelta?: boolean
   className?: string
 }
 
@@ -34,11 +36,13 @@ export default function KpiCard({
   icon: Icon,
   tone = 'primary',
   delta,
+  invertDelta = false,
   className,
 }: KpiCardProps) {
   const animated = useCountUp(value)
   const display = format(animated)
   const deltaUp = (delta ?? 0) >= 0
+  const deltaGood = isGoodDelta(delta ?? 0, invertDelta)
 
   return (
     <div
@@ -51,7 +55,7 @@ export default function KpiCard({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-[10px] font-medium uppercase tracking-wide text-ash">{title}</p>
-          <p className="mt-1.5 truncate text-lg font-bold tabular-nums text-ink sm:text-xl lg:text-2xl">{display}</p>
+          <p className={cn('mt-1.5 truncate text-lg font-bold tabular-nums sm:text-xl lg:text-2xl', value < 0 ? 'text-danger' : 'text-ink')}>{display}</p>
           {sub && <p className="mt-0.5 truncate text-[10px] font-medium text-muted-foreground">{sub}</p>}
         </div>
         <div className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-lg transition-transform duration-300 group-hover:scale-110', TONES[tone].tile)}>
@@ -62,7 +66,7 @@ export default function KpiCard({
         <div
           className={cn(
             'mt-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold',
-            deltaUp ? 'bg-badge-success/10 text-badge-success' : 'bg-danger/10 text-danger',
+            deltaGood ? 'bg-badge-success/10 text-badge-success' : 'bg-danger/10 text-danger',
           )}
         >
           {deltaUp ? '↑' : '↓'} {Math.abs(delta)}%
