@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { fetchFinanceData } from '@/lib/finance'
-import { Wrench, ShoppingCart, TrendingDown, DollarSign, Users, Calendar, Package, Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Wrench, ShoppingCart, TrendingDown, DollarSign, Users, Calendar, Package, Search, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
+import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import PageHeader from '@/components/dashboard/PageHeader'
@@ -355,9 +356,12 @@ export default function LaporanPage() {
                           {new Date(s.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </p>
                       </div>
-                      <div className="shrink-0 text-right">
+                      <div className="flex shrink-0 flex-col items-end gap-1">
                         <p className={`text-sm font-bold tabular-nums ${s.margin >= 0 ? 'text-badge-success' : 'text-danger'}`}>{formatRupiah(s.margin)}</p>
                         <p className="text-[10px] text-muted-foreground">Beli {formatRupiah(s.buy_price)} · Jual {formatRupiah(s.sell_price)}</p>
+                        <Link href="/riwayat-penjualan" className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium text-muted-foreground hover:text-ink hover:bg-secondary/60 transition-colors">
+                          <Eye size={11} /> Detail
+                        </Link>
                       </div>
                     </div>
                   ))}
@@ -378,7 +382,8 @@ export default function LaporanPage() {
                         <th className="px-4 py-2.5 font-medium text-right">Harga Jual</th>
                         <th className="px-4 py-2.5 font-medium text-right">Margin</th>
                         <th className="px-4 py-2.5 font-medium">Status</th>
-                        <th className="px-4 py-2.5 font-medium">Tanggal</th>
+                        <th className="px-4 py-2.5 font-medium whitespace-nowrap">Tanggal</th>
+                        <th className="px-4 py-2.5 font-medium text-center">Detail</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-hairline">
@@ -386,13 +391,18 @@ export default function LaporanPage() {
                         <tr key={s.id} className="transition-colors hover:bg-secondary/40">
                           <td className="px-4 py-3 font-medium text-ink">{s.product_name || 'Produk'}</td>
                           <td className="px-4 py-3"><Badge variant={s.item_type === 'sparepart' ? 'success' : 'secondary'}>{s.item_type === 'sparepart' ? 'Sparepart' : 'Unit'}</Badge></td>
-                          <td className="px-4 py-3 text-muted-foreground">#{s.invoice_number}</td>
+                          <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">#{s.invoice_number}</td>
                           <td className="px-4 py-3 text-muted-foreground">{s.buyer_name}</td>
                           <td className="px-4 py-3 text-right text-muted-foreground">{formatRupiah(s.buy_price)}</td>
                           <td className="px-4 py-3 text-right">{formatRupiah(s.sell_price)}</td>
                           <td className={`px-4 py-3 text-right font-semibold ${s.margin >= 0 ? 'text-badge-success' : 'text-danger'}`}>{formatRupiah(s.margin)}</td>
                           <td className="px-4 py-3"><Badge variant={statusVariant(s.status)}>{s.status}</Badge></td>
-                          <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(s.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+                          <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">{new Date(s.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+                          <td className="px-4 py-3 text-center">
+                            <Link href="/riwayat-penjualan" className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-ink hover:bg-secondary/60 transition-colors">
+                              <Eye size={15} />
+                            </Link>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
