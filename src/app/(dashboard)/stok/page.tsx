@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase, Product, StockMovement } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
 import Link from 'next/link'
-import { Search, ArrowDown, ArrowUp, ArrowDownUp, AlertTriangle, Plus, Package, X, Cpu, Wrench, Pencil, Trash2, ShoppingCart, ArrowDownToLine, Laptop } from 'lucide-react'
+import { Search, ArrowDown, ArrowUp, ArrowDownUp, AlertTriangle, Plus, Package, X, Cpu, Wrench, Pencil, Trash2, ShoppingCart, ArrowDownToLine, Laptop, Clock } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -138,6 +138,12 @@ export default function StokPage() {
             <Button variant="secondary" className="w-full sm:w-auto gap-1.5 sm:gap-2 h-9 sm:h-10 text-xs sm:text-sm">
               <ArrowDownToLine size={14} strokeWidth={2} className="sm:w-4 sm:h-4" />
               Beli Sparepart
+            </Button>
+          </Link>
+          <Link href="/stok/riwayat-pembelian" className="sm:flex-none">
+            <Button variant="secondary" className="w-full sm:w-auto gap-1.5 sm:gap-2 h-9 sm:h-10 text-xs sm:text-sm">
+              <Clock size={14} strokeWidth={2} className="sm:w-4 sm:h-4" />
+              Riwayat
             </Button>
           </Link>
           <Link href="/unit-laptop/beli" className="sm:flex-none">
