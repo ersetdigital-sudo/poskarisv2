@@ -12,3 +12,23 @@ export function pctDelta(current: number, previous: number): number | null {
 export function isGoodDelta(delta: number, invert: boolean): boolean {
   return invert ? delta < 0 : delta >= 0
 }
+
+export interface TrendBadge {
+  // Arah panah mengikuti tanda delta SELALU (naik = delta positif, turun = delta negatif)
+  up: boolean
+  // Warna badge: good => hijau, bad => merah (baik/buruk mengikuti metric type)
+  good: boolean
+  // Besaran persentase tanpa tanda (absolut)
+  pct: number
+}
+
+// Resolve lengkap badge trend: panah + warna + persentase.
+// Arah panah SELALU ikut tanda delta (bukan besar-kecil persentase, bukan abs).
+// Warna ikut isGoodDelta (invert untuk metric "naik = buruk" seperti biaya).
+export function resolveTrend(delta: number, invert: boolean): TrendBadge {
+  return {
+    up: delta >= 0,
+    good: isGoodDelta(delta, invert),
+    pct: Math.abs(Math.round(delta)),
+  }
+}

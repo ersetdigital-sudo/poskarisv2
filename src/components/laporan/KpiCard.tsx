@@ -3,7 +3,7 @@
 import { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCountUp } from './useCountUp'
-import { isGoodDelta } from '@/lib/trend'
+import { resolveTrend } from '@/lib/trend'
 
 const TONES = {
   emerald: { tile: 'bg-badge-success/15 text-badge-success', bar: 'from-badge-success' },
@@ -41,8 +41,7 @@ export default function KpiCard({
 }: KpiCardProps) {
   const animated = useCountUp(value)
   const display = format(animated)
-  const deltaUp = (delta ?? 0) >= 0
-  const deltaGood = isGoodDelta(delta ?? 0, invertDelta)
+  const trend = delta != null ? resolveTrend(delta, invertDelta) : null
 
   return (
     <div
@@ -62,14 +61,14 @@ export default function KpiCard({
           <Icon className="h-4 w-4" strokeWidth={2} />
         </div>
       </div>
-      {delta != null && (
+      {trend && (
         <div
           className={cn(
             'mt-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold',
-            deltaGood ? 'bg-badge-success/10 text-badge-success' : 'bg-danger/10 text-danger',
+            trend.good ? 'bg-badge-success/10 text-badge-success' : 'bg-danger/10 text-danger',
           )}
         >
-          {deltaUp ? '↑' : '↓'} {Math.abs(delta)}%
+          {trend.up ? '↑' : '↓'} {trend.pct}%
           <span className="font-normal text-muted-foreground">vs bln lalu</span>
         </div>
       )}
