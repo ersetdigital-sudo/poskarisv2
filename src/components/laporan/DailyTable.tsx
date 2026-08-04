@@ -8,7 +8,7 @@ export interface DailyRow {
   omzetServis: number
   omzetUnit: number
   marginUnit: number
-  modalSparepart: number
+  pembelianSparepart: number
   profit: number
   countServis: number
   countUnit: number
@@ -30,12 +30,12 @@ export default function DailyTable({ rows }: DailyTableProps) {
       omzetServis: acc.omzetServis + d.omzetServis,
       omzetUnit: acc.omzetUnit + d.omzetUnit,
       marginUnit: acc.marginUnit + d.marginUnit,
-      modalSparepart: acc.modalSparepart + d.modalSparepart,
+      pembelianSparepart: acc.pembelianSparepart + d.pembelianSparepart,
       profit: acc.profit + d.profit,
       countServis: acc.countServis + d.countServis,
       countUnit: acc.countUnit + d.countUnit,
     }),
-    { omzetServis: 0, omzetUnit: 0, marginUnit: 0, modalSparepart: 0, profit: 0, countServis: 0, countUnit: 0 },
+    { omzetServis: 0, omzetUnit: 0, marginUnit: 0, pembelianSparepart: 0, profit: 0, countServis: 0, countUnit: 0 },
   )
 
   const profitClass = (v: number) => (v >= 0 ? 'text-badge-success' : 'text-danger')
@@ -72,8 +72,8 @@ export default function DailyTable({ rows }: DailyTableProps) {
               </div>
               <div className="flex items-center gap-1.5 text-muted-foreground">
                 <PackageX size={12} className="shrink-0" />
-                <span>Modal Sparepart</span>
-                <span className="ml-auto font-mono font-medium text-danger">{formatRupiah(d.modalSparepart)}</span>
+                <span>Pembelian Sparepart</span>
+                <span className="ml-auto font-mono font-medium text-danger">{formatRupiah(d.pembelianSparepart)}</span>
               </div>
             </div>
             <div className="flex items-center justify-between border-t border-hairline pt-1.5">
@@ -95,7 +95,7 @@ export default function DailyTable({ rows }: DailyTableProps) {
               <th className="p-3 text-right text-xs font-medium uppercase text-ash">Omzet Unit</th>
               <th className="p-3 text-center text-xs font-medium uppercase text-ash">Unit</th>
               <th className="p-3 text-right text-xs font-medium uppercase text-ash">Margin Unit</th>
-              <th className="p-3 text-right text-xs font-medium uppercase text-ash">Modal Sparepart</th>
+              <th className="p-3 text-right text-xs font-medium uppercase text-ash">Pembelian Sparepart</th>
               <th className="p-3 text-right text-xs font-medium uppercase text-ash">Profit</th>
             </tr>
           </thead>
@@ -115,7 +115,7 @@ export default function DailyTable({ rows }: DailyTableProps) {
                 <td className="p-3 text-center text-xs">{d.countUnit}</td>
                 <td className="p-3 text-right font-mono text-xs text-badge-success">{formatRupiah(d.marginUnit)}</td>
                 <td className="p-3 text-right font-mono text-xs text-danger">
-                  {d.modalSparepart > 0 ? formatRupiah(d.modalSparepart) : '-'}
+                  {d.pembelianSparepart > 0 ? formatRupiah(d.pembelianSparepart) : '-'}
                 </td>
                 <td className={cn('p-3 text-right font-mono text-xs font-bold', profitClass(d.profit))}>
                   {formatRupiah(d.profit)}
@@ -132,7 +132,7 @@ export default function DailyTable({ rows }: DailyTableProps) {
                 <td className="p-3 text-right font-mono text-xs font-bold text-ink">{formatRupiah(totals.omzetUnit)}</td>
                 <td className="p-3 text-center text-xs font-bold text-ink">{totals.countUnit}</td>
                 <td className="p-3 text-right font-mono text-xs font-bold text-badge-success">{formatRupiah(totals.marginUnit)}</td>
-                <td className="p-3 text-right font-mono text-xs font-bold text-danger">{formatRupiah(totals.modalSparepart)}</td>
+                <td className="p-3 text-right font-mono text-xs font-bold text-danger">{formatRupiah(totals.pembelianSparepart)}</td>
                 <td className={cn('p-3 text-right font-mono text-sm font-bold', profitClass(totals.profit))}>
                   {formatRupiah(totals.profit)}
                 </td>

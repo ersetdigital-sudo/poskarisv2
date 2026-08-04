@@ -15,7 +15,7 @@ import { pctDelta } from '@/lib/trend'
 
 interface LaporanData {
   omzetServis: number; omzetPenjualan: number; marginUnit: number;
-  biayaOperasional: number; modalSparepart: number; labaBersih: number;
+  biayaOperasional: number; pembelianSparepart: number; labaBersih: number;
   totalTransaksiServis: number; totalTransaksiUnit: number;
 }
 
@@ -36,7 +36,7 @@ interface TopCustomer {
 }
 
 export default function LaporanPage() {
-  const [data, setData] = useState<LaporanData>({ omzetServis: 0, omzetPenjualan: 0, marginUnit: 0, biayaOperasional: 0, modalSparepart: 0, labaBersih: 0, totalTransaksiServis: 0, totalTransaksiUnit: 0 })
+  const [data, setData] = useState<LaporanData>({ omzetServis: 0, omzetPenjualan: 0, marginUnit: 0, biayaOperasional: 0, pembelianSparepart: 0, labaBersih: 0, totalTransaksiServis: 0, totalTransaksiUnit: 0 })
   const [deltas, setDeltas] = useState<Record<string, number | null>>({})
   const [loading, setLoading] = useState(true)
   const [filterMonth, setFilterMonth] = useState(() => { const now = new Date(); return { month: now.getMonth() + 1, year: now.getFullYear() } })
@@ -59,14 +59,14 @@ export default function LaporanPage() {
         fetchFinanceData({ year: filterMonth.year, month: filterMonth.month }),
         fetchFinanceData(prev),
       ])
-      const { summary, services: servisData, sales: salesData, parts } = cur
+      const { summary, services: servisData, sales: salesData, purchases } = cur
 
       setData({
         omzetServis: summary.omzetServis,
         omzetPenjualan: summary.omzetPenjualan,
         marginUnit: summary.marginUnit,
         biayaOperasional: summary.biayaOperasional,
-        modalSparepart: summary.modalSparepart,
+        pembelianSparepart: summary.pembelianSparepart,
         labaBersih: summary.labaBersih,
         totalTransaksiServis: summary.totalTransaksiServis,
         totalTransaksiUnit: summary.totalTransaksiUnit,
@@ -83,10 +83,10 @@ export default function LaporanPage() {
       setServices(servisData || [])
       setSales(salesData || [])
 
-      // Rekap harian: omzet, margin unit, modal sparepart, dan profit per hari
+      // Rekap harian: omzet, margin unit, pembelian sparepart, dan profit per hari
       const dailyMap: Record<string, DailyRow> = {}
       const addDay = (day: string) => {
-        if (!dailyMap[day]) dailyMap[day] = { date: day, omzetServis: 0, omzetUnit: 0, marginUnit: 0, modalSparepart: 0, profit: 0, countServis: 0, countUnit: 0 }
+        if (!dailyMap[day]) dailyMap[day] = { date: day, omzetServis: 0, omzetUnit: 0, marginUnit: 0, pembelianSparepart: 0, profit: 0, countServis: 0, countUnit: 0 }
       }
       servisData?.forEach(s => {
         const day = new Date(s.date_in).toISOString().split('T')[0]
@@ -105,13 +105,13 @@ export default function LaporanPage() {
           dailyMap[day].countUnit++
         }
       })
-      parts?.forEach(p => {
-        const day = new Date(p.date_in).toISOString().split('T')[0]
+      purchases?.forEach(p => {
+        const day = (p.purchase_date || '').slice(0, 10)
         addDay(day)
-        dailyMap[day].modalSparepart += (p.quantity || 0) * (p.buy_price || 0)
+        dailyMap[day].pembelianSparepart += (p.quantity || 0) * (p.buy_price || 0)
       })
       const daily = Object.values(dailyMap)
-      daily.forEach(d => { d.profit = d.omzetServis + d.marginUnit - d.modalSparepart })
+      daily.forEach(d => { d.profit = d.omzetServis + d.marginUnit - d.pembelianSparepart })
       setDailySummary(daily.sort((a, b) => b.date.localeCompare(a.date)))
 
       // Top customers
@@ -155,7 +155,7 @@ export default function LaporanPage() {
   const segments = [
     { label: 'Omzet Servis', value: data.omzetServis, color: 'bg-badge-success' },
     { label: 'Margin Unit', value: data.marginUnit, color: 'bg-badge-info' },
-    { label: 'Modal Sparepart', value: data.modalSparepart, color: 'bg-badge-warning' },
+    { label: 'Pembelian Sparepart', value: data.pembelianSparepart, color: 'bg-badge-warning' },
     { label: 'Biaya Operasional', value: data.biayaOperasional, color: 'bg-danger' },
   ]
   const segmentTotal = Math.max(segments.reduce((sum, s) => sum + Math.abs(s.value), 0), 1)
@@ -424,7 +424,7 @@ export default function LaporanPage() {
           rows={[
             { label: '(+) Omzet Servis', value: data.omzetServis, kind: 'in' },
             { label: '(+) Margin Penjualan Unit', value: data.marginUnit, kind: 'in' },
-            { label: '(-) Modal Sparepart', value: data.modalSparepart, kind: 'out' },
+            { label: '(-) Pembelian Sparepart', value: data.pembelianSparepart, kind: 'out' },
             { label: '(-) Biaya Operasional', value: data.biayaOperasional, kind: 'out' },
           ]}
         />
