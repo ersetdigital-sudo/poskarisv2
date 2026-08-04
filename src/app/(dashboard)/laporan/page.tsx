@@ -27,7 +27,7 @@ interface ServiceDetail {
 
 interface SaleDetail {
   id: string; invoice_number: string; buyer_name: string; product_id: string | null;
-  product_name: string; sell_price: number; buy_price: number; margin: number;
+  product_name: string; item_type: string; quantity: number; sell_price: number; buy_price: number; margin: number;
   status: string; date: string;
 }
 
@@ -315,14 +315,14 @@ export default function LaporanPage() {
         </div>
       </Reveal>
 
-      {/* Unit Terjual */}
+      {/* Produk Terjual */}
       <Reveal delay={120}>
         <Card className="shadow-card">
           <CardContent className="p-0 sm:p-0">
             {sales.length === 0 ? (
               <div className="p-8 text-center">
-                <p className="text-sm font-semibold text-ink">Unit Terjual</p>
-                <p className="mt-1 text-xs text-muted-foreground">Belum ada unit terjual di {periodLabel}</p>
+                <p className="text-sm font-semibold text-ink">Produk Terjual</p>
+                <p className="mt-1 text-xs text-muted-foreground">Belum ada produk terjual di {periodLabel}</p>
               </div>
             ) : (
               <>
@@ -331,8 +331,8 @@ export default function LaporanPage() {
                     <Package className="h-4 w-4" strokeWidth={2} />
                   </div>
                   <div>
-                    <h2 className="text-sm font-bold text-ink">Unit Terjual</h2>
-                    <p className="text-[10px] text-muted-foreground">{data.totalTransaksiUnit} unit · {sales.length} transaksi di {periodLabel}</p>
+                    <h2 className="text-sm font-bold text-ink">Produk Terjual</h2>
+                    <p className="text-[10px] text-muted-foreground">{sales.length} transaksi di {periodLabel}</p>
                   </div>
                 </div>
                 {/* Mobile */}
@@ -344,8 +344,11 @@ export default function LaporanPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="min-w-0 truncate text-sm font-semibold text-ink">{s.product_name || 'Unit'}</p>
-                          <Badge variant={statusVariant(s.status)}>{s.status}</Badge>
+                          <p className="min-w-0 truncate text-sm font-semibold text-ink">{s.product_name || 'Produk'}</p>
+                          <span className="flex shrink-0 items-center gap-1.5">
+                            <Badge variant={s.item_type === 'sparepart' ? 'success' : 'secondary'}>{s.item_type === 'sparepart' ? 'Sparepart' : 'Unit'}</Badge>
+                            <Badge variant={statusVariant(s.status)}>{s.status}</Badge>
+                          </span>
                         </div>
                         <p className="mt-0.5 truncate text-xs text-muted-foreground">#{s.invoice_number} · {s.buyer_name}</p>
                         <p className="mt-0.5 text-[11px] text-muted-foreground">
@@ -368,6 +371,7 @@ export default function LaporanPage() {
                     <thead>
                       <tr className="border-b border-hairline bg-secondary/30 text-left text-xs text-ash">
                         <th className="px-4 py-2.5 font-medium">Produk</th>
+                        <th className="px-4 py-2.5 font-medium">Tipe</th>
                         <th className="px-4 py-2.5 font-medium">Invoice</th>
                         <th className="px-4 py-2.5 font-medium">Pembeli</th>
                         <th className="px-4 py-2.5 font-medium text-right">Harga Beli</th>
@@ -380,7 +384,8 @@ export default function LaporanPage() {
                     <tbody className="divide-y divide-hairline">
                       {sales.map((s) => (
                         <tr key={s.id} className="transition-colors hover:bg-secondary/40">
-                          <td className="px-4 py-3 font-medium text-ink">{s.product_name || 'Unit'}</td>
+                          <td className="px-4 py-3 font-medium text-ink">{s.product_name || 'Produk'}</td>
+                          <td className="px-4 py-3"><Badge variant={s.item_type === 'sparepart' ? 'success' : 'secondary'}>{s.item_type === 'sparepart' ? 'Sparepart' : 'Unit'}</Badge></td>
                           <td className="px-4 py-3 text-muted-foreground">#{s.invoice_number}</td>
                           <td className="px-4 py-3 text-muted-foreground">{s.buyer_name}</td>
                           <td className="px-4 py-3 text-right text-muted-foreground">{formatRupiah(s.buy_price)}</td>

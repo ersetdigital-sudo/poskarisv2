@@ -10,6 +10,7 @@ const mkService = (over: Partial<FinanceService>): FinanceService => ({
 
 const mkSale = (over: Partial<FinanceSale>): FinanceSale => ({
   id: 'sale1', invoice_number: 'JSP-0001', buyer_name: 'B', product_id: 'p1', product_name: 'RAM',
+  item_type: 'unit', quantity: 1,
   sell_price: 150_000, buy_price: 100_000, margin: 50_000, status: 'completed',
   date: '2026-07-20T00:00:00.000Z', created_at: '2026-07-20T00:00:00.000Z', ...over,
 })

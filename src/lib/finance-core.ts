@@ -47,6 +47,8 @@ export interface FinanceSale {
   buyer_name: string
   product_id: string | null
   product_name: string
+  item_type: string
+  quantity: number
   sell_price: number
   buy_price: number
   margin: number

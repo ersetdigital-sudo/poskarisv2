@@ -18,7 +18,7 @@ export async function fetchFinanceData(period: FinancePeriod): Promise<FinancePe
   const salesQuery = supabase
     .from('sales')
     .select(
-      'id, invoice_number, buyer_name, product_id, sell_price, buy_price, margin, status, date, created_at, products(name)',
+      'id, invoice_number, buyer_name, product_id, item_type, item_name, quantity, sell_price, buy_price, margin, status, date, created_at, products(name)',
     )
     .gte('date', start)
     .lt('date', end)
@@ -60,7 +60,9 @@ export async function fetchFinanceData(period: FinancePeriod): Promise<FinancePe
     invoice_number: s.invoice_number,
     buyer_name: s.buyer_name,
     product_id: s.product_id,
-    product_name: s.products?.[0]?.name || '',
+    product_name: s.item_name || s.products?.[0]?.name || '',
+    item_type: s.item_type || 'unit',
+    quantity: s.quantity ?? 1,
     sell_price: s.sell_price,
     buy_price: s.buy_price,
     margin: s.margin,
