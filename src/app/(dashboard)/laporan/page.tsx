@@ -48,6 +48,7 @@ export default function LaporanPage() {
   const [activeTab, setActiveTab] = useState<'servis' | 'unit' | 'harian' | 'customer'>('harian')
   const [search, setSearch] = useState('')
   const [detailSale, setDetailSale] = useState<SaleDetail | null>(null)
+  const [detailDay, setDetailDay] = useState<string | null>(null)
 
   useEffect(() => { fetchLaporan() }, [filterMonth])
 
@@ -616,7 +617,7 @@ export default function LaporanPage() {
 
       {activeTab === 'harian' && (
         <Reveal delay={300}>
-          <DailyTable rows={dailySummary} />
+          <DailyTable rows={dailySummary} onDayClick={setDetailDay} />
         </Reveal>
       )}
 
@@ -732,6 +733,73 @@ export default function LaporanPage() {
           </div>
         </Modal>
       )}
+
+      {/* Detail Hari Modal */}
+      {detailDay && (() => {
+        const dayServices = services.filter(s => {
+          const day = new Date(s.date_in).toISOString().split('T')[0]
+          return day === detailDay && s.status === 'selesai'
+        })
+        const daySales = sales.filter(s => {
+          const day = new Date(s.date).toISOString().split('T')[0]
+          return day === detailDay && s.status === 'completed'
+        })
+        const dayDate = new Date(`${detailDay}T00:00:00`)
+        const dayLabel = dayDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+        const dayProfit = dayServices.reduce((sum, s) => sum + s.total_fee, 0) + daySales.reduce((sum, s) => sum + s.margin, 0)
+
+        return (
+          <Modal title={`Detail Harian — ${dayLabel}`} onClose={() => setDetailDay(null)} maxWidth="lg">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between rounded-lg bg-secondary/50 p-3">
+                <span className="text-sm text-muted-foreground">Profit Hari Ini</span>
+                <span className={`text-lg font-bold font-mono ${dayProfit >= 0 ? 'text-badge-success' : 'text-danger'}`}>{formatRupiah(dayProfit)}</span>
+              </div>
+
+              {dayServices.length > 0 && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-2">Servis ({dayServices.length})</p>
+                  <div className="space-y-2">
+                    {dayServices.map(s => (
+                      <div key={s.id} className="flex items-center justify-between rounded-lg border border-hairline p-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-ink truncate">{s.customer_name} — {s.device_type}</p>
+                          <p className="text-[11px] text-muted-foreground">#{s.nota_number}</p>
+                        </div>
+                        <p className="shrink-0 pl-3 text-sm font-bold text-badge-success">{formatRupiah(s.total_fee)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {daySales.length > 0 && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-2">Penjualan ({daySales.length})</p>
+                  <div className="space-y-2">
+                    {daySales.map(s => (
+                      <div key={s.id} className="flex items-center justify-between rounded-lg border border-hairline p-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-ink truncate">{s.product_name || 'Produk'} — {s.buyer_name}</p>
+                          <p className="text-[11px] text-muted-foreground">#{s.invoice_number}</p>
+                        </div>
+                        <div className="shrink-0 pl-3 text-right">
+                          <p className={`text-sm font-bold ${s.margin >= 0 ? 'text-badge-success' : 'text-danger'}`}>{formatRupiah(s.margin)}</p>
+                          <p className="text-[10px] text-muted-foreground">Beli {formatRupiah(s.buy_price)} · Jual {formatRupiah(s.sell_price)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {dayServices.length === 0 && daySales.length === 0 && (
+                <p className="text-center text-sm text-muted-foreground">Tidak ada transaksi di hari ini</p>
+              )}
+            </div>
+          </Modal>
+        )
+      })()}
     </div>
   )
 }

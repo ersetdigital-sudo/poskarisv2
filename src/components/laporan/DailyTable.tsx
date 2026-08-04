@@ -16,6 +16,7 @@ export interface DailyRow {
 
 interface DailyTableProps {
   rows: DailyRow[]
+  onDayClick?: (date: string) => void
 }
 
 const formatRupiah = (n: number) =>
@@ -24,7 +25,7 @@ const formatRupiah = (n: number) =>
 const formatTanggal = (iso: string, opts: Intl.DateTimeFormatOptions) =>
   new Date(`${iso}T00:00:00`).toLocaleDateString('id-ID', opts)
 
-export default function DailyTable({ rows }: DailyTableProps) {
+export default function DailyTable({ rows, onDayClick }: DailyTableProps) {
   const totals = rows.reduce(
     (acc, d) => ({
       omzetServis: acc.omzetServis + d.omzetServis,
@@ -47,7 +48,7 @@ export default function DailyTable({ rows }: DailyTableProps) {
         {rows.length === 0 ? (
           <div className="p-6 text-center text-sm text-muted-foreground">Belum ada data harian</div>
         ) : rows.map(d => (
-          <div key={d.date} className="p-3 space-y-2">
+          <div key={d.date} onClick={() => onDayClick?.(d.date)} className={`p-3 space-y-2 ${onDayClick ? 'cursor-pointer hover:bg-secondary/30 transition-colors' : ''}`}>
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold text-ink">
                 {formatTanggal(d.date, { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -105,7 +106,7 @@ export default function DailyTable({ rows }: DailyTableProps) {
                 <td colSpan={8} className="p-8 text-center text-xs text-stone">Belum ada data harian</td>
               </tr>
             ) : rows.map(d => (
-              <tr key={d.date} className="border-b border-hairline transition-colors hover:bg-secondary/20">
+              <tr key={d.date} onClick={() => onDayClick?.(d.date)} className={`border-b border-hairline transition-colors ${onDayClick ? 'cursor-pointer hover:bg-secondary/30' : 'hover:bg-secondary/20'}`}>
                 <td className="p-3 text-xs font-medium text-ink">
                   {formatTanggal(d.date, { weekday: 'short', day: 'numeric', month: 'short' })}
                 </td>
