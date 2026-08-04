@@ -1,156 +1,8 @@
 import { supabase } from '@/lib/supabase'
+import { buildPeriodRange, computeFinanceSummary } from './finance-core'
+import type { FinancePeriod, FinancePeriodData, FinancePurchase, FinanceSale, FinanceServicePart } from './finance-core'
 
-export interface FinancePeriod {
-  year: number
-  month: number | null
-}
-
-export interface FinanceMonthly {
-  month: number
-  omzetServis: number
-  omzetPenjualan: number
-  marginUnit: number
-  biaya: number
-  modalSparepart: number
-  laba: number
-}
-
-export interface FinanceSummary {
-  omzetServis: number
-  omzetPenjualan: number
-  marginUnit: number
-  biayaOperasional: number
-  modalSparepart: number
-  labaBersih: number
-  totalTransaksiServis: number
-  totalTransaksiUnit: number
-  monthly: FinanceMonthly[]
-}
-
-export interface FinanceService {
-  id: string
-  nota_number: string
-  customer_name: string
-  device_type: string
-  device_brand: string | null
-  service_fee: number
-  parts_fee: number
-  total_fee: number
-  status: string
-  date_in: string
-  created_at: string
-  // Belum ada di DB (out of scope): sparepart_cost?: number; sparepart_used?: unknown[]
-}
-
-export interface FinanceSale {
-  id: string
-  invoice_number: string
-  buyer_name: string
-  product_id: string | null
-  product_name: string
-  sell_price: number
-  buy_price: number
-  margin: number
-  status: string
-  date: string
-  created_at: string
-}
-
-export interface FinanceServicePart {
-  service_id: string
-  quantity: number
-  buy_price: number
-  date_in: string
-}
-
-export interface FinanceCost {
-  amount: number
-  period_month: number
-  period_year: number
-}
-
-export interface FinancePeriodData {
-  summary: FinanceSummary
-  services: FinanceService[]
-  sales: FinanceSale[]
-  costs: FinanceCost[]
-  parts: FinanceServicePart[]
-}
-
-const SERVICE_DONE = 'selesai'
-const SALE_DONE = 'completed'
-
-export function buildPeriodRange(period: FinancePeriod): { start: string; end: string } {
-  const start = new Date(period.year, (period.month ?? 1) - 1, 1)
-  const end = period.month != null
-    ? new Date(period.year, period.month, 1)
-    : new Date(period.year + 1, 0, 1)
-  return { start: start.toISOString(), end: end.toISOString() }
-}
-
-export function computeFinanceSummary(
-  services: FinanceService[],
-  sales: FinanceSale[],
-  costs: FinanceCost[],
-  parts: FinanceServicePart[] = [],
-): FinanceSummary {
-  const doneServices = services.filter((s) => s.status === SERVICE_DONE)
-  const doneSales = sales.filter((s) => s.status === SALE_DONE)
-
-  const omzetServis = doneServices.reduce((sum, s) => sum + (s.total_fee || 0), 0)
-  const omzetPenjualan = doneSales.reduce((sum, s) => sum + (s.sell_price || 0), 0)
-  const marginUnit = doneSales.reduce(
-    (sum, s) => sum + (s.margin ?? (s.sell_price || 0) - (s.buy_price || 0)),
-    0,
-  )
-  const biayaOperasional = costs.reduce((sum, c) => sum + (c.amount || 0), 0)
-  const modalSparepart = parts.reduce(
-    (sum, p) => sum + (p.quantity || 0) * (p.buy_price || 0),
-    0,
-  )
-  const labaBersih = omzetServis + marginUnit - biayaOperasional - modalSparepart
-
-  const monthly: FinanceMonthly[] = Array.from({ length: 12 }, (_, idx) => {
-    const month = idx + 1
-    const monthServices = doneServices.filter((s) => new Date(s.date_in).getMonth() === idx)
-    const monthSales = doneSales.filter((s) => new Date(s.date).getMonth() === idx)
-    const monthParts = parts.filter((p) => new Date(p.date_in).getMonth() === idx)
-    const monthOmzetServis = monthServices.reduce((sum, s) => sum + (s.total_fee || 0), 0)
-    const monthOmzetPenjualan = monthSales.reduce((sum, s) => sum + (s.sell_price || 0), 0)
-    const monthMarginUnit = monthSales.reduce(
-      (sum, s) => sum + (s.margin ?? (s.sell_price || 0) - (s.buy_price || 0)),
-      0,
-    )
-    const biaya = costs
-      .filter((c) => c.period_month === month)
-      .reduce((sum, c) => sum + (c.amount || 0), 0)
-    const modalSparepart = monthParts.reduce(
-      (sum, p) => sum + (p.quantity || 0) * (p.buy_price || 0),
-      0,
-    )
-    return {
-      month,
-      omzetServis: monthOmzetServis,
-      omzetPenjualan: monthOmzetPenjualan,
-      marginUnit: monthMarginUnit,
-      biaya,
-      modalSparepart,
-      laba: monthOmzetServis + monthMarginUnit - biaya - modalSparepart,
-    }
-  })
-
-  return {
-    omzetServis,
-    omzetPenjualan,
-    marginUnit,
-    biayaOperasional,
-    modalSparepart,
-    labaBersih,
-    totalTransaksiServis: doneServices.length,
-    totalTransaksiUnit: doneSales.length,
-    monthly,
-  }
-}
+export * from './finance-core'
 
 export async function fetchFinanceData(period: FinancePeriod): Promise<FinancePeriodData> {
   const { start, end } = buildPeriodRange(period)
@@ -182,15 +34,24 @@ export async function fetchFinanceData(period: FinancePeriod): Promise<FinancePe
   const partsQuery = supabase
     .from('service_parts')
     .select('service_id, quantity, buy_price, services!inner(status, date_in)')
-    .eq('services.status', SERVICE_DONE)
+    .eq('services.status', 'selesai')
     .gte('services.date_in', start)
     .lt('services.date_in', end)
 
-  const [servicesRes, salesRes, costsRes, partsRes] = await Promise.all([
+  // Bandingkan pakai bagian tanggal saja ('YYYY-MM-DD') karena purchase_date bertipe DATE —
+  // bandingkan dengan timestamp ISO bisa salah atribusi bulan di zona waktu +07:00.
+  const purchasesQuery = supabase
+    .from('sparepart_purchases')
+    .select('product_id, quantity, buy_price, purchase_date')
+    .gte('purchase_date', start.slice(0, 10))
+    .lt('purchase_date', end.slice(0, 10))
+
+  const [servicesRes, salesRes, costsRes, partsRes, purchasesRes] = await Promise.all([
     servicesQuery,
     salesQuery,
     costsQuery,
     partsQuery,
+    purchasesQuery,
   ])
 
   const services = servicesRes.data || []
@@ -214,12 +75,19 @@ export async function fetchFinanceData(period: FinancePeriod): Promise<FinancePe
     buy_price: p.buy_price,
     date_in: p.services?.[0]?.date_in || '',
   }))
+  const purchases: FinancePurchase[] = (purchasesRes.data || []).map((p) => ({
+    product_id: p.product_id,
+    quantity: p.quantity,
+    buy_price: p.buy_price,
+    purchase_date: p.purchase_date,
+  }))
 
   return {
     services,
     sales,
     costs,
     parts,
-    summary: computeFinanceSummary(services, sales, costs, parts),
+    purchases,
+    summary: computeFinanceSummary(services, sales, costs, parts, purchases),
   }
 }
